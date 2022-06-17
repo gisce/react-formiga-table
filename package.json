@@ -1,6 +1,6 @@
 {
   "name": "@gisce/react-formiga-table",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "scripts": {
     "build": "tsc && vite build",
     "prepublishOnly": "npm run build",
