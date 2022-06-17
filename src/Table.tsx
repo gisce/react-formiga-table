@@ -42,11 +42,13 @@ export type TableProps = {
 };
 
 const Styles = styled.div`
-  padding: 1rem;
+  padding: 0.5rem;
+  overflow-x: auto;
 
   table {
     border-spacing: 0;
     border: 1px solid black;
+    width: 100%;
 
     tr {
       :last-child {
