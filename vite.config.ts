@@ -11,6 +11,7 @@ export default defineConfig({
     }),
   ],
   build: {
+    sourcemap: "inline",
     lib: {
       entry: path.resolve(__dirname, "src/index.ts"),
       name: "react-formiga-table",

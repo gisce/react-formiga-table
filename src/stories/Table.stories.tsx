@@ -25,6 +25,13 @@ export const Primary: ComponentStoryObj<typeof Table> = {
           return <img src={item} />;
         },
       },
+      {
+        title: "Object",
+        key: "object",
+        render: (item: any) => {
+          return <pre>{JSON.stringify(item, null, 2)}</pre>;
+        },
+      },
     ],
     dataSource: [
       {
@@ -32,12 +39,20 @@ export const Primary: ComponentStoryObj<typeof Table> = {
         surnames: "Doe",
         image:
           "https://pickaface.net/gallery/avatar/unr_sample_161118_2054_ynlrg.png",
+        object: {
+          model: "test",
+          value: "Test value",
+        },
       },
       {
         name: "Jane",
         surnames: "Doe",
         image:
           "https://pickaface.net/gallery/avatar/unr_sample_170130_2257_9qgawp.png",
+        object: {
+          model: "test",
+          value: "Test value",
+        },
       },
     ],
   },
