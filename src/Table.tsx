@@ -114,6 +114,13 @@ export const Table = (props: TableProps) => {
       columns.map((it) => ({
         Header: it.title,
         accessor: it.key,
+        Cell: ({ value }: { value: any }) => {
+          if (it.render) {
+            return it.render(value);
+          } else {
+            return value;
+          }
+        },
       })),
     [columns]
   );
