@@ -117,9 +117,8 @@ export const Table = (props: TableProps) => {
         Cell: ({ value }: { value: any }) => {
           if (it.render) {
             return it.render(value);
-          } else {
-            return value;
           }
+          return value || null;
         },
       })),
     [columns]
