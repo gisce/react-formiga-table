@@ -9,7 +9,15 @@ export default meta;
 
 export const Primary: ComponentStoryObj<typeof Table> = {
   args: {
-    height: 100,
+    loading: false,
+    loadingComponent: <h1>loading</h1>,
+    height: 300,
+    onRow: (record: any) => ({
+      style: {},
+      onDoubleClick: () => {
+        alert("double clicked record" + JSON.stringify(record));
+      },
+    }),
     columns: [
       {
         title: "Name",
