@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
-import { useTable } from "react-table";
+import { useTable, useRowSelect } from "react-table";
 
 export type TableColumn = {
   key: string;
@@ -22,11 +22,8 @@ type ContainerProps = {
 export type TableProps = {
   dataSource: any[];
   columns: TableColumn[];
-  rowKey: (item: any) => string;
   onRow: (item: any) => RowSettings;
-  rowSelection: {
-    selectedRowKeys: string[] | number[];
-  };
+  onRowSelectionChange?: (selectedRowKeys: number[]) => void;
   onChange: (a: any, b: any, sorter: any, d: any) => void;
 
   // Display settings
@@ -85,55 +82,140 @@ function TableComp({
   columns,
   data,
   onRow,
+  onRowSelectionChange,
 }: {
   columns: any;
   data: any;
   onRow: (item: any) => RowSettings;
+  onRowSelectionChange?: (selectedRowKeys: number[]) => void;
 }) {
   // Use the state and functions returned from useTable to build your UI
-  const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
-    useTable({
-      columns,
-      data,
-    });
+  const {
+    getTableProps,
+    getTableBodyProps,
+    headerGroups,
+    rows,
+    prepareRow,
+    selectedFlatRows,
+  } = onRowSelectionChange
+    ? (useTable(
+        {
+          columns,
+          data,
+        },
+        useRowSelect,
+        (hooks) => {
+          hooks.visibleColumns.push((columns) => [
+            // Let's make a column for selection
+            {
+              id: "selection",
+              // The header can use the table's getToggleAllRowsSelectedProps method
+              // to render a checkbox
+              Header: (headerProps) => {
+                const { getToggleAllRowsSelectedProps } = headerProps as any;
+                return (
+                  <div
+                    style={{
+                      width: 50,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <IndeterminateCheckbox
+                      {...getToggleAllRowsSelectedProps()}
+                    />
+                  </div>
+                );
+              },
+              // The cell can use the individual row's getToggleRowSelectedProps method
+              // to the render a checkbox
+              Cell: ({ row }) => (
+                <div
+                  style={{
+                    width: 50,
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <IndeterminateCheckbox
+                    {...(row as any).getToggleRowSelectedProps()}
+                  />
+                </div>
+              ),
+            },
+            ...columns,
+          ]);
+        }
+      ) as any)
+    : useTable({ columns, data });
+
+  useEffect(() => {
+    onRowSelectionChange?.(selectedFlatRows.map((d: any) => d.original));
+  }, [selectedFlatRows]);
 
   // Render the UI for your table
   return (
-    <table {...getTableProps()}>
-      <thead>
-        {headerGroups.map((headerGroup) => (
-          <tr {...headerGroup.getHeaderGroupProps()}>
-            {headerGroup.headers.map((column) => (
-              <th {...column.getHeaderProps()}>{column.render("Header")}</th>
-            ))}
-          </tr>
-        ))}
-      </thead>
-      <tbody {...getTableBodyProps()}>
-        {rows.map((row, i) => {
-          prepareRow(row);
-          const { style, onDoubleClick } = onRow(row.original);
-
-          return (
-            <tr
-              style={style}
-              {...row.getRowProps()}
-              onDoubleClick={onDoubleClick}
-            >
-              {row.cells.map((cell) => {
-                return <td {...cell.getCellProps()}>{cell.render("Cell")}</td>;
-              })}
+    <>
+      <table {...getTableProps()}>
+        <thead>
+          {headerGroups.map((headerGroup: any) => (
+            <tr {...headerGroup.getHeaderGroupProps()}>
+              {headerGroup.headers.map((column: any) => (
+                <th {...column.getHeaderProps()}>{column.render("Header")}</th>
+              ))}
             </tr>
-          );
-        })}
-      </tbody>
-    </table>
+          ))}
+        </thead>
+        <tbody {...getTableBodyProps()}>
+          {rows.map((row: any, i: number) => {
+            prepareRow(row);
+            const { style, onDoubleClick } = onRow(row.original);
+
+            return (
+              <tr
+                style={style}
+                {...row.getRowProps()}
+                onDoubleClick={onDoubleClick}
+              >
+                {row.cells.map((cell: any) => {
+                  return (
+                    <td {...cell.getCellProps()}>{cell.render("Cell")}</td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </>
   );
 }
 
+const IndeterminateCheckbox = React.forwardRef((props, ref) => {
+  const { indeterminate, ...rest } = props as any;
+
+  const defaultRef = React.useRef();
+  const resolvedRef = ref || defaultRef;
+
+  React.useEffect(() => {
+    (resolvedRef as any).current.indeterminate = indeterminate;
+  }, [resolvedRef, indeterminate]);
+
+  return <input type="checkbox" ref={resolvedRef as any} {...rest} />;
+});
+
 export const Table = (props: TableProps) => {
-  const { dataSource, columns, height, onRow, loading, loadingComponent } =
-    props;
+  const {
+    dataSource,
+    columns,
+    height,
+    onRow,
+    loading,
+    loadingComponent,
+    onRowSelectionChange,
+  } = props;
 
   if (loading) {
     return loadingComponent;
@@ -158,7 +240,12 @@ export const Table = (props: TableProps) => {
 
   return (
     <Container height={height}>
-      <TableComp columns={columnsForTable} data={data} onRow={onRow} />
+      <TableComp
+        columns={columnsForTable}
+        data={data}
+        onRow={onRow}
+        onRowSelectionChange={onRowSelectionChange}
+      />
     </Container>
   );
 };

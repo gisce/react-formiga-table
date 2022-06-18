@@ -12,6 +12,9 @@ export const Primary: ComponentStoryObj<typeof Table> = {
     loading: false,
     loadingComponent: <h1>loading</h1>,
     height: 300,
+    onRowSelectionChange: (selectedRows: any) => {
+      alert("selectedRows: " + JSON.stringify(selectedRows));
+    },
     onRow: (record: any) => ({
       style: {},
       onDoubleClick: () => {
