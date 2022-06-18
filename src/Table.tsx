@@ -15,6 +15,10 @@ export type RowSettings = {
   onDoubleClick: () => void;
 };
 
+type ContainerProps = {
+  height?: number;
+};
+
 export type TableProps = {
   dataSource: any[];
   columns: TableColumn[];
@@ -27,43 +31,34 @@ export type TableProps = {
 
   // Display settings
   loading: boolean;
-  minHeight: number;
-  scroll?:
-    | {
-        x?: string | number | true | undefined;
-        y?: string | number | undefined;
-      }
-    | undefined;
-
-  // Unused props - only to mantain interface structure with previous component
-  size: any;
-  pagination: any;
-  rowClassName: any;
+  height?: number;
 };
 
-const Styles = styled.div`
-  padding: 0.5rem;
+const Container = styled.div`
   overflow-x: auto;
+  height: ${(props: ContainerProps) => `${props.height}px` || "auto"};
 
   table {
     border-spacing: 0;
-    border: 1px solid black;
     width: 100%;
 
     tr {
-      :last-child {
-        td {
-          border-bottom: 0;
-        }
+      td  {
+        border-bottom: 1px solid rgb(228, 228, 231);
       }
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background-color: #fafafa;
+      border-bottom: 1px solid rgb(228, 228, 231);
     }
 
     th,
     td {
       margin: 0;
       padding: 0.5rem;
-      border-bottom: 1px solid black;
-      border-right: 1px solid black;
 
       :last-child {
         border-right: 0;
@@ -109,7 +104,7 @@ function TableComp({ columns, data }: { columns: any; data: any }) {
 }
 
 export const Table = (props: TableProps) => {
-  const { dataSource, columns } = props;
+  const { dataSource, columns, height } = props;
 
   const columnsForTable = React.useMemo(
     () =>
@@ -129,8 +124,8 @@ export const Table = (props: TableProps) => {
   const data = React.useMemo(() => dataSource, [dataSource]);
 
   return (
-    <Styles>
+    <Container height={height}>
       <TableComp columns={columnsForTable} data={data} />
-    </Styles>
+    </Container>
   );
 };

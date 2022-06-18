@@ -9,6 +9,7 @@ export default meta;
 
 export const Primary: ComponentStoryObj<typeof Table> = {
   args: {
+    height: 100,
     columns: [
       {
         title: "Name",
