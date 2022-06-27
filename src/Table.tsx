@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import styled from "styled-components";
 import { useTable, useRowSelect } from "react-table";
+import useDeepCompareEffect from "use-deep-compare-effect";
 
 export type TableColumn = {
   key: string;
@@ -96,6 +97,7 @@ function TableComp({
     headerGroups,
     rows,
     prepareRow,
+    state: { selectedRowIds },
     selectedFlatRows,
   } = onRowSelectionChange
     ? (useTable(
@@ -151,9 +153,9 @@ function TableComp({
       ) as any)
     : useTable({ columns, data });
 
-  useEffect(() => {
+  useDeepCompareEffect(() => {
     onRowSelectionChange?.(selectedFlatRows.map((d: any) => d.original));
-  }, [selectedFlatRows]);
+  }, [selectedRowIds]);
 
   // Render the UI for your table
   return (
@@ -199,7 +201,7 @@ const IndeterminateCheckbox = React.forwardRef((props, ref) => {
   const defaultRef = React.useRef();
   const resolvedRef = ref || defaultRef;
 
-  React.useEffect(() => {
+  useEffect(() => {
     (resolvedRef as any).current.indeterminate = indeterminate;
   }, [resolvedRef, indeterminate]);
 
