@@ -65,6 +65,7 @@ const Container = styled.div`
       top: 0;
       background-color: #fafafa;
       border-bottom: 1px solid #f0f0f0;
+      z-index: 5;
     }
 
     th,
