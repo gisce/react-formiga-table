@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import styled from "styled-components";
-import { useTable, useRowSelect } from "react-table";
+import { useTable, useRowSelect, useSortBy } from "react-table";
 import useDeepCompareEffect from "use-deep-compare-effect";
 
 export type TableColumn = {
@@ -8,7 +8,7 @@ export type TableColumn = {
   dataIndex?: string;
   title: string;
   render?: (item: any) => React.ReactNode;
-  sorter?: (a: any, b: any) => number;
+  sorter?: (a: any, b: any, column: string, desc: boolean) => number;
 };
 
 export type RowSettings = {
@@ -20,12 +20,18 @@ type ContainerProps = {
   height?: number;
 };
 
+export type Sorter = {
+  id: string;
+  desc: boolean;
+};
+
 export type TableProps = {
   dataSource: any[];
   columns: TableColumn[];
   onRow: (item: any) => RowSettings;
   onRowSelectionChange?: (selectedRowKeys: number[]) => void;
-  onChange: (a: any, b: any, sorter: any, d: any) => void;
+  onSortChanged?: (sorters: Sorter[]) => void;
+  sortBy?: Sorter[];
 
   // Display settings
   loading: boolean;
@@ -68,6 +74,22 @@ const Container = styled.div`
       z-index: 5;
     }
 
+    th:hover {
+      background-color: #f2f2f2;
+    }
+
+    th .arrow {
+      padding-left: 10px;
+      font-size: 0.65em;
+      color: #bdbdbd;
+    }
+
+    th .ctx {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
     th,
     td {
       margin: 0;
@@ -85,11 +107,13 @@ function TableComp({
   data,
   onRow,
   onRowSelectionChange,
+  onSortChanged,
 }: {
   columns: any;
   data: any;
   onRow: (item: any) => RowSettings;
   onRowSelectionChange?: (selectedRowKeys: number[]) => void;
+  onSortChanged?: (sorters: Sorter[]) => void;
 }) {
   // Use the state and functions returned from useTable to build your UI
   const {
@@ -98,7 +122,8 @@ function TableComp({
     headerGroups,
     rows,
     prepareRow,
-    state: { selectedRowIds },
+    state,
+    // state: { selectedRowIds },
     selectedFlatRows,
   } = onRowSelectionChange
     ? (useTable(
@@ -106,6 +131,7 @@ function TableComp({
           columns,
           data,
         },
+        useSortBy,
         useRowSelect,
         (hooks) => {
           hooks.visibleColumns.push((columns) => [
@@ -152,11 +178,17 @@ function TableComp({
           ]);
         }
       ) as any)
-    : useTable({ columns, data });
+    : useTable({ columns, data }, useSortBy);
+
+  console.log("State: " + JSON.stringify(state, null, 2));
 
   useDeepCompareEffect(() => {
     onRowSelectionChange?.(selectedFlatRows.map((d: any) => d.original));
-  }, [selectedRowIds]);
+  }, [state.selectedRowIds]);
+
+  useDeepCompareEffect(() => {
+    onSortChanged?.(state.sortBy);
+  }, [state.sortBy]);
 
   // Render the UI for your table
   return (
@@ -166,7 +198,23 @@ function TableComp({
           {headerGroups.map((headerGroup: any) => (
             <tr {...headerGroup.getHeaderGroupProps()}>
               {headerGroup.headers.map((column: any) => (
-                <th {...column.getHeaderProps()}>{column.render("Header")}</th>
+                <th
+                  {...column.getHeaderProps(
+                    column.getSortByToggleProps({ title: undefined })
+                  )}
+                >
+                  <div className="ctx">
+                    {column.render("Header")}
+                    <span
+                      className="arrow"
+                      style={{
+                        visibility: column.isSorted ? undefined : "hidden",
+                      }}
+                    >
+                      {column.isSortedDesc ? " ▼" : " ▲"}
+                    </span>
+                  </div>
+                </th>
               ))}
             </tr>
           ))}
@@ -184,7 +232,18 @@ function TableComp({
               >
                 {row.cells.map((cell: any) => {
                   return (
-                    <td {...cell.getCellProps()}>{cell.render("Cell")}</td>
+                    <td
+                      {...cell.getCellProps()}
+                      style={
+                        cell.column.isSorted
+                          ? {
+                              backgroundColor: "#fafafa",
+                            }
+                          : {}
+                      }
+                    >
+                      {cell.render("Cell")}
+                    </td>
                   );
                 })}
               </tr>
@@ -218,6 +277,7 @@ export const Table = (props: TableProps) => {
     loading,
     loadingComponent,
     onRowSelectionChange,
+    onSortChanged,
   } = props;
 
   if (loading) {
@@ -235,6 +295,7 @@ export const Table = (props: TableProps) => {
           }
           return value || null;
         },
+        sortType: it.sorter,
       })),
     [columns]
   );
@@ -248,6 +309,7 @@ export const Table = (props: TableProps) => {
         data={data}
         onRow={onRow}
         onRowSelectionChange={onRowSelectionChange}
+        onSortChanged={onSortChanged}
       />
     </Container>
   );

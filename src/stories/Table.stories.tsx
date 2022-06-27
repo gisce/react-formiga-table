@@ -13,7 +13,7 @@ export const Primary: ComponentStoryObj<typeof Table> = {
     loadingComponent: <h1>loading</h1>,
     height: 300,
     onRowSelectionChange: (selectedRows: any) => {
-      alert("selectedRows: " + JSON.stringify(selectedRows));
+      // alert("selectedRows: " + JSON.stringify(selectedRows));
     },
     onRow: (record: any) => ({
       style: {},
@@ -25,16 +25,34 @@ export const Primary: ComponentStoryObj<typeof Table> = {
       {
         title: "Name",
         key: "name",
+        sorter: (a, b, column, desc) => {
+          console.log("Name sorter");
+          if (a.original[column] > b.original[column]) {
+            return desc ? 1 : -1;
+          } else if (a.original[column] < b.original[column]) {
+            return desc ? -1 : 1;
+          } else {
+            return 0;
+          }
+        },
       },
       {
         title: "Surnames",
         key: "surnames",
+        sorter: (a, b, column, desc) => {
+          console.log("Surnames sorter");
+          return -1;
+        },
       },
       {
         title: "Image",
         key: "image",
         render: (item: any) => {
           return <img src={item} />;
+        },
+        sorter: (a, b, column, desc) => {
+          console.log("Image sorter");
+          return -1;
         },
       },
       {
@@ -43,11 +61,15 @@ export const Primary: ComponentStoryObj<typeof Table> = {
         render: (item: any) => {
           return <pre>{JSON.stringify(item, null, 2)}</pre>;
         },
+        sorter: (a, b, column, desc) => {
+          console.log("Object sorter");
+          return -1;
+        },
       },
     ],
     dataSource: [
       {
-        name: "John",
+        name: "A. John",
         surnames: "Doe",
         image:
           "https://pickaface.net/gallery/avatar/unr_sample_161118_2054_ynlrg.png",
@@ -57,7 +79,7 @@ export const Primary: ComponentStoryObj<typeof Table> = {
         },
       },
       {
-        name: "Jane",
+        name: "B. Jane",
         surnames: "Doe",
         image:
           "https://pickaface.net/gallery/avatar/unr_sample_170130_2257_9qgawp.png",
