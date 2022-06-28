@@ -99,6 +99,14 @@ const Container = styled.div`
         border-right: 0;
       }
     }
+
+    tr:nth-child(odd) {
+      background: #fff;
+    }
+
+    tr:nth-child(even) {
+      background: #fafafa;
+    }
   }
 `;
 
