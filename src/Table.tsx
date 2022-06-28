@@ -107,6 +107,14 @@ const Container = styled.div`
     tr:nth-child(even) {
       background: #fafafa;
     }
+
+    tr:hover {
+      background-color: #f2f2f2;
+    }
+
+    tr:hover {
+      background-color: #f2f2f2;
+    }
   }
 `;
 
