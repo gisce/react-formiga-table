@@ -1,5 +1,5 @@
 import { ComponentMeta, ComponentStoryObj } from "@storybook/react";
-import { Table } from "../Table";
+import { Sorter, Table } from "../Table";
 
 const meta: ComponentMeta<typeof Table> = {
   title: "Table/Basic",
@@ -21,28 +21,18 @@ export const Primary: ComponentStoryObj<typeof Table> = {
         alert("double clicked record" + JSON.stringify(record));
       },
     }),
+    sorter: { id: "name", desc: true },
+    onChangeSort: (sorter: Sorter | undefined) => {
+      console.log(sorter);
+    },
     columns: [
       {
         title: "Name",
         key: "name",
-        sorter: (a, b, column, desc) => {
-          console.log("Name sorter");
-          if (a.original[column] > b.original[column]) {
-            return desc ? 1 : -1;
-          } else if (a.original[column] < b.original[column]) {
-            return desc ? -1 : 1;
-          } else {
-            return 0;
-          }
-        },
       },
       {
         title: "Surnames",
         key: "surnames",
-        sorter: (a, b, column, desc) => {
-          console.log("Surnames sorter");
-          return -1;
-        },
       },
       {
         title: "Image",
@@ -50,20 +40,12 @@ export const Primary: ComponentStoryObj<typeof Table> = {
         render: (item: any) => {
           return <img src={item} />;
         },
-        sorter: (a, b, column, desc) => {
-          console.log("Image sorter");
-          return -1;
-        },
       },
       {
         title: "Object",
         key: "object",
         render: (item: any) => {
           return <pre>{JSON.stringify(item, null, 2)}</pre>;
-        },
-        sorter: (a, b, column, desc) => {
-          console.log("Object sorter");
-          return -1;
         },
       },
     ],

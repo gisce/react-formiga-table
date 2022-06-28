@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
-import { useTable, useRowSelect, useSortBy } from "react-table";
+import { useTable, useRowSelect } from "react-table";
 import useDeepCompareEffect from "use-deep-compare-effect";
 
 export type TableColumn = {
@@ -30,8 +30,8 @@ export type TableProps = {
   columns: TableColumn[];
   onRow: (item: any) => RowSettings;
   onRowSelectionChange?: (selectedRowKeys: number[]) => void;
-  onSortChanged?: (sorters: Sorter[]) => void;
-  sortBy?: Sorter[];
+  onChangeSort?: (sorter: Sorter | undefined) => void;
+  sorter: Sorter | undefined;
 
   // Display settings
   loading: boolean;
@@ -107,15 +107,70 @@ function TableComp({
   data,
   onRow,
   onRowSelectionChange,
-  onSortChanged,
+  onChangeSort,
+  sorter,
 }: {
   columns: any;
   data: any;
   onRow: (item: any) => RowSettings;
   onRowSelectionChange?: (selectedRowKeys: number[]) => void;
-  onSortChanged?: (sorters: Sorter[]) => void;
+  onChangeSort?: (sorter: Sorter | undefined) => void;
+  sorter?: Sorter | undefined;
 }) {
-  // Use the state and functions returned from useTable to build your UI
+  const [localSorter, setLocalSorter] = useState(sorter);
+
+  const getColumnSorter = useCallback(
+    (columnId: string) => {
+      if (!localSorter) {
+        return undefined;
+      }
+
+      if (columnId === localSorter.id) {
+        return localSorter;
+      }
+
+      return undefined;
+    },
+    [localSorter]
+  );
+
+  const handleColumnClick = useCallback(
+    (columnId: string) => {
+      if (columnId === "react_formiga_table_selection") {
+        return;
+      }
+
+      if (!localSorter) {
+        setLocalSorter({
+          id: columnId,
+          desc: false,
+        });
+        return;
+      }
+
+      if (localSorter!.id !== columnId) {
+        setLocalSorter({
+          id: columnId,
+          desc: false,
+        });
+        return;
+      }
+
+      if (localSorter!.desc === false) {
+        setLocalSorter({
+          id: columnId,
+          desc: true,
+        });
+        return;
+      }
+
+      if (localSorter!.desc === true) {
+        setLocalSorter(undefined);
+      }
+    },
+    [localSorter]
+  );
+
   const {
     getTableProps,
     getTableBodyProps,
@@ -123,7 +178,6 @@ function TableComp({
     rows,
     prepareRow,
     state,
-    // state: { selectedRowIds },
     selectedFlatRows,
   } = onRowSelectionChange
     ? (useTable(
@@ -131,13 +185,12 @@ function TableComp({
           columns,
           data,
         },
-        useSortBy,
         useRowSelect,
         (hooks) => {
           hooks.visibleColumns.push((columns) => [
             // Let's make a column for selection
             {
-              id: "selection",
+              id: "react_formiga_table_selection",
               // The header can use the table's getToggleAllRowsSelectedProps method
               // to render a checkbox
               Header: (headerProps) => {
@@ -178,19 +231,16 @@ function TableComp({
           ]);
         }
       ) as any)
-    : useTable({ columns, data }, useSortBy);
-
-  console.log("State: " + JSON.stringify(state, null, 2));
+    : useTable({ columns, data });
 
   useDeepCompareEffect(() => {
     onRowSelectionChange?.(selectedFlatRows.map((d: any) => d.original));
   }, [state.selectedRowIds]);
 
-  useDeepCompareEffect(() => {
-    onSortChanged?.(state.sortBy);
-  }, [state.sortBy]);
+  useEffect(() => {
+    onChangeSort?.(localSorter);
+  }, [localSorter]);
 
-  // Render the UI for your table
   return (
     <>
       <table {...getTableProps()}>
@@ -199,19 +249,26 @@ function TableComp({
             <tr {...headerGroup.getHeaderGroupProps()}>
               {headerGroup.headers.map((column: any) => (
                 <th
-                  {...column.getHeaderProps(
-                    column.getSortByToggleProps({ title: undefined })
-                  )}
+                  {...column.getHeaderProps()}
+                  onClick={() => {
+                    handleColumnClick(column.id);
+                  }}
                 >
                   <div className="ctx">
                     {column.render("Header")}
                     <span
                       className="arrow"
                       style={{
-                        visibility: column.isSorted ? undefined : "hidden",
+                        visibility:
+                          getColumnSorter(column.id) !== undefined
+                            ? undefined
+                            : "hidden",
                       }}
                     >
-                      {column.isSortedDesc ? " ▼" : " ▲"}
+                      {getColumnSorter(column.id) !== undefined &&
+                      getColumnSorter(column.id)!.desc
+                        ? " ▼"
+                        : " ▲"}
                     </span>
                   </div>
                 </th>
@@ -220,7 +277,7 @@ function TableComp({
           ))}
         </thead>
         <tbody {...getTableBodyProps()}>
-          {rows.map((row: any, i: number) => {
+          {rows.map((row: any) => {
             prepareRow(row);
             const { style, onDoubleClick } = onRow(row.original);
 
@@ -235,7 +292,7 @@ function TableComp({
                     <td
                       {...cell.getCellProps()}
                       style={
-                        cell.column.isSorted
+                        getColumnSorter(cell.column.id) !== undefined
                           ? {
                               backgroundColor: "#fafafa",
                             }
@@ -277,7 +334,8 @@ export const Table = (props: TableProps) => {
     loading,
     loadingComponent,
     onRowSelectionChange,
-    onSortChanged,
+    onChangeSort,
+    sorter,
   } = props;
 
   if (loading) {
@@ -309,7 +367,8 @@ export const Table = (props: TableProps) => {
         data={data}
         onRow={onRow}
         onRowSelectionChange={onRowSelectionChange}
-        onSortChanged={onSortChanged}
+        onChangeSort={onChangeSort}
+        sorter={sorter}
       />
     </Container>
   );
