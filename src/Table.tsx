@@ -53,8 +53,16 @@ const Container = styled.div`
       cursor: pointer;
       user-select: none;
 
+      &:nth-child(odd) {
+        background: #fff;
+      }
+
+      &:nth-child(even) {
+        background: #fafafa;
+      }
+
       &:hover {
-        background-color: #fafafa;
+        background-color: #f2f2f2;
       }
 
       td  {
@@ -98,22 +106,6 @@ const Container = styled.div`
       :last-child {
         border-right: 0;
       }
-    }
-
-    tr:nth-child(odd) {
-      background: #fff;
-    }
-
-    tr:nth-child(even) {
-      background: #fafafa;
-    }
-
-    tr:hover {
-      background-color: #f2f2f2;
-    }
-
-    tr:hover {
-      background-color: #f2f2f2;
     }
   }
 `;
@@ -268,6 +260,7 @@ function TableComp({
                   <div className="ctx">
                     {column.render("Header")}
                     <span
+                      key={column.id}
                       className="arrow"
                       style={{
                         visibility:
