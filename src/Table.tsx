@@ -32,6 +32,7 @@ export type TableProps = {
   onRowSelectionChange?: (selectedRowKeys: number[]) => void;
   onChangeSort?: (sorter: Sorter | undefined) => void;
   sorter: Sorter | undefined;
+  expandable?: boolean;
 
   // Display settings
   loading: boolean;
@@ -117,6 +118,7 @@ function TableComp({
   onRowSelectionChange,
   onChangeSort,
   sorter,
+  expandable,
 }: {
   columns: any;
   data: any;
@@ -124,6 +126,7 @@ function TableComp({
   onRowSelectionChange?: (selectedRowKeys: number[]) => void;
   onChangeSort?: (sorter: Sorter | undefined) => void;
   sorter?: Sorter | undefined;
+  expandable?: boolean;
 }) {
   const [localSorter, setLocalSorter] = useState(sorter);
 
@@ -340,6 +343,7 @@ export const Table = (props: TableProps) => {
     onRowSelectionChange,
     onChangeSort,
     sorter,
+    expandable = false,
   } = props;
 
   if (loading) {
@@ -373,6 +377,7 @@ export const Table = (props: TableProps) => {
         onRowSelectionChange={onRowSelectionChange}
         onChangeSort={onChangeSort}
         sorter={sorter}
+        expandable={expandable}
       />
     </Container>
   );
