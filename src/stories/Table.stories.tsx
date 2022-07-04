@@ -1,5 +1,7 @@
 import { ComponentMeta, ComponentStoryObj } from "@storybook/react";
 import { Sorter, Table } from "../Table";
+import { Spin } from "antd";
+import "antd/dist/antd.css";
 
 const meta: ComponentMeta<typeof Table> = {
   title: "Table/Basic",
@@ -10,7 +12,7 @@ export default meta;
 export const Primary: ComponentStoryObj<typeof Table> = {
   args: {
     loading: false,
-    loadingComponent: <h1>loading</h1>,
+    loadingComponent: <Spin />,
     height: 300,
     onRowSelectionChange: (selectedRows: any) => {
       console.log("selectedRows: " + JSON.stringify(selectedRows));
@@ -69,6 +71,43 @@ export const Primary: ComponentStoryObj<typeof Table> = {
           model: "test",
           value: "Test value",
         },
+      },
+    ],
+  },
+};
+
+export const Expandable: ComponentStoryObj<typeof Table> = {
+  args: {
+    loading: false,
+    loadingComponent: <Spin />,
+    height: 400,
+    onRowSelectionChange: (selectedRows: any) => {
+      console.log("selectedRows: " + JSON.stringify(selectedRows));
+    },
+    onRow: (record: any) => ({
+      style: {},
+      onDoubleClick: () => {
+        alert("double clicked record" + JSON.stringify(record));
+      },
+    }),
+    columns: [
+      {
+        title: "Name",
+        key: "name",
+      },
+      {
+        title: "Surnames",
+        key: "surnames",
+      },
+    ],
+    dataSource: [
+      {
+        name: "A. John",
+        surnames: "Doe",
+      },
+      {
+        name: "B. Jane",
+        surnames: "Doe",
       },
     ],
   },
