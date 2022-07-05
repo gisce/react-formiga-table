@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import { useTable, useRowSelect } from "react-table";
 import useDeepCompareEffect from "use-deep-compare-effect";
+import { useExpandable } from "./hooks/useExpandable";
 
 export type TableColumn = {
   key: string;
@@ -25,14 +26,29 @@ export type Sorter = {
   desc: boolean;
 };
 
-export type TableProps = {
-  dataSource: any[];
-  columns: TableColumn[];
+export type ExpandOptions = {
+  expandable?: boolean;
+  onRowExpand?: (item: any) => Promise<void>;
+  expandIcon?: any;
+  collapseIcon?: any;
+};
+
+export type TableBaseProps = {
   onRow: (item: any) => RowSettings;
   onRowSelectionChange?: (selectedRowKeys: number[]) => void;
   onChangeSort?: (sorter: Sorter | undefined) => void;
   sorter: Sorter | undefined;
-  expandable?: boolean;
+  expandOptions?: ExpandOptions;
+};
+
+export type TableCompProps = TableBaseProps & {
+  columns: any;
+  data: any;
+};
+
+export type TableProps = TableBaseProps & {
+  dataSource: any[];
+  columns: TableColumn[];
 
   // Display settings
   loading: boolean;
@@ -111,23 +127,23 @@ const Container = styled.div`
   }
 `;
 
-function TableComp({
-  columns,
-  data,
-  onRow,
-  onRowSelectionChange,
-  onChangeSort,
-  sorter,
-  expandable,
-}: {
-  columns: any;
-  data: any;
-  onRow: (item: any) => RowSettings;
-  onRowSelectionChange?: (selectedRowKeys: number[]) => void;
-  onChangeSort?: (sorter: Sorter | undefined) => void;
-  sorter?: Sorter | undefined;
-  expandable?: boolean;
-}) {
+function TableComp(props: TableCompProps) {
+  const {
+    columns,
+    data,
+    onRow,
+    onRowSelectionChange,
+    onChangeSort,
+    sorter,
+    expandOptions = {},
+  } = props;
+
+  const {
+    expandable = false,
+    expandIcon = <span>+</span>,
+    collapseIcon = <span>-</span>,
+  } = expandOptions;
+
   const [localSorter, setLocalSorter] = useState(sorter);
 
   const getColumnSorter = useCallback(
@@ -147,7 +163,7 @@ function TableComp({
 
   const handleColumnClick = useCallback(
     (columnId: string) => {
-      if (columnId === "react_formiga_table_selection") {
+      if (columnId.indexOf("react_formiga_table") !== -1) {
         return;
       }
 
@@ -183,6 +199,77 @@ function TableComp({
   );
 
   const {
+    openedKeys,
+    setOpenedKeys,
+    toggleOpenedKey,
+    keyIsOpened,
+    updateItem,
+    items,
+    setItems,
+  } = useExpandable();
+
+  const hooksFn = (hooks: any) => {
+    hooks.visibleColumns.push((columns: any) => {
+      const columnsHooks = [];
+
+      if (onRowSelectionChange) {
+        columnsHooks.push({
+          id: "react_formiga_table_selection",
+          Header: (headerProps: any) => {
+            const { getToggleAllRowsSelectedProps } = headerProps as any;
+            return (
+              <div
+                style={{
+                  width: 50,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <IndeterminateCheckbox {...getToggleAllRowsSelectedProps()} />
+              </div>
+            );
+          },
+          Cell: ({ row }: { row: any }) => (
+            <div
+              style={{
+                width: 50,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <IndeterminateCheckbox
+                {...(row as any).getToggleRowSelectedProps()}
+              />
+            </div>
+          ),
+        });
+      }
+
+      if (expandable) {
+        columnsHooks.push({
+          id: "react_formiga_table_expandable",
+          Cell: ({ row }: { row: any }) => (
+            <div
+              style={{
+                width: 50,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              {expandIcon}
+            </div>
+          ),
+        });
+      }
+      columnsHooks.push(...columns);
+      return columnsHooks;
+    });
+  };
+
+  const {
     getTableProps,
     getTableBodyProps,
     headerGroups,
@@ -197,47 +284,9 @@ function TableComp({
           data,
         },
         useRowSelect,
-        (hooks) => {
-          hooks.visibleColumns.push((columns) => [
-            {
-              id: "react_formiga_table_selection",
-              Header: (headerProps) => {
-                const { getToggleAllRowsSelectedProps } = headerProps as any;
-                return (
-                  <div
-                    style={{
-                      width: 50,
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <IndeterminateCheckbox
-                      {...getToggleAllRowsSelectedProps()}
-                    />
-                  </div>
-                );
-              },
-              Cell: ({ row }) => (
-                <div
-                  style={{
-                    width: 50,
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  <IndeterminateCheckbox
-                    {...(row as any).getToggleRowSelectedProps()}
-                  />
-                </div>
-              ),
-            },
-            ...columns,
-          ]);
-        }
+        hooksFn
       ) as any)
-    : useTable({ columns, data });
+    : useTable({ columns, data }, hooksFn);
 
   useDeepCompareEffect(() => {
     onRowSelectionChange?.(selectedFlatRows.map((d: any) => d.original));
@@ -333,18 +382,8 @@ const IndeterminateCheckbox = React.forwardRef((props, ref) => {
 });
 
 export const Table = (props: TableProps) => {
-  const {
-    dataSource,
-    columns,
-    height,
-    onRow,
-    loading,
-    loadingComponent,
-    onRowSelectionChange,
-    onChangeSort,
-    sorter,
-    expandable = false,
-  } = props;
+  const { dataSource, columns, height, loading, loadingComponent, ...rest } =
+    props;
 
   if (loading) {
     return loadingComponent;
@@ -370,15 +409,7 @@ export const Table = (props: TableProps) => {
 
   return (
     <Container height={height}>
-      <TableComp
-        columns={columnsForTable}
-        data={data}
-        onRow={onRow}
-        onRowSelectionChange={onRowSelectionChange}
-        onChangeSort={onChangeSort}
-        sorter={sorter}
-        expandable={expandable}
-      />
+      <TableComp columns={columnsForTable} data={data} {...rest} />
     </Container>
   );
 };
