@@ -364,6 +364,9 @@ const Checkbox = ({
 
   return (
     <input
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+      }}
       ref={checkboxRef as any}
       type="checkbox"
       onChange={onChange as any}
