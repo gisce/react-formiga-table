@@ -25,7 +25,7 @@ export const Primary: ComponentStoryObj<typeof Table> = {
     }),
     sorter: { id: "name", desc: true },
     onChangeSort: (sorter: Sorter | undefined) => {
-      console.log(sorter);
+      console.log("onChangeSort: ", sorter);
     },
     columns: [
       {
@@ -53,6 +53,7 @@ export const Primary: ComponentStoryObj<typeof Table> = {
     ],
     dataSource: [
       {
+        id: 0,
         name: "A. John",
         surnames: "Doe",
         image:
@@ -63,6 +64,7 @@ export const Primary: ComponentStoryObj<typeof Table> = {
         },
       },
       {
+        id: 1,
         name: "B. Jane",
         surnames: "Doe",
         image:

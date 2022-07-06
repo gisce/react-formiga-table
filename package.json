@@ -13,9 +13,7 @@
   "dependencies": {
     "react": "^16.8.0 || 17.x",
     "react-dom": "^16.8.0 || 17.x",
-    "react-table": "^7.8.0",
-    "styled-components": "^5.0.0",
-    "use-deep-compare-effect": "^1.8.1"
+    "styled-components": "^5.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.17.8",
@@ -43,7 +41,6 @@
   "peerDependencies": {
     "react": "^16.8.0 || 17.x",
     "react-dom": "^16.8.0 || 17.x",
-    "react-table": "^7.8.0",
     "styled-components": "^5.0.0"
   },
   "files": [

@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
-import { useTable, useRowSelect } from "react-table";
-import useDeepCompareEffect from "use-deep-compare-effect";
 
 export type TableColumn = {
   key: string;
@@ -29,7 +27,7 @@ export type TableProps = {
   dataSource: any[];
   columns: TableColumn[];
   onRow: (item: any) => RowSettings;
-  onRowSelectionChange?: (selectedRowKeys: number[]) => void;
+  onRowSelectionChange?: (selectedRowItems: any[]) => void;
   onChangeSort?: (sorter: Sorter | undefined) => void;
   sorter: Sorter | undefined;
 
@@ -121,11 +119,52 @@ function TableComp({
   columns: any;
   data: any;
   onRow: (item: any) => RowSettings;
-  onRowSelectionChange?: (selectedRowKeys: number[]) => void;
   onChangeSort?: (sorter: Sorter | undefined) => void;
   sorter?: Sorter | undefined;
+  onRowSelectionChange?: (selectedRowKeys: number[]) => void;
 }) {
   const [localSorter, setLocalSorter] = useState(sorter);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>([]);
+
+  useEffect(() => {
+    onRowSelectionChange?.(selectedRowKeys);
+  }, [selectedRowKeys]);
+
+  const toggleAllRowsSelected = useCallback(() => {
+    if (selectedRowKeys.length === data.length || selectedRowKeys.length > 0) {
+      setSelectedRowKeys([]);
+      return;
+    }
+
+    setSelectedRowKeys(data.map((item: any) => item.id));
+  }, [selectedRowKeys, setSelectedRowKeys]);
+
+  const toggleRowSelected = useCallback(
+    (row: any) => {
+      const selectedFoundRow = selectedRowKeys.find(
+        (id: number) => row.id === id
+      );
+
+      if (selectedFoundRow === undefined) {
+        setSelectedRowKeys([...selectedRowKeys, row.id]);
+        return;
+      }
+
+      setSelectedRowKeys([...selectedRowKeys.filter((id) => id !== row.id)]);
+    },
+    [selectedRowKeys, setSelectedRowKeys]
+  );
+
+  const isRowSelected = useCallback(
+    (row: any) => {
+      const selectedFoundRow = selectedRowKeys.find(
+        (id: number) => row.id === id
+      );
+
+      return selectedFoundRow !== undefined;
+    },
+    [selectedRowKeys, setSelectedRowKeys]
+  );
 
   const getColumnSorter = useCallback(
     (columnId: string) => {
@@ -144,10 +183,6 @@ function TableComp({
 
   const handleColumnClick = useCallback(
     (columnId: string) => {
-      if (columnId === "react_formiga_table_selection") {
-        return;
-      }
-
       if (!localSorter) {
         setLocalSorter({
           id: columnId,
@@ -179,28 +214,78 @@ function TableComp({
     [localSorter]
   );
 
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    rows,
-    prepareRow,
-    state,
-    selectedFlatRows,
-  } = onRowSelectionChange
-    ? (useTable(
-        {
-          columns,
-          data,
-        },
-        useRowSelect,
-        (hooks) => {
-          hooks.visibleColumns.push((columns) => [
-            {
-              id: "react_formiga_table_selection",
-              Header: (headerProps) => {
-                const { getToggleAllRowsSelectedProps } = headerProps as any;
-                return (
+  useEffect(() => {
+    onChangeSort?.(localSorter);
+  }, [localSorter]);
+
+  return (
+    <table>
+      <thead>
+        <tr>
+          {onRowSelectionChange && (
+            <th key={"react_formiga_table_selection"}>
+              <div
+                style={{
+                  width: 50,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Checkbox
+                  value={
+                    selectedRowKeys.length === data.length
+                      ? true
+                      : selectedRowKeys.length === 0
+                      ? false
+                      : null
+                  }
+                  onChange={toggleAllRowsSelected}
+                />
+              </div>
+            </th>
+          )}
+          {columns.map((column: any) => (
+            <th
+              key={column.key}
+              onClick={() => {
+                handleColumnClick(column.key);
+              }}
+            >
+              <div className="ctx">
+                <p>{column.title}</p>
+                <span
+                  key={column.key}
+                  className="arrow"
+                  style={{
+                    visibility:
+                      getColumnSorter(column.key) !== undefined
+                        ? undefined
+                        : "hidden",
+                  }}
+                >
+                  {getColumnSorter(column.key) !== undefined &&
+                  getColumnSorter(column.key)!.desc
+                    ? " ▼"
+                    : " ▲"}
+                </span>
+              </div>
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {data.map((row: any) => {
+          const { style, onDoubleClick } = onRow(row);
+
+          return (
+            <tr
+              key={`tr-${row.id}`}
+              style={style}
+              onDoubleClick={onDoubleClick}
+            >
+              {onRowSelectionChange && (
+                <td key={`react_formiga_table_selection-${row.id}`}>
                   <div
                     style={{
                       width: 50,
@@ -209,125 +294,85 @@ function TableComp({
                       alignItems: "center",
                     }}
                   >
-                    <IndeterminateCheckbox
-                      {...getToggleAllRowsSelectedProps()}
-                    />
+                    {isRowSelected(row) ? (
+                      <Checkbox
+                        value={true}
+                        onChange={() => {
+                          toggleRowSelected(row);
+                        }}
+                      />
+                    ) : (
+                      <Checkbox
+                        value={false}
+                        onChange={() => {
+                          toggleRowSelected(row);
+                        }}
+                      />
+                    )}
                   </div>
+                </td>
+              )}
+              {columns.map((column: any) => {
+                return (
+                  <td
+                    key={`${column.key}-${row.id}`}
+                    style={
+                      getColumnSorter(column.key) !== undefined
+                        ? {
+                            backgroundColor: "#fafafa",
+                          }
+                        : {}
+                    }
+                  >
+                    {column.render
+                      ? column.render(row[column.key])
+                      : row[column.key]}
+                  </td>
                 );
-              },
-              Cell: ({ row }) => (
-                <div
-                  style={{
-                    width: 50,
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  <IndeterminateCheckbox
-                    {...(row as any).getToggleRowSelectedProps()}
-                  />
-                </div>
-              ),
-            },
-            ...columns,
-          ]);
-        }
-      ) as any)
-    : useTable({ columns, data });
-
-  useDeepCompareEffect(() => {
-    onRowSelectionChange?.(selectedFlatRows.map((d: any) => d.original));
-  }, [state.selectedRowIds]);
-
-  useEffect(() => {
-    onChangeSort?.(localSorter);
-  }, [localSorter]);
-
-  return (
-    <>
-      <table {...getTableProps()}>
-        <thead>
-          {headerGroups.map((headerGroup: any) => (
-            <tr {...headerGroup.getHeaderGroupProps()}>
-              {headerGroup.headers.map((column: any) => (
-                <th
-                  {...column.getHeaderProps()}
-                  onClick={() => {
-                    handleColumnClick(column.id);
-                  }}
-                >
-                  <div className="ctx">
-                    {column.render("Header")}
-                    <span
-                      key={column.id}
-                      className="arrow"
-                      style={{
-                        visibility:
-                          getColumnSorter(column.id) !== undefined
-                            ? undefined
-                            : "hidden",
-                      }}
-                    >
-                      {getColumnSorter(column.id) !== undefined &&
-                      getColumnSorter(column.id)!.desc
-                        ? " ▼"
-                        : " ▲"}
-                    </span>
-                  </div>
-                </th>
-              ))}
+              })}
             </tr>
-          ))}
-        </thead>
-        <tbody {...getTableBodyProps()}>
-          {rows.map((row: any) => {
-            prepareRow(row);
-            const { style, onDoubleClick } = onRow(row.original);
-
-            return (
-              <tr
-                style={style}
-                {...row.getRowProps()}
-                onDoubleClick={onDoubleClick}
-              >
-                {row.cells.map((cell: any) => {
-                  return (
-                    <td
-                      {...cell.getCellProps()}
-                      style={
-                        getColumnSorter(cell.column.id) !== undefined
-                          ? {
-                              backgroundColor: "#fafafa",
-                            }
-                          : {}
-                      }
-                    >
-                      {cell.render("Cell")}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
 
-const IndeterminateCheckbox = React.forwardRef((props, ref) => {
-  const { indeterminate, ...rest } = props as any;
+const Checkbox = ({
+  value,
+  onChange,
+}: {
+  value: boolean | null;
+  onChange: (value: boolean | null) => void;
+}) => {
+  const checkboxRef = React.useRef();
 
-  const defaultRef = React.useRef();
-  const resolvedRef = ref || defaultRef;
+  React.useEffect(() => {
+    const cbRef = checkboxRef.current as any;
 
-  useEffect(() => {
-    (resolvedRef as any).current.indeterminate = indeterminate;
-  }, [resolvedRef, indeterminate]);
+    if (value === true) {
+      cbRef.checked = true;
+      cbRef.indeterminate = false;
+    } else if (value === false) {
+      cbRef.checked = false;
+      cbRef.indeterminate = false;
+    } else if (value === null) {
+      cbRef.checked = false;
+      cbRef.indeterminate = true;
+    }
+  }, [value]);
 
-  return <input type="checkbox" ref={resolvedRef as any} {...rest} />;
-});
+  return (
+    <input
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+      }}
+      ref={checkboxRef as any}
+      type="checkbox"
+      onChange={onChange as any}
+    />
+  );
+};
 
 export const Table = (props: TableProps) => {
   const {
@@ -346,28 +391,12 @@ export const Table = (props: TableProps) => {
     return loadingComponent;
   }
 
-  const columnsForTable = React.useMemo(
-    () =>
-      columns.map((it) => ({
-        Header: it.title,
-        accessor: it.key,
-        Cell: ({ value }: { value: any }) => {
-          if (it.render) {
-            return it.render(value);
-          }
-          return value || null;
-        },
-        sortType: it.sorter,
-      })),
-    [columns]
-  );
-
   const data = React.useMemo(() => dataSource, [dataSource]);
 
   return (
     <Container height={height}>
       <TableComp
-        columns={columnsForTable}
+        columns={columns}
         data={data}
         onRow={onRow}
         onRowSelectionChange={onRowSelectionChange}
