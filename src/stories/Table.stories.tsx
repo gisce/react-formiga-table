@@ -2,7 +2,7 @@ import { ComponentMeta, ComponentStoryObj } from "@storybook/react";
 import { Sorter, Table } from "../Table";
 import { Spin } from "antd";
 import "antd/dist/antd.css";
-import { PlusSquareOutlined, MinusSquareOutlined } from "@ant-design/icons";
+
 const meta: ComponentMeta<typeof Table> = {
   title: "Table/Basic",
   component: Table,
@@ -81,20 +81,15 @@ export const Expandable: ComponentStoryObj<typeof Table> = {
     loading: false,
     loadingComponent: <Spin />,
     height: 400,
-    // onRowSelectionChange: (selectedRows: any) => {
-    //   console.log("selectedRows: " + JSON.stringify(selectedRows));
-    // },
+    onRowSelectionChange: (selectedRows: any) => {
+      console.log("selectedRows: " + JSON.stringify(selectedRows));
+    },
     onRow: (record: any) => ({
       style: {},
       onDoubleClick: () => {
         alert("double clicked record" + JSON.stringify(record));
       },
     }),
-    expandOptions: {
-      expandable: true,
-      expandIcon: <PlusSquareOutlined />,
-      collapseIcon: <MinusSquareOutlined />,
-    },
     columns: [
       {
         title: "Name",
