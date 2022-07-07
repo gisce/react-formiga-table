@@ -56,13 +56,16 @@ export const Rows = ({
                 </div>
               </td>
             )}
+            {expandableOpts !== undefined &&
+              (() => {
+                const ExpandableComponent = expandableOpts.expandIcon;
+                return (
+                  <td key={`react_formiga_table_expandable-${row.id}`}>
+                    <ExpandableComponent />
+                  </td>
+                );
+              })()}
             {columns.map((column: any, columnIdx: number) => {
-              let ExpandableComponent: any = null;
-
-              if (expandableOpts && columnIdx === 0) {
-                ExpandableComponent = expandableOpts.expandIcon;
-              }
-
               return (
                 <td
                   key={`${column.key}-${row.id}`}
@@ -74,9 +77,6 @@ export const Rows = ({
                       : {}
                   }
                 >
-                  {ExpandableComponent && (
-                    <ExpandableComponent style={{ paddingRight: 20 }} />
-                  )}
                   {column.render
                     ? column.render(row[column.key])
                     : row[column.key]}
