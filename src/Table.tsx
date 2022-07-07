@@ -77,6 +77,7 @@ export const Table = (props: TableProps) => {
             onRow={onRow}
             isRowSelected={isRowSelected}
             toggleRowSelected={toggleRowSelected}
+            expandableOpts={expandableOpts}
           />
         </tbody>
       </table>

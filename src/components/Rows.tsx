@@ -1,4 +1,5 @@
-import { RowSettings, Sorter, TableColumn } from "../types";
+import exp from "constants";
+import { ExpandOptions, RowSettings, Sorter, TableColumn } from "../types";
 import { Checkbox } from "./Checkbox";
 
 export const Rows = ({
@@ -9,6 +10,7 @@ export const Rows = ({
   onRow,
   isRowSelected,
   toggleRowSelected,
+  expandableOpts,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   dataSource: any[];
@@ -17,6 +19,7 @@ export const Rows = ({
   onRow: (item: any) => RowSettings;
   isRowSelected: (row: any) => boolean;
   toggleRowSelected: (row: any) => void;
+  expandableOpts?: ExpandOptions;
 }) => {
   return (
     <>
@@ -53,7 +56,13 @@ export const Rows = ({
                 </div>
               </td>
             )}
-            {columns.map((column: any) => {
+            {columns.map((column: any, columnIdx: number) => {
+              let ExpandableComponent: any = null;
+
+              if (expandableOpts && columnIdx === 0) {
+                ExpandableComponent = expandableOpts.expandIcon;
+              }
+
               return (
                 <td
                   key={`${column.key}-${row.id}`}
@@ -65,6 +74,9 @@ export const Rows = ({
                       : {}
                   }
                 >
+                  {ExpandableComponent && (
+                    <ExpandableComponent style={{ paddingRight: 20 }} />
+                  )}
                   {column.render
                     ? column.render(row[column.key])
                     : row[column.key]}

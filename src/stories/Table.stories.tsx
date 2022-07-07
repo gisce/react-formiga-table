@@ -1,7 +1,9 @@
 import { ComponentMeta, ComponentStoryObj } from "@storybook/react";
-import { Sorter, Table } from "../Table";
+import { Table } from "../Table";
 import { Spin } from "antd";
 import "antd/dist/antd.css";
+import { Sorter } from "../types";
+import { PlusSquareOutlined, MinusSquareOutlined } from "@ant-design/icons";
 
 const meta: ComponentMeta<typeof Table> = {
   title: "Table/Basic",
@@ -114,5 +116,9 @@ export const Expandable: ComponentStoryObj<typeof Table> = {
         surnames: "Doe",
       },
     ],
+    expandableOpts: {
+      expandIcon: PlusSquareOutlined,
+      collapseIcon: MinusSquareOutlined,
+    },
   },
 };
