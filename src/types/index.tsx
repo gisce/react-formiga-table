@@ -6,11 +6,6 @@ export type TableColumn = {
   sorter?: (a: any, b: any, column: string, desc: boolean) => number;
 };
 
-export type RowSettings = {
-  style: any;
-  onDoubleClick: () => void;
-};
-
 export type Sorter = {
   id: string;
   desc: boolean;
@@ -25,7 +20,8 @@ export type ExpandOptions = {
 export type TableProps = {
   dataSource: any[];
   columns: TableColumn[];
-  onRow: (item: any) => RowSettings;
+  onRowStyle: (item: any) => any;
+  onRowDoubleClick?: (item: any) => void;
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   onChangeSort?: (sorter: Sorter | undefined) => void;
   sorter: Sorter | undefined;

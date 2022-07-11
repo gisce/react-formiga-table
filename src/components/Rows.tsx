@@ -1,4 +1,5 @@
-import { RowSettings, Sorter, TableColumn } from "../types";
+import exp from "constants";
+import { ExpandOptions, Sorter, TableColumn } from "../types";
 import { Checkbox } from "./Checkbox";
 
 export const Rows = ({
@@ -6,25 +7,35 @@ export const Rows = ({
   dataSource,
   columns,
   getColumnSorter,
-  onRow,
+  onRowStyle,
+  onRowDoubleClick,
   isRowSelected,
   toggleRowSelected,
+  expandableOpts,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   dataSource: any[];
   columns: TableColumn[];
   getColumnSorter: (columnId: string) => Sorter | undefined;
-  onRow: (item: any) => RowSettings;
+  onRowStyle: (item: any) => any;
+  onRowDoubleClick?: (item: any) => void;
   isRowSelected: (row: any) => boolean;
   toggleRowSelected: (row: any) => void;
+  expandableOpts?: ExpandOptions;
 }) => {
   return (
     <>
       {dataSource.map((row: any) => {
-        const { style, onDoubleClick } = onRow(row);
+        const style = onRowStyle(row);
 
         return (
-          <tr key={`tr-${row.id}`} style={style} onDoubleClick={onDoubleClick}>
+          <tr
+            key={`tr-${row.id}`}
+            style={style}
+            onDoubleClick={() => {
+              onRowDoubleClick?.(row);
+            }}
+          >
             {onRowSelectionChange && (
               <td key={`react_formiga_table_selection-${row.id}`}>
                 <div
@@ -53,7 +64,16 @@ export const Rows = ({
                 </div>
               </td>
             )}
-            {columns.map((column: any) => {
+            {expandableOpts !== undefined &&
+              (() => {
+                const ExpandableComponent = expandableOpts.expandIcon;
+                return (
+                  <td key={`react_formiga_table_expandable-${row.id}`}>
+                    <ExpandableComponent />
+                  </td>
+                );
+              })()}
+            {columns.map((column: any, columnIdx: number) => {
               return (
                 <td
                   key={`${column.key}-${row.id}`}

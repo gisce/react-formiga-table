@@ -1,3 +1,4 @@
+import exp from "constants";
 import { Sorter, TableColumn } from "../types";
 import { Checkbox } from "./Checkbox";
 
@@ -9,6 +10,7 @@ export const Headers = ({
   selectedRowKeys,
   handleColumnClick,
   getColumnSorter,
+  expandable = false,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   dataSource: any[];
@@ -17,11 +19,12 @@ export const Headers = ({
   columns: TableColumn[];
   handleColumnClick: (columnId: string) => void;
   getColumnSorter: (columnId: string) => Sorter | undefined;
+  expandable?: boolean;
 }) => {
   return (
     <>
       {onRowSelectionChange && (
-        <th key={"react_formiga_table_selection"}>
+        <th style={{ width: 10 }} key={"react_formiga_table_selection"}>
           <div
             style={{
               width: 50,
@@ -43,6 +46,9 @@ export const Headers = ({
           </div>
         </th>
       )}
+      {expandable && (
+        <th style={{ width: 10 }} key={"react_formiga_table_expandable"} />
+      )}
       {columns.map((column: any) => (
         <th
           key={column.key}
@@ -51,7 +57,7 @@ export const Headers = ({
           }}
         >
           <div className="ctx">
-            <p>{column.title}</p>
+            {column.title}
             <span
               key={column.key}
               className="arrow"

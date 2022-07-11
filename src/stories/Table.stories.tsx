@@ -1,7 +1,9 @@
 import { ComponentMeta, ComponentStoryObj } from "@storybook/react";
-import { Sorter, Table } from "../Table";
+import { Table } from "../Table";
 import { Spin } from "antd";
 import "antd/dist/antd.css";
+import { Sorter } from "../types";
+import { PlusSquareOutlined, MinusSquareOutlined } from "@ant-design/icons";
 
 const meta: ComponentMeta<typeof Table> = {
   title: "Table/Basic",
@@ -17,12 +19,10 @@ export const Primary: ComponentStoryObj<typeof Table> = {
     onRowSelectionChange: (selectedRows: any) => {
       console.log("selectedRows: " + JSON.stringify(selectedRows));
     },
-    onRow: (record: any) => ({
-      style: {},
-      onDoubleClick: () => {
-        alert("double clicked record" + JSON.stringify(record));
-      },
-    }),
+    onRowStyle: () => undefined,
+    onRowDoubleClick: (record: any) => {
+      alert("double clicked record" + JSON.stringify(record));
+    },
     sorter: { id: "name", desc: true },
     onChangeSort: (sorter: Sorter | undefined) => {
       console.log("onChangeSort: ", sorter);
@@ -86,12 +86,10 @@ export const Expandable: ComponentStoryObj<typeof Table> = {
     onRowSelectionChange: (selectedRows: any) => {
       console.log("selectedRows: " + JSON.stringify(selectedRows));
     },
-    onRow: (record: any) => ({
-      style: {},
-      onDoubleClick: () => {
-        alert("double clicked record" + JSON.stringify(record));
-      },
-    }),
+    onRowStyle: () => undefined,
+    onRowDoubleClick: (record: any) => {
+      alert("double clicked record" + JSON.stringify(record));
+    },
     columns: [
       {
         title: "Name",
@@ -114,5 +112,9 @@ export const Expandable: ComponentStoryObj<typeof Table> = {
         surnames: "Doe",
       },
     ],
+    expandableOpts: {
+      expandIcon: PlusSquareOutlined,
+      collapseIcon: MinusSquareOutlined,
+    },
   },
 };
