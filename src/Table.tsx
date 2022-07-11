@@ -14,7 +14,8 @@ export const Table = (props: TableProps) => {
     loadingComponent,
     dataSource,
     columns,
-    onRow,
+    onRowDoubleClick,
+    onRowStyle,
     onRowSelectionChange,
     onChangeSort,
     sorter,
@@ -53,7 +54,7 @@ export const Table = (props: TableProps) => {
   }, [localSorter]);
 
   return (
-    <Container height={height}>
+    <Container height={height} canClick={onRowDoubleClick !== undefined}>
       <table>
         <thead>
           <tr>
@@ -75,7 +76,8 @@ export const Table = (props: TableProps) => {
             columns={columns}
             onRowSelectionChange={onRowSelectionChange}
             getColumnSorter={getColumnSorter}
-            onRow={onRow}
+            onRowDoubleClick={onRowDoubleClick}
+            onRowStyle={onRowStyle}
             isRowSelected={isRowSelected}
             toggleRowSelected={toggleRowSelected}
             expandableOpts={expandableOpts}

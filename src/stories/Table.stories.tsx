@@ -19,12 +19,10 @@ export const Primary: ComponentStoryObj<typeof Table> = {
     onRowSelectionChange: (selectedRows: any) => {
       console.log("selectedRows: " + JSON.stringify(selectedRows));
     },
-    onRow: (record: any) => ({
-      style: {},
-      onDoubleClick: () => {
-        alert("double clicked record" + JSON.stringify(record));
-      },
-    }),
+    onRowStyle: () => undefined,
+    onRowDoubleClick: (record: any) => {
+      alert("double clicked record" + JSON.stringify(record));
+    },
     sorter: { id: "name", desc: true },
     onChangeSort: (sorter: Sorter | undefined) => {
       console.log("onChangeSort: ", sorter);
@@ -88,12 +86,10 @@ export const Expandable: ComponentStoryObj<typeof Table> = {
     onRowSelectionChange: (selectedRows: any) => {
       console.log("selectedRows: " + JSON.stringify(selectedRows));
     },
-    onRow: (record: any) => ({
-      style: {},
-      onDoubleClick: () => {
-        alert("double clicked record" + JSON.stringify(record));
-      },
-    }),
+    onRowStyle: () => undefined,
+    onRowDoubleClick: (record: any) => {
+      alert("double clicked record" + JSON.stringify(record));
+    },
     columns: [
       {
         title: "Name",

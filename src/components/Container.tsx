@@ -2,7 +2,8 @@ import styled from "styled-components";
 
 export const Container = styled.div`
   overflow-x: auto;
-  height: ${({ height }: { height?: number }) => `${height}px` || "auto"};
+  height: ${({ height }: { height?: number; canClick: boolean }) =>
+    `${height}px` || "auto"};
   border-bottom: 1px solid #f0f0f0;
 
   table {
@@ -11,7 +12,8 @@ export const Container = styled.div`
     width: 100%;
 
     tr {
-      cursor: pointer;
+      cursor: ${({ canClick }: { height?: number; canClick: boolean }) =>
+        canClick ? "pointer" : "auto"};
       user-select: none;
 
       &:nth-child(odd) {
