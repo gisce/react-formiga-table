@@ -4,8 +4,9 @@ export type ExpandableItem = {
 };
 
 export type ExpandableItemUi = {
-  id: string;
-  child_id?: Array<string>;
+  id: number;
+  // absoluteId: number;
+  child_id?: Array<number>;
   children?: ExpandableItemUi[];
   isLoading: boolean;
 };
@@ -13,7 +14,7 @@ export type ExpandableItemUi = {
 // A recursion method for finding the item
 // inside the items nested array
 export const findDeepItem = (
-  id: string,
+  id: number,
   items: Array<ExpandableItemUi>
 ): ExpandableItemUi | undefined => {
   for (const item of items || []) {

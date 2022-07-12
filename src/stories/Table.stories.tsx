@@ -3,7 +3,11 @@ import { Table } from "../Table";
 import { Spin } from "antd";
 import "antd/dist/antd.css";
 import { Sorter } from "../types";
-import { PlusSquareOutlined, MinusSquareOutlined } from "@ant-design/icons";
+import {
+  PlusSquareOutlined,
+  MinusSquareOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
 
 const meta: ComponentMeta<typeof Table> = {
   title: "Table/Basic",
@@ -78,6 +82,8 @@ export const Primary: ComponentStoryObj<typeof Table> = {
   },
 };
 
+const otherChilds = [{ id: 2, name: "R. Kate", surnames: "Hellington" }];
+
 export const Expandable: ComponentStoryObj<typeof Table> = {
   args: {
     loading: false,
@@ -105,6 +111,7 @@ export const Expandable: ComponentStoryObj<typeof Table> = {
         id: 0,
         name: "A. John",
         surnames: "Doe",
+        child_id: [2],
       },
       {
         id: 1,
@@ -115,6 +122,14 @@ export const Expandable: ComponentStoryObj<typeof Table> = {
     expandableOpts: {
       expandIcon: PlusSquareOutlined,
       collapseIcon: MinusSquareOutlined,
+      loadingIcon: LoadingOutlined,
+      onFetchChildrenForRecord: async (parent: any) => {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        const childIdsToRetrieve: number[] = parent.child_id;
+        return otherChilds.filter((item) =>
+          childIdsToRetrieve.includes(item.id)
+        );
+      },
     },
   },
 };
