@@ -4,6 +4,7 @@ import {
   Sorter,
   TableColumn,
 } from "../types";
+import { Cell } from "./Cell";
 import { Checkbox } from "./Checkbox";
 
 export const Rows = ({
@@ -154,33 +155,14 @@ function getRowComponent({
         })()}
       {columns.map((column: any, columnIdx: number) => {
         return (
-          <td
-            key={`${column.key}-${row.id}`}
-            style={
-              getColumnSorter(column.key) !== undefined
-                ? {
-                    backgroundColor: "#fafafa",
-                  }
-                : {}
-            }
-          >
-            <div
-              style={{
-                display: "flex",
-              }}
-            >
-              {level > 0 ? (
-                <div
-                  style={{
-                    width: level * 20,
-                    // height: 10,
-                    // backgroundColor: "red",
-                  }}
-                />
-              ) : null}
-              {column.render ? column.render(row[column.key]) : row[column.key]}
-            </div>
-          </td>
+          <Cell
+            column={column}
+            columnIdx={columnIdx}
+            row={row}
+            expandable={expandableOpts !== undefined}
+            level={level}
+            getColumnSorter={getColumnSorter}
+          />
         );
       })}
     </tr>,
