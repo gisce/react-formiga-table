@@ -12,10 +12,13 @@ export type Sorter = {
 };
 
 export type ExpandOptions = {
-  onRowExpand?: (item: any) => Promise<void>;
+  onFetchChildrenForRecord?: (item: any) => Promise<any[]>;
   expandIcon?: any;
   collapseIcon?: any;
+  loadingIcon?: any;
 };
+
+export type ExpandableRowIcon = "loading" | "expand" | "collapse" | "none";
 
 export type TableProps = {
   dataSource: any[];

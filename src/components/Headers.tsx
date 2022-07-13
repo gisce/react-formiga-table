@@ -4,22 +4,20 @@ import { Checkbox } from "./Checkbox";
 
 export const Headers = ({
   onRowSelectionChange,
-  dataSource,
+  totalRows,
   columns,
   toggleAllRowsSelected,
   selectedRowKeys,
   handleColumnClick,
   getColumnSorter,
-  expandable = false,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
-  dataSource: any[];
+  totalRows: number;
   toggleAllRowsSelected: () => void;
   selectedRowKeys: number[];
   columns: TableColumn[];
   handleColumnClick: (columnId: string) => void;
   getColumnSorter: (columnId: string) => Sorter | undefined;
-  expandable?: boolean;
 }) => {
   return (
     <>
@@ -35,7 +33,7 @@ export const Headers = ({
           >
             <Checkbox
               value={
-                selectedRowKeys.length === dataSource.length
+                selectedRowKeys.length === totalRows
                   ? true
                   : selectedRowKeys.length === 0
                   ? false
@@ -45,9 +43,6 @@ export const Headers = ({
             />
           </div>
         </th>
-      )}
-      {expandable && (
-        <th style={{ width: 10 }} key={"react_formiga_table_expandable"} />
       )}
       {columns.map((column: any) => (
         <th

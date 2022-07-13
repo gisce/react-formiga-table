@@ -36,14 +36,14 @@ export const Table = (props: TableProps) => {
     useSortable(sorter);
 
   const {
-    openedKeys,
-    setOpenedKeys,
-    toggleOpenedKey,
     keyIsOpened,
-    updateItem,
-    items,
-    setItems,
-  } = useExpandable();
+    onExpandableIconClicked,
+    getExpandableStatusForRow,
+    getChildsForParent,
+  } = useExpandable({
+    dataSource,
+    onFetchChildrenForRecord: expandableOpts?.onFetchChildrenForRecord,
+  });
 
   useEffect(() => {
     onRowSelectionChange?.(selectedRowKeys);
@@ -59,14 +59,13 @@ export const Table = (props: TableProps) => {
         <thead>
           <tr>
             <Headers
-              dataSource={dataSource}
+              totalRows={dataSource.length}
               columns={columns}
               onRowSelectionChange={onRowSelectionChange}
               selectedRowKeys={selectedRowKeys}
               toggleAllRowsSelected={toggleAllRowsSelected}
               handleColumnClick={handleColumnClick}
               getColumnSorter={getColumnSorter}
-              expandable={expandableOpts !== undefined}
             />
           </tr>
         </thead>
@@ -81,6 +80,10 @@ export const Table = (props: TableProps) => {
             isRowSelected={isRowSelected}
             toggleRowSelected={toggleRowSelected}
             expandableOpts={expandableOpts}
+            onExpandableIconClicked={onExpandableIconClicked}
+            getExpandableStatusForRow={getExpandableStatusForRow}
+            keyIsOpened={keyIsOpened}
+            getChildsForParent={getChildsForParent}
           />
         </tbody>
       </table>
