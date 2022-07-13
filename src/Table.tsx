@@ -66,7 +66,6 @@ export const Table = (props: TableProps) => {
               toggleAllRowsSelected={toggleAllRowsSelected}
               handleColumnClick={handleColumnClick}
               getColumnSorter={getColumnSorter}
-              expandable={expandableOpts !== undefined}
             />
           </tr>
         </thead>

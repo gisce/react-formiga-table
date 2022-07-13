@@ -1,18 +1,25 @@
 import { useState, useCallback } from "react";
-import { ExpandableItem, ExpandableItemUi } from "../helpers/expandableHelper";
 import { ExpandableRowIcon } from "../types";
+
+export type ExpandableItem = {
+  id: number;
+  child_id?: Array<number>;
+  isLoading: boolean;
+  level: number;
+  data: any;
+};
 
 export const useExpandable = ({
   dataSource,
   onFetchChildrenForRecord,
 }: {
-  dataSource: ExpandableItem[];
+  dataSource: any[];
   onFetchChildrenForRecord?: (item: any) => Promise<any[]>;
 }) => {
   const [openedKeys, setOpenedKeys] = useState<number[]>([]);
   const [loadedKeys, setLoadedKeys] = useState<number[]>([]);
 
-  const [items, setItems] = useState<Array<ExpandableItemUi>>(
+  const [items, setItems] = useState<Array<ExpandableItem>>(
     dataSource.map((item) => transformData(item, 0))
   );
 
@@ -158,23 +165,14 @@ export const useExpandable = ({
   );
 
   return {
-    openedKeys,
-    setOpenedKeys,
-    toggleOpenedKey,
     keyIsOpened,
-    keyHasChilds,
-    items,
-    setItems,
     onExpandableIconClicked,
     getExpandableStatusForRow,
     getChildsForParent,
   };
 };
 
-function transformData(
-  entry: ExpandableItem,
-  level: number = 0
-): ExpandableItemUi {
+function transformData(entry: any, level: number = 0): ExpandableItem {
   return {
     id: entry.id,
     child_id: entry.child_id,
@@ -185,7 +183,7 @@ function transformData(
 }
 
 const updateItemInArray = (
-  itemToUpdate: ExpandableItemUi,
+  itemToUpdate: ExpandableItem,
   items: any[]
 ): any[] => {
   return items.map((localItem: any) => {

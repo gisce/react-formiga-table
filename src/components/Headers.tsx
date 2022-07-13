@@ -10,7 +10,6 @@ export const Headers = ({
   selectedRowKeys,
   handleColumnClick,
   getColumnSorter,
-  expandable = false,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   totalRows: number;
@@ -19,7 +18,6 @@ export const Headers = ({
   columns: TableColumn[];
   handleColumnClick: (columnId: string) => void;
   getColumnSorter: (columnId: string) => Sorter | undefined;
-  expandable?: boolean;
 }) => {
   return (
     <>
@@ -45,9 +43,6 @@ export const Headers = ({
             />
           </div>
         </th>
-      )}
-      {expandable && (
-        <th style={{ width: 10 }} key={"react_formiga_table_expandable"} />
       )}
       {columns.map((column: any) => (
         <th

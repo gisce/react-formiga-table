@@ -127,41 +127,17 @@ function getRowComponent({
           </div>
         </td>
       )}
-      {expandableOpts !== undefined &&
-        (() => {
-          const status = getExpandableStatusForRow(row);
-
-          let ExpandableComponent;
-
-          if (status === "expand") {
-            ExpandableComponent = expandableOpts.expandIcon;
-          } else if (status === "collapse") {
-            ExpandableComponent = expandableOpts.collapseIcon;
-          } else {
-            ExpandableComponent = expandableOpts.loadingIcon;
-          }
-
-          return (
-            <td key={`react_formiga_table_expandable-${row.id}`}>
-              {status === "none" ? null : (
-                <ExpandableComponent
-                  onClick={() => {
-                    onExpandableIconClicked(row);
-                  }}
-                />
-              )}
-            </td>
-          );
-        })()}
       {columns.map((column: any, columnIdx: number) => {
         return (
           <Cell
             column={column}
             columnIdx={columnIdx}
             row={row}
-            expandable={expandableOpts !== undefined}
-            level={level}
             getColumnSorter={getColumnSorter}
+            expandableOpts={expandableOpts}
+            getExpandableStatusForRow={getExpandableStatusForRow}
+            onExpandableIconClicked={onExpandableIconClicked}
+            level={level}
           />
         );
       })}
