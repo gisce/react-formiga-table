@@ -36,13 +36,7 @@ export const Table = (props: TableProps) => {
     useSortable(sorter);
 
   const {
-    openedKeys,
-    setOpenedKeys,
-    toggleOpenedKey,
     keyIsOpened,
-    updateItem,
-    items,
-    setItems,
     onExpandableIconClicked,
     getExpandableStatusForRow,
     getChildsForParent,
@@ -65,7 +59,7 @@ export const Table = (props: TableProps) => {
         <thead>
           <tr>
             <Headers
-              dataSource={dataSource}
+              totalRows={dataSource.length}
               columns={columns}
               onRowSelectionChange={onRowSelectionChange}
               selectedRowKeys={selectedRowKeys}

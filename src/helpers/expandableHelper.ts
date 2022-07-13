@@ -5,45 +5,10 @@ export type ExpandableItem = {
 
 export type ExpandableItemUi = {
   id: number;
-  // absoluteId: number;
   child_id?: Array<number>;
-  children?: ExpandableItemUi[];
   isLoading: boolean;
-};
-
-// A recursion method for finding the item
-// inside the items nested array
-export const findDeepItem = (
-  id: number,
-  items: Array<ExpandableItemUi>
-): ExpandableItemUi | undefined => {
-  for (const item of items || []) {
-    if (item.id == id) return item;
-
-    if (item.children) {
-      const _item = findDeepItem(id, item.children);
-      if (_item) return _item;
-    }
-  }
-};
-
-// A recursion method for finding the item inside nested array
-// and updating that object with the passed one.
-// Returns the updated nested array
-export const updateDeepItem = (
-  menuItemUi: ExpandableItemUi,
-  items: Array<ExpandableItemUi>
-): Array<ExpandableItemUi> => {
-  return items.map((item: ExpandableItemUi) => {
-    return item.id === menuItemUi.id
-      ? menuItemUi
-      : {
-          ...item,
-          children: item.children
-            ? updateDeepItem(menuItemUi, item.children!)
-            : undefined,
-        };
-  });
+  level: number;
+  data: any;
 };
 
 // In order to get the tree menu simplified, we set item id's composed with their parents id

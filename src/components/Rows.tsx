@@ -72,6 +72,7 @@ function getRowComponent({
   keyIsOpened,
   getChildsForParent,
   onRowStyle,
+  level = 0,
 }: {
   row: any;
   columns: TableColumn[];
@@ -86,6 +87,7 @@ function getRowComponent({
   keyIsOpened: (key: number) => boolean;
   getChildsForParent: (key: number) => any[] | undefined;
   onRowStyle: (item: any) => any;
+  level?: number;
 }): React.ReactNode {
   const style = onRowStyle(row);
   let components: React.ReactNode[] = [
@@ -162,18 +164,33 @@ function getRowComponent({
                 : {}
             }
           >
-            {column.render ? column.render(row[column.key]) : row[column.key]}
+            <div
+              style={{
+                display: "flex",
+              }}
+            >
+              {level > 0 ? (
+                <div
+                  style={{
+                    width: level * 20,
+                    // height: 10,
+                    // backgroundColor: "red",
+                  }}
+                />
+              ) : null}
+              {column.render ? column.render(row[column.key]) : row[column.key]}
+            </div>
           </td>
         );
       })}
     </tr>,
   ];
 
-  if (keyIsOpened(row.id)) {
+  if (expandableOpts !== undefined && keyIsOpened(row.id)) {
     components = components.concat(
       getChildsForParent(row.id)?.map((item: any) => {
         return getRowComponent({
-          row: item,
+          row: item.data,
           columns,
           onRowStyle,
           onRowDoubleClick,
@@ -186,6 +203,7 @@ function getRowComponent({
           getColumnSorter,
           keyIsOpened,
           getChildsForParent,
+          level: item.level,
         });
       })
     );

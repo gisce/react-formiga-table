@@ -82,7 +82,12 @@ export const Primary: ComponentStoryObj<typeof Table> = {
   },
 };
 
-const otherChilds = [{ id: 2, name: "R. Kate", surnames: "Hellington" }];
+const otherChilds = [
+  { id: 2, name: "R. Kate", surnames: "Hellington", child_id: [4, 5] },
+  { id: 4, name: "Four Bob", surnames: "Asdt" },
+  { id: 5, name: "Five Bob", surnames: "Asdt", child_id: [6] },
+  { id: 6, name: "Six thur", surnames: "Ficht" },
+];
 
 export const Expandable: ComponentStoryObj<typeof Table> = {
   args: {

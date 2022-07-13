@@ -1,10 +1,5 @@
 import { useState, useCallback } from "react";
-import {
-  ExpandableItem,
-  ExpandableItemUi,
-  updateDeepItem,
-  getCompoundId,
-} from "../helpers/expandableHelper";
+import { ExpandableItem, ExpandableItemUi } from "../helpers/expandableHelper";
 import { ExpandableRowIcon } from "../types";
 
 export const useExpandable = ({
@@ -15,8 +10,10 @@ export const useExpandable = ({
   onFetchChildrenForRecord?: (item: any) => Promise<any[]>;
 }) => {
   const [openedKeys, setOpenedKeys] = useState<number[]>([]);
+  const [loadedKeys, setLoadedKeys] = useState<number[]>([]);
+
   const [items, setItems] = useState<Array<ExpandableItemUi>>(
-    dataSource.map(transformData)
+    dataSource.map((item) => transformData(item, 0))
   );
 
   const toggleOpenedKey = useCallback(
@@ -38,6 +35,13 @@ export const useExpandable = ({
     [openedKeys]
   );
 
+  const keyIsLoaded = useCallback(
+    (key: number) => {
+      return loadedKeys.includes(key);
+    },
+    [loadedKeys]
+  );
+
   const keyHasChilds = useCallback(
     (key: number) => {
       const item = items.find((item) => item.id === key);
@@ -47,13 +51,6 @@ export const useExpandable = ({
       }
 
       return item.child_id !== undefined && item.child_id.length > 0;
-    },
-    [items]
-  );
-
-  const getChildsForParent = useCallback(
-    (key: number) => {
-      return items.find((item) => item.id === key)?.children;
     },
     [items]
   );
@@ -70,14 +67,19 @@ export const useExpandable = ({
     [items]
   );
 
-  const updateItem = useCallback(
-    (item: ExpandableItemUi): void => {
-      // We search for the item in our local items nested array, we update it,
-      // and we get the whole updated nested array
-      const updatedItems = updateDeepItem(item, items);
+  const getChildsForParent = useCallback(
+    (id: number): any[] => {
+      const parent = items.find((item) => item.id === id);
+      if (!parent) {
+        return [];
+      }
+      const child_id = parent.child_id;
 
-      // We set the updated item's nested array in our state
-      setItems(updatedItems);
+      if (!child_id) {
+        return [];
+      }
+
+      return items.filter((item) => child_id.includes(item.id));
     },
     [items]
   );
@@ -94,23 +96,52 @@ export const useExpandable = ({
         return;
       }
 
-      if (!keyIsOpened(record.id)) {
-        if (!item.children) {
-          updateItem({ ...item, isLoading: true });
+      if (!keyIsOpened(record.id) && !keyIsLoaded(item.id)) {
+        setItems(
+          updateItemInArray(
+            {
+              ...item,
+              isLoading: true,
+            },
+            items
+          )
+        );
 
-          try {
-            const children = await onFetchChildrenForRecord?.(item);
-            updateItem({ ...item, isLoading: false, children });
-          } catch (err) {
-            console.error(err);
-            updateItem({ ...item, isLoading: false });
-          }
+        try {
+          const children = (await onFetchChildrenForRecord?.(item)) || [];
+          const newItems = [
+            ...items,
+            ...children.map((child) => transformData(child, item.level + 1)),
+          ];
+          loadedKeys.push(item.id);
+          setLoadedKeys([...loadedKeys]);
+
+          setItems(
+            updateItemInArray(
+              {
+                ...item,
+                isLoading: false,
+              },
+              newItems
+            )
+          );
+        } catch (err) {
+          console.error(err);
+          setItems(
+            updateItemInArray(
+              {
+                ...item,
+                isLoading: false,
+              },
+              items
+            )
+          );
         }
       }
 
       toggleOpenedKey(record.id);
     },
-    [items, openedKeys]
+    [items, openedKeys, loadedKeys]
   );
 
   const getExpandableStatusForRow = useCallback(
@@ -132,7 +163,6 @@ export const useExpandable = ({
     toggleOpenedKey,
     keyIsOpened,
     keyHasChilds,
-    updateItem,
     items,
     setItems,
     onExpandableIconClicked,
@@ -141,19 +171,26 @@ export const useExpandable = ({
   };
 };
 
-function transformData(entry: ExpandableItem): ExpandableItemUi {
-  // const child_id = entry.child_id
-  //   ? entry.child_id.map((childId: number) => {
-  //       return getCompoundId({
-  //         parentId: entry.id.toString(),
-  //         childId: childId.toString(),
-  //       });
-  //     })
-  //   : undefined;
-
+function transformData(
+  entry: ExpandableItem,
+  level: number = 0
+): ExpandableItemUi {
   return {
     id: entry.id,
     child_id: entry.child_id,
     isLoading: false,
-  } as ExpandableItemUi;
+    level,
+    data: entry,
+  };
 }
+
+const updateItemInArray = (
+  itemToUpdate: ExpandableItemUi,
+  items: any[]
+): any[] => {
+  return items.map((localItem: any) => {
+    if (localItem.id === itemToUpdate.id) {
+      return itemToUpdate;
+    } else return localItem;
+  });
+};
