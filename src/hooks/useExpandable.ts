@@ -12,15 +12,19 @@ export type ExpandableItem = {
 export const useExpandable = ({
   dataSource,
   onFetchChildrenForRecord,
+  childField = "child_id",
 }: {
   dataSource: any[];
   onFetchChildrenForRecord?: (item: any) => Promise<any[]>;
+  childField?: string;
 }) => {
   const [openedKeys, setOpenedKeys] = useState<number[]>([]);
   const [loadedKeys, setLoadedKeys] = useState<number[]>([]);
 
   const [items, setItems] = useState<Array<ExpandableItem>>(
-    dataSource.map((item) => transformData(item, 0))
+    dataSource.map((item) =>
+      transformData({ entry: item, childField, level: 0 })
+    )
   );
 
   const toggleOpenedKey = useCallback(
@@ -51,13 +55,13 @@ export const useExpandable = ({
 
   const keyHasChilds = useCallback(
     (key: number) => {
-      const item = items.find((item) => item.id === key);
+      const item: any = items.find((item) => item.id === key);
 
       if (!item) {
         return false;
       }
 
-      return item.child_id !== undefined && item.child_id.length > 0;
+      return item[childField] !== undefined && item[childField].length > 0;
     },
     [items]
   );
@@ -76,11 +80,11 @@ export const useExpandable = ({
 
   const getChildsForParent = useCallback(
     (id: number): any[] => {
-      const parent = items.find((item) => item.id === id);
+      const parent: any = items.find((item) => item.id === id);
       if (!parent) {
         return [];
       }
-      const child_id = parent.child_id;
+      const child_id = parent[childField];
 
       if (!child_id) {
         return [];
@@ -118,7 +122,9 @@ export const useExpandable = ({
           const children = (await onFetchChildrenForRecord?.(item)) || [];
           const newItems = [
             ...items,
-            ...children.map((child) => transformData(child, item.level + 1)),
+            ...children.map((child) =>
+              transformData({ entry: child, level: item.level + 1, childField })
+            ),
           ];
           loadedKeys.push(item.id);
           setLoadedKeys([...loadedKeys]);
@@ -172,10 +178,18 @@ export const useExpandable = ({
   };
 };
 
-function transformData(entry: any, level: number = 0): ExpandableItem {
+function transformData({
+  entry,
+  childField,
+  level = 0,
+}: {
+  entry: any;
+  childField: string;
+  level: number;
+}): ExpandableItem {
   return {
     id: entry.id,
-    child_id: entry.child_id,
+    [childField]: entry[childField],
     isLoading: false,
     level,
     data: entry,

@@ -12,10 +12,11 @@ export type Sorter = {
 };
 
 export type ExpandOptions = {
-  onFetchChildrenForRecord?: (item: any) => Promise<any[]>;
-  expandIcon?: any;
-  collapseIcon?: any;
-  loadingIcon?: any;
+  onFetchChildrenForRecord: (item: any) => Promise<any[]>;
+  expandIcon: any;
+  collapseIcon: any;
+  loadingIcon: any;
+  childField: string;
 };
 
 export type ExpandableRowIcon = "loading" | "expand" | "collapse" | "none";

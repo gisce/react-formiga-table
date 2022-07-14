@@ -125,6 +125,7 @@ export const Expandable: ComponentStoryObj<typeof Table> = {
       },
     ],
     expandableOpts: {
+      childField: "child_id",
       expandIcon: PlusSquareOutlined,
       collapseIcon: MinusSquareOutlined,
       loadingIcon: LoadingOutlined,

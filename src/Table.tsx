@@ -43,6 +43,7 @@ export const Table = (props: TableProps) => {
   } = useExpandable({
     dataSource,
     onFetchChildrenForRecord: expandableOpts?.onFetchChildrenForRecord,
+    childField: expandableOpts?.childField,
   });
 
   useEffect(() => {
