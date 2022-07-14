@@ -114,7 +114,7 @@ export const Expandable: ComponentStoryObj<typeof Table> = {
     dataSource: [
       {
         id: 0,
-        name: "A. John",
+        name: "B. John",
         surnames: "Doe",
         child_id: [2],
       },

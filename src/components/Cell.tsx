@@ -64,8 +64,8 @@ function ExpandableComponent({
 
   const status = getExpandableStatusForRow(row);
 
-  if (columnIdx !== 0 || status === "none") {
-    return <div style={{ display: "inline-block", width: level * 20 }} />;
+  if (status === "none" || columnIdx !== 0) {
+    return <div style={{ display: "inline-block", width: 24 + level * 35 }} />;
   }
 
   let Icon;
@@ -80,7 +80,7 @@ function ExpandableComponent({
   return (
     <div style={{ display: "inline-block" }}>
       <Icon
-        style={{ marginRight: 10, marginLeft: level * 20 }}
+        style={{ marginRight: 10, marginLeft: level * 35 }}
         onClick={() => {
           onExpandableIconClicked(row);
         }}
