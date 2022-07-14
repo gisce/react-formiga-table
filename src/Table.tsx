@@ -20,6 +20,7 @@ export const Table = (props: TableProps) => {
     onChangeSort,
     sorter,
     expandableOpts,
+    sortEnabled = true,
   } = props;
 
   if (loading) {
@@ -67,6 +68,7 @@ export const Table = (props: TableProps) => {
               toggleAllRowsSelected={toggleAllRowsSelected}
               handleColumnClick={handleColumnClick}
               getColumnSorter={getColumnSorter}
+              sortEnabled={sortEnabled}
             />
           </tr>
         </thead>

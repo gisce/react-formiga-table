@@ -10,6 +10,7 @@ export const Headers = ({
   selectedRowKeys,
   handleColumnClick,
   getColumnSorter,
+  sortEnabled,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   totalRows: number;
@@ -18,6 +19,7 @@ export const Headers = ({
   columns: TableColumn[];
   handleColumnClick: (columnId: string) => void;
   getColumnSorter: (columnId: string) => Sorter | undefined;
+  sortEnabled: boolean;
 }) => {
   return (
     <>
@@ -47,9 +49,13 @@ export const Headers = ({
       {columns.map((column: any) => (
         <th
           key={column.key}
-          onClick={() => {
-            handleColumnClick(column.key);
-          }}
+          onClick={
+            sortEnabled
+              ? () => {
+                  handleColumnClick(column.key);
+                }
+              : undefined
+          }
         >
           <div className="ctx">
             {column.title}

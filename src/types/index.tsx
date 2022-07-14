@@ -27,8 +27,9 @@ export type TableProps = {
   onRowStyle: (item: any) => any;
   onRowDoubleClick?: (item: any) => void;
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
+  sortEnabled?: boolean;
   onChangeSort?: (sorter: Sorter | undefined) => void;
-  sorter: Sorter | undefined;
+  sorter?: Sorter | undefined;
   expandableOpts?: ExpandOptions;
   loading: boolean;
   loadingComponent: any;
