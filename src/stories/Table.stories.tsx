@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { ComponentMeta, ComponentStoryObj } from "@storybook/react";
 import { Table } from "../Table";
 import { Spin } from "antd";
@@ -89,53 +90,60 @@ const otherChilds = [
   { id: 6, name: "Six thur", surnames: "Ficht" },
 ];
 
-export const Expandable: ComponentStoryObj<typeof Table> = {
-  args: {
-    loading: false,
-    loadingComponent: <Spin />,
-    height: 400,
-    onRowSelectionChange: (selectedRows: any) => {
-      console.log("selectedRows: " + JSON.stringify(selectedRows));
+export const Expandable = (): React.ReactElement => {
+  const [results, setResults] = useState<any[]>([
+    {
+      id: 0,
+      name: "B. John",
+      surnames: "Doe",
+      child_id: [2],
     },
-    onRowStyle: () => undefined,
-    onRowDoubleClick: (record: any) => {
-      alert("double clicked record" + JSON.stringify(record));
+    {
+      id: 1,
+      name: "B. Jane",
+      surnames: "Doe",
     },
-    columns: [
-      {
-        title: "Name",
-        key: "name",
-      },
-      {
-        title: "Surnames",
-        key: "surnames",
-      },
-    ],
-    dataSource: [
-      {
-        id: 0,
-        name: "B. John",
-        surnames: "Doe",
-        child_id: [2],
-      },
-      {
-        id: 1,
-        name: "B. Jane",
-        surnames: "Doe",
-      },
-    ],
-    expandableOpts: {
-      childField: "child_id",
-      expandIcon: PlusSquareOutlined,
-      collapseIcon: MinusSquareOutlined,
-      loadingIcon: LoadingOutlined,
-      onFetchChildrenForRecord: async (parent: any) => {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        const childIdsToRetrieve: number[] = parent.child_id;
-        return otherChilds.filter((item) =>
-          childIdsToRetrieve.includes(item.id)
-        );
-      },
-    },
-  },
+  ]);
+
+  return (
+    <Table
+      dataSource={results}
+      columns={[
+        {
+          title: "Name",
+          key: "name",
+        },
+        {
+          title: "Surnames",
+          key: "surnames",
+        },
+      ]}
+      onRowSelectionChange={(selectedRows: any) => {
+        console.log("selectedRows: " + JSON.stringify(selectedRows));
+      }}
+      onRowStyle={() => undefined}
+      onRowDoubleClick={(record: any) => {
+        alert("double clicked record" + JSON.stringify(record));
+      }}
+      loadingComponent={<Spin />}
+      height={400}
+      sorter={undefined}
+      loading={false}
+      expandableOpts={{
+        childField: "child_id",
+        expandIcon: PlusSquareOutlined,
+        collapseIcon: MinusSquareOutlined,
+        loadingIcon: LoadingOutlined,
+        onFetchChildrenForRecord: async (parent: any) => {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          const childIdsToRetrieve: number[] = parent.child_id;
+          const filteredChilds = otherChilds.filter((item) =>
+            childIdsToRetrieve.includes(item.id)
+          );
+          setResults([...results, ...filteredChilds]);
+          return filteredChilds;
+        },
+      }}
+    />
+  );
 };

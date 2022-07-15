@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { ExpandableRowIcon } from "../types";
 
 export type ExpandableItem = {
@@ -20,10 +20,11 @@ export const useExpandable = ({
 }) => {
   const [openedKeys, setOpenedKeys] = useState<number[]>([]);
   const [loadedKeys, setLoadedKeys] = useState<number[]>([]);
+  const idLevelMap = useRef<Map<number, number>>(new Map<number, number>());
 
   const [items, setItems] = useState<Array<ExpandableItem>>(
     dataSource.map((item) =>
-      transformData({ entry: item, childField, level: 0 })
+      transformData({ entry: item, childField, idLevelMap: idLevelMap.current })
     )
   );
 
@@ -52,6 +53,10 @@ export const useExpandable = ({
     },
     [loadedKeys]
   );
+
+  const getLevelForKey = (key: number) => {
+    return idLevelMap.current.get(key) || 0;
+  };
 
   const keyHasChilds = useCallback(
     (key: number) => {
@@ -120,24 +125,30 @@ export const useExpandable = ({
 
         try {
           const children = (await onFetchChildrenForRecord?.(item)) || [];
-          const newItems = [
-            ...items,
-            ...children.map((child) =>
-              transformData({ entry: child, level: item.level + 1, childField })
-            ),
-          ];
-          loadedKeys.push(item.id);
-          setLoadedKeys([...loadedKeys]);
-
+          children.forEach((child) => {
+            idLevelMap.current.set(child.id, item.level + 1);
+          });
           setItems(
             updateItemInArray(
               {
                 ...item,
                 isLoading: false,
               },
-              newItems
+              [
+                ...items,
+                ...children.map((child) => {
+                  return transformData({
+                    entry: child,
+                    childField,
+                    idLevelMap: idLevelMap.current,
+                  });
+                }),
+              ]
             )
           );
+
+          loadedKeys.push(item.id);
+          setLoadedKeys([...loadedKeys]);
         } catch (err) {
           console.error(err);
           setItems(
@@ -197,23 +208,24 @@ export const useExpandable = ({
     getExpandableStatusForRow,
     getChildsForParent,
     getAllVisibleKeys,
+    getLevelForKey,
   };
 };
 
 function transformData({
   entry,
   childField,
-  level = 0,
+  idLevelMap,
 }: {
   entry: any;
   childField: string;
-  level: number;
+  idLevelMap: Map<number, number>;
 }): ExpandableItem {
   return {
     id: entry.id,
     [childField]: entry[childField],
     isLoading: false,
-    level,
+    level: idLevelMap.get(entry.id) || 0,
     data: entry,
   };
 }

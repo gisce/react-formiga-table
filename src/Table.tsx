@@ -41,6 +41,7 @@ export const Table = (props: TableProps) => {
     getExpandableStatusForRow,
     getChildsForParent,
     getAllVisibleKeys,
+    getLevelForKey,
   } = useExpandable({
     dataSource,
     onFetchChildrenForRecord: expandableOpts?.onFetchChildrenForRecord,
@@ -102,6 +103,7 @@ export const Table = (props: TableProps) => {
             getExpandableStatusForRow={getExpandableStatusForRow}
             keyIsOpened={keyIsOpened}
             getChildsForParent={getChildsForParent}
+            getLevelForKey={getLevelForKey}
           />
         </tbody>
       </table>

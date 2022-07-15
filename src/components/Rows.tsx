@@ -21,6 +21,7 @@ export const Rows = ({
   getExpandableStatusForRow,
   keyIsOpened,
   getChildsForParent,
+  getLevelForKey,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   dataSource: any[];
@@ -35,26 +36,31 @@ export const Rows = ({
   getExpandableStatusForRow: (item: any) => ExpandableRowIcon;
   keyIsOpened: (key: number) => boolean;
   getChildsForParent: (key: number) => any[] | undefined;
+  getLevelForKey: (key: number) => number;
 }) => {
   return (
     <>
-      {dataSource.map((row: any) => {
-        return getRowComponent({
-          row,
-          columns,
-          onRowStyle,
-          onRowDoubleClick,
-          onRowSelectionChange,
-          isRowSelected,
-          toggleRowSelected,
-          expandableOpts,
-          getExpandableStatusForRow,
-          onExpandableIconClicked,
-          getColumnSorter,
-          keyIsOpened,
-          getChildsForParent,
-        });
-      })}
+      {dataSource
+        .filter((entry) => {
+          return getLevelForKey(entry.id) === 0;
+        })
+        .map((row: any) => {
+          return getRowComponent({
+            row,
+            columns,
+            onRowStyle,
+            onRowDoubleClick,
+            onRowSelectionChange,
+            isRowSelected,
+            toggleRowSelected,
+            expandableOpts,
+            getExpandableStatusForRow,
+            onExpandableIconClicked,
+            getColumnSorter,
+            keyIsOpened,
+            getChildsForParent,
+          });
+        })}
     </>
   );
 };
