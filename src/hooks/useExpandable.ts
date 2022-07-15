@@ -170,11 +170,33 @@ export const useExpandable = ({
     [openedKeys, items]
   );
 
+  const getAllVisibleKeys = useCallback((): number[] => {
+    const firstLevelItems = items.filter((item) => item.level === 0);
+    const visibleKeys = firstLevelItems.map((item) => item.id);
+
+    openedKeys.forEach((key: number) => {
+      const item: any = items.find((lItem) => lItem.id === key);
+      if (!item) {
+        return;
+      }
+      if (!item.child_id) {
+        return;
+      }
+      item.child_id.forEach((child_key: number) => {
+        if (!visibleKeys.includes(child_key)) {
+          visibleKeys.push(child_key);
+        }
+      });
+    });
+    return visibleKeys;
+  }, [openedKeys, items]);
+
   return {
     keyIsOpened,
     onExpandableIconClicked,
     getExpandableStatusForRow,
     getChildsForParent,
+    getAllVisibleKeys,
   };
 };
 

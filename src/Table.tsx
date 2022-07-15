@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { Container } from "./components/Container";
 import { useExpandable } from "./hooks/useExpandable";
 import { useSelectable } from "./hooks/useSelectable";
@@ -32,7 +32,7 @@ export const Table = (props: TableProps) => {
     toggleAllRowsSelected,
     toggleRowSelected,
     isRowSelected,
-  } = useSelectable(dataSource);
+  } = useSelectable();
   const { localSorter, getColumnSorter, handleColumnClick } =
     useSortable(sorter);
 
@@ -41,6 +41,7 @@ export const Table = (props: TableProps) => {
     onExpandableIconClicked,
     getExpandableStatusForRow,
     getChildsForParent,
+    getAllVisibleKeys,
   } = useExpandable({
     dataSource,
     onFetchChildrenForRecord: expandableOpts?.onFetchChildrenForRecord,
@@ -55,17 +56,32 @@ export const Table = (props: TableProps) => {
     onChangeSort?.(localSorter);
   }, [localSorter]);
 
+  const allRowsAreSelected = useCallback(() => {
+    if (selectedRowKeys.length === 0) {
+      return false;
+    }
+
+    if (!expandableOpts) {
+      return dataSource.length === selectedRowKeys.length;
+    }
+    return getAllVisibleKeys().length === selectedRowKeys.length;
+  }, [dataSource, selectedRowKeys]);
+
+  const onToggleAllRowsSelected = useCallback(() => {
+    toggleAllRowsSelected(getAllVisibleKeys());
+  }, [toggleAllRowsSelected, getAllVisibleKeys]);
+
   return (
     <Container height={height} canClick={onRowDoubleClick !== undefined}>
       <table>
         <thead>
           <tr>
             <Headers
-              totalRows={dataSource.length}
+              allRowsAreSelected={allRowsAreSelected()}
               columns={columns}
               onRowSelectionChange={onRowSelectionChange}
               selectedRowKeys={selectedRowKeys}
-              toggleAllRowsSelected={toggleAllRowsSelected}
+              toggleAllRowsSelected={onToggleAllRowsSelected}
               handleColumnClick={handleColumnClick}
               getColumnSorter={getColumnSorter}
               sortEnabled={sortEnabled}

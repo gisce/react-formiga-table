@@ -130,6 +130,7 @@ function getRowComponent({
       {columns.map((column: any, columnIdx: number) => {
         return (
           <Cell
+            key={`${column.key}-${row.id}`}
             column={column}
             columnIdx={columnIdx}
             row={row}

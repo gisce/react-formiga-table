@@ -1,19 +1,22 @@
 import { useState, useCallback } from "react";
 
-export const useSelectable = (dataSource: any[]) => {
+export const useSelectable = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
 
-  const toggleAllRowsSelected = useCallback(() => {
-    if (
-      selectedRowKeys.length === dataSource.length ||
-      selectedRowKeys.length > 0
-    ) {
-      setSelectedRowKeys([]);
-      return;
-    }
+  const toggleAllRowsSelected = useCallback(
+    (allVisibleKeys: number[]) => {
+      if (
+        selectedRowKeys.length === allVisibleKeys.length ||
+        selectedRowKeys.length > 0
+      ) {
+        setSelectedRowKeys([]);
+        return;
+      }
 
-    setSelectedRowKeys(dataSource.map((item: any) => item.id));
-  }, [selectedRowKeys, setSelectedRowKeys]);
+      setSelectedRowKeys(allVisibleKeys);
+    },
+    [selectedRowKeys, setSelectedRowKeys]
+  );
 
   const toggleRowSelected = useCallback(
     (row: any) => {

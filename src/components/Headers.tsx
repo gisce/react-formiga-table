@@ -1,10 +1,9 @@
-import exp from "constants";
 import { Sorter, TableColumn } from "../types";
 import { Checkbox } from "./Checkbox";
 
 export const Headers = ({
   onRowSelectionChange,
-  totalRows,
+  allRowsAreSelected,
   columns,
   toggleAllRowsSelected,
   selectedRowKeys,
@@ -13,7 +12,7 @@ export const Headers = ({
   sortEnabled,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
-  totalRows: number;
+  allRowsAreSelected: boolean;
   toggleAllRowsSelected: () => void;
   selectedRowKeys: number[];
   columns: TableColumn[];
@@ -35,7 +34,7 @@ export const Headers = ({
           >
             <Checkbox
               value={
-                selectedRowKeys.length === totalRows
+                allRowsAreSelected
                   ? true
                   : selectedRowKeys.length === 0
                   ? false

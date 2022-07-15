@@ -27,7 +27,7 @@ export const Cell = ({
       : {};
 
   return (
-    <td key={`${column.key}-${row.id}`} style={tdStyle}>
+    <td style={tdStyle}>
       <ExpandableComponent
         row={row}
         columnIdx={columnIdx}
