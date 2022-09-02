@@ -1,4 +1,4 @@
-import { ExpandableRowIcon, ExpandOptions, Sorter } from "../types";
+import { ExpandableRowIcon, ExpandOptions, OnCellRenderOpts, Sorter } from "../types";
 
 export const Cell = ({
   column,
@@ -9,6 +9,7 @@ export const Cell = ({
   expandableOpts,
   getExpandableStatusForRow,
   onExpandableIconClicked,
+  onCellRender,
 }: {
   column: any;
   row: any;
@@ -18,6 +19,7 @@ export const Cell = ({
   expandableOpts?: ExpandOptions;
   getExpandableStatusForRow: (item: any) => ExpandableRowIcon;
   onExpandableIconClicked: (item: any) => void;
+  onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
 }) => {
   const tdStyle =
     getColumnSorter(column.key) !== undefined
@@ -25,6 +27,21 @@ export const Cell = ({
           backgroundColor: "#fafafa",
         }
       : {};
+
+  let renderedContent;
+
+  if (onCellRender) {
+    renderedContent = onCellRender({
+      column,
+      columnIdx,
+      rowKey: row.id,
+      value: row[column.key],
+    });
+  } else if (column.render) {
+    renderedContent = column.render(row[column.key]);
+  } else {
+    renderedContent = row[column.key];
+  }
 
   return (
     <td style={tdStyle}>
@@ -36,8 +53,8 @@ export const Cell = ({
         onExpandableIconClicked={onExpandableIconClicked}
         level={level}
       />
-      <div style={{ display: "inline-block" }}>
-        {column.render ? column.render(row[column.key]) : row[column.key]}
+      <div style={{ display: "inline-block", width: "100%" }}>
+        {renderedContent}
       </div>
     </td>
   );

@@ -1,6 +1,7 @@
 import {
   ExpandableRowIcon,
   ExpandOptions,
+  OnCellRenderOpts,
   Sorter,
   TableColumn,
 } from "../types";
@@ -22,6 +23,7 @@ export const Rows = ({
   keyIsOpened,
   getChildsForParent,
   getLevelForKey,
+  onCellRender,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   dataSource: any[];
@@ -37,6 +39,7 @@ export const Rows = ({
   keyIsOpened: (key: number) => boolean;
   getChildsForParent: (key: number) => any[] | undefined;
   getLevelForKey: (key: number) => number;
+  onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
 }) => {
   return (
     <>
@@ -80,6 +83,7 @@ function getRowComponent({
   getChildsForParent,
   onRowStyle,
   level = 0,
+  onCellRender,
 }: {
   row: any;
   columns: TableColumn[];
@@ -95,6 +99,7 @@ function getRowComponent({
   getChildsForParent: (key: number) => any[] | undefined;
   onRowStyle: (item: any) => any;
   level?: number;
+  onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
 }): React.ReactNode {
   const style = onRowStyle(row);
   let components: React.ReactNode[] = [
@@ -169,6 +174,7 @@ function getRowComponent({
           keyIsOpened,
           getChildsForParent,
           level: item.level,
+          onCellRender,
         });
       })
     );

@@ -20,6 +20,7 @@ export const Table = (props: TableProps) => {
     onChangeSort,
     sorter,
     expandableOpts,
+    onCellRender,
   } = props;
 
   if (loading) {
@@ -104,6 +105,7 @@ export const Table = (props: TableProps) => {
             keyIsOpened={keyIsOpened}
             getChildsForParent={getChildsForParent}
             getLevelForKey={getLevelForKey}
+            onCellRender={onCellRender}
           />
         </tbody>
       </table>

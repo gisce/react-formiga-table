@@ -32,6 +32,7 @@ export const Checkbox = ({
       ref={checkboxRef as any}
       type="checkbox"
       onChange={onChange as any}
+      tabIndex={-1}
     />
   );
 };
