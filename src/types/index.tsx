@@ -21,6 +21,13 @@ export type ExpandOptions = {
 
 export type ExpandableRowIcon = "loading" | "expand" | "collapse" | "none";
 
+export type OnCellRenderOpts = {
+  column: any;
+  columnIdx: number;
+  rowKey: string;
+  value: any;
+};
+
 export type TableProps = {
   dataSource: any[];
   columns: TableColumn[];
@@ -34,4 +41,5 @@ export type TableProps = {
   loading: boolean;
   loadingComponent: any;
   height?: number;
+  onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
 };
