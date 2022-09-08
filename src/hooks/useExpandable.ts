@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { ExpandableRowIcon } from "../types";
 
 export type ExpandableItem = {
@@ -27,6 +27,18 @@ export const useExpandable = ({
       transformData({ entry: item, childField, idLevelMap: idLevelMap.current })
     )
   );
+
+  useEffect(() => {
+    setItems(
+      dataSource.map((item) =>
+        transformData({
+          entry: item,
+          childField,
+          idLevelMap: idLevelMap.current,
+        })
+      )
+    );
+  }, [dataSource]);
 
   const toggleOpenedKey = useCallback(
     (key: number) => {

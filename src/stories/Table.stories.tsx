@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ComponentMeta, ComponentStoryObj } from "@storybook/react";
 import { Table } from "../Table";
-import { Spin } from "antd";
+import { Button, Spin } from "antd";
 import "antd/dist/antd.css";
 import { OnCellRenderOpts, Sorter } from "../types";
 import {
@@ -216,4 +216,84 @@ export const CustomCellRender: ComponentStoryObj<typeof Table> = {
       },
     ],
   },
+};
+
+export const AddingMoreChilds = (): React.ReactElement => {
+  const [results, setResults] = useState<any[]>([
+    {
+      id: 0,
+      name: "B. John",
+      surnames: "Doe",
+      child_id: [2],
+    },
+    {
+      id: 1,
+      name: "B. Jane",
+      surnames: "Doe",
+    },
+  ]);
+
+  return (
+    <>
+      <Button
+        style={{ marginBottom: 20 }}
+        onClick={() => {
+          setResults([
+            {
+              id: 0,
+              name: "B. John",
+              surnames: "Doe",
+              child_id: [2],
+            },
+            {
+              id: 1,
+              name: "B. Jane",
+              surnames: "Doe",
+            },
+            {
+              id: 2,
+              name: "B. Doe",
+              surnames: "Jhane",
+            },
+            {
+              id: 3,
+              name: "B. Minion",
+              surnames: "Senesio",
+            },
+            {
+              id: 4,
+              name: "B. Clark",
+              surnames: "Harrisson",
+            },
+          ]);
+        }}
+      >
+        Add more childs
+      </Button>
+      <Table
+        dataSource={results}
+        columns={[
+          {
+            title: "Name",
+            key: "name",
+          },
+          {
+            title: "Surnames",
+            key: "surnames",
+          },
+        ]}
+        onRowSelectionChange={(selectedRows: any) => {
+          console.log("selectedRows: " + JSON.stringify(selectedRows));
+        }}
+        onRowStyle={() => undefined}
+        onRowDoubleClick={(record: any) => {
+          alert("double clicked record" + JSON.stringify(record));
+        }}
+        loadingComponent={<Spin />}
+        height={400}
+        sorter={undefined}
+        loading={false}
+      />
+    </>
+  );
 };
