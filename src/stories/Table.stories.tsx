@@ -42,6 +42,42 @@ export const Primary: ComponentStoryObj<typeof Table> = {
         key: "surnames",
       },
       {
+        title: "Address",
+        key: "address",
+      },
+      {
+        title: "Address 2",
+        key: "address2",
+      },
+      {
+        title: "Address 3",
+        key: "address3",
+      },
+      {
+        title: "Address",
+        key: "address",
+      },
+      {
+        title: "Address 2",
+        key: "address2",
+      },
+      {
+        title: "Address 3",
+        key: "address3",
+      },
+      {
+        title: "Address",
+        key: "address",
+      },
+      {
+        title: "Address 2",
+        key: "address2",
+      },
+      {
+        title: "Address 3",
+        key: "address3",
+      },
+      {
         title: "Image",
         key: "image",
         render: (item: any) => {

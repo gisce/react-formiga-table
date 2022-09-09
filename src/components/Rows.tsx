@@ -1,3 +1,4 @@
+import styled from "styled-components";
 import {
   ExpandableRowIcon,
   ExpandOptions,
@@ -102,6 +103,7 @@ function getRowComponent({
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
 }): React.ReactNode {
   const style = onRowStyle(row);
+  const rowIsSelected = isRowSelected(row);
   let components: React.ReactNode[] = [
     <tr
       key={`tr-${row.id}`}
@@ -111,7 +113,14 @@ function getRowComponent({
       }}
     >
       {onRowSelectionChange && (
-        <td key={`react_formiga_table_selection-${row.id}`}>
+        <td
+          key={`react_formiga_table_selection-${row.id}`}
+          style={{
+            left: 0,
+            position: "sticky",
+            backgroundColor: rowIsSelected ? "#E6F7FF" : "#f2f2f2",
+          }}
+        >
           <div
             style={{
               width: 50,
@@ -120,7 +129,7 @@ function getRowComponent({
               alignItems: "center",
             }}
           >
-            {isRowSelected(row) ? (
+            {rowIsSelected ? (
               <Checkbox
                 value={true}
                 onChange={() => {
@@ -150,6 +159,7 @@ function getRowComponent({
             getExpandableStatusForRow={getExpandableStatusForRow}
             onExpandableIconClicked={onExpandableIconClicked}
             level={level}
+            rowIsSelected={rowIsSelected}
           />
         );
       })}

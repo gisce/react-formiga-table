@@ -23,7 +23,16 @@ export const Headers = ({
   return (
     <>
       {onRowSelectionChange && (
-        <th style={{ width: 10 }} key={"react_formiga_table_selection"}>
+        <th
+          style={{
+            width: 10,
+            left: 0,
+            zIndex: 100,
+            position: "sticky",
+            backgroundColor: "#f2f2f2",
+          }}
+          key={"react_formiga_table_selection"}
+        >
           <div
             style={{
               width: 50,

@@ -1,4 +1,9 @@
-import { ExpandableRowIcon, ExpandOptions, OnCellRenderOpts, Sorter } from "../types";
+import {
+  ExpandableRowIcon,
+  ExpandOptions,
+  OnCellRenderOpts,
+  Sorter,
+} from "../types";
 
 export const Cell = ({
   column,
@@ -10,6 +15,7 @@ export const Cell = ({
   getExpandableStatusForRow,
   onExpandableIconClicked,
   onCellRender,
+  rowIsSelected,
 }: {
   column: any;
   row: any;
@@ -20,11 +26,16 @@ export const Cell = ({
   getExpandableStatusForRow: (item: any) => ExpandableRowIcon;
   onExpandableIconClicked: (item: any) => void;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
+  rowIsSelected?: boolean;
 }) => {
   const tdStyle =
     getColumnSorter(column.key) !== undefined
       ? {
-          backgroundColor: "#fafafa",
+          backgroundColor: rowIsSelected ? "#E6F7FF" : "#fafafa",
+        }
+      : rowIsSelected
+      ? {
+          backgroundColor: rowIsSelected ? "#E6F7FF" : undefined,
         }
       : {};
 
