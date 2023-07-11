@@ -21,6 +21,7 @@ export const Table = (props: TableProps) => {
     sorter,
     expandableOpts,
     onCellRender,
+    readonly
   } = props;
 
   if (loading) {
@@ -86,6 +87,7 @@ export const Table = (props: TableProps) => {
               handleColumnClick={handleColumnClick}
               getColumnSorter={getColumnSorter}
               sortEnabled={expandableOpts === undefined}
+              readonly={readonly}
             />
           </tr>
         </thead>
@@ -106,6 +108,7 @@ export const Table = (props: TableProps) => {
             getChildsForParent={getChildsForParent}
             getLevelForKey={getLevelForKey}
             onCellRender={onCellRender}
+            readonly={readonly}
           />
         </tbody>
       </table>

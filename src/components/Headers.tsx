@@ -10,6 +10,7 @@ export const Headers = ({
   handleColumnClick,
   getColumnSorter,
   sortEnabled,
+  readonly,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   allRowsAreSelected: boolean;
@@ -19,10 +20,11 @@ export const Headers = ({
   handleColumnClick: (columnId: string) => void;
   getColumnSorter: (columnId: string) => Sorter | undefined;
   sortEnabled: boolean;
+  readonly?: boolean;
 }) => {
   return (
     <>
-      {onRowSelectionChange && (
+      {onRowSelectionChange && !readonly && (
         <th
           style={{
             width: 10,
