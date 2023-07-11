@@ -25,6 +25,7 @@ export const Rows = ({
   getChildsForParent,
   getLevelForKey,
   onCellRender,
+  readonly,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   dataSource: any[];
@@ -41,6 +42,7 @@ export const Rows = ({
   getChildsForParent: (key: number) => any[] | undefined;
   getLevelForKey: (key: number) => number;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
+  readonly?: boolean;
 }) => {
   return (
     <>
@@ -63,6 +65,7 @@ export const Rows = ({
             getColumnSorter,
             keyIsOpened,
             getChildsForParent,
+            readonly,
           });
         })}
     </>
@@ -85,6 +88,7 @@ function getRowComponent({
   onRowStyle,
   level = 0,
   onCellRender,
+  readonly,
 }: {
   row: any;
   columns: TableColumn[];
@@ -101,6 +105,7 @@ function getRowComponent({
   onRowStyle: (item: any) => any;
   level?: number;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
+  readonly?: boolean;
 }): React.ReactNode {
   const style = onRowStyle(row);
   const rowIsSelected = isRowSelected(row);
@@ -112,7 +117,7 @@ function getRowComponent({
         onRowDoubleClick?.(row);
       }}
     >
-      {onRowSelectionChange && (
+      {onRowSelectionChange && !readonly && (
         <td
           key={`react_formiga_table_selection-${row.id}`}
           style={{
@@ -129,21 +134,14 @@ function getRowComponent({
               alignItems: "center",
             }}
           >
-            {rowIsSelected ? (
-              <Checkbox
-                value={true}
-                onChange={() => {
-                  toggleRowSelected(row);
-                }}
-              />
-            ) : (
-              <Checkbox
-                value={false}
-                onChange={() => {
-                  toggleRowSelected(row);
-                }}
-              />
-            )}
+            {!readonly &&
+          <Checkbox
+            value={rowIsSelected}
+            onChange={() => {
+              toggleRowSelected(row);
+            }}
+          />
+            }
           </div>
         </td>
       )}

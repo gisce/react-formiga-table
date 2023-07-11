@@ -42,4 +42,5 @@ export type TableProps = {
   loadingComponent: any;
   height?: number;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
+  readonly?: boolean;
 };
