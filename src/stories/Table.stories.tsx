@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { ComponentMeta, ComponentStoryObj } from "@storybook/react";
 import { Table } from "../Table";
 import { Button, Spin } from "antd";
-import "antd/dist/antd.css";
 import { OnCellRenderOpts, Sorter } from "../types";
 import {
   PlusSquareOutlined,
