@@ -140,7 +140,6 @@ function getRowComponent({
             onChange={(event) => {
               toggleRowSelected(row.id, event);
             }}
-            id={row.id}
           />
             }
           </div>

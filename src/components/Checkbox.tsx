@@ -3,11 +3,9 @@ import React from "react";
 export const Checkbox = ({
   value,
   onChange,
-  id,
 }: {
   value: boolean | null;
   onChange: (value: boolean | null) => void;
-  id: any
 }) => {
   const checkboxRef = React.useRef();
 
