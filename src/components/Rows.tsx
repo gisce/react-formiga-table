@@ -36,7 +36,7 @@ export const Rows = ({
   onRowStatus?: (item: any) => any;
   onRowDoubleClick?: (item: any) => void;
   isRowSelected: (row: any) => boolean;
-  toggleRowSelected: (row: any) => void;
+  toggleRowSelected: (row: any, event: any) => void;
   expandableOpts?: ExpandOptions;
   onExpandableIconClicked: (item: any) => void;
   getExpandableStatusForRow: (item: any) => ExpandableRowIcon;
@@ -100,7 +100,7 @@ function getRowComponent({
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   isRowSelected: (row: any) => boolean;
   getColumnSorter: (columnId: string) => Sorter | undefined;
-  toggleRowSelected: (row: any) => void;
+  toggleRowSelected: (row: any, event: any) => void;
   expandableOpts?: ExpandOptions;
   onExpandableIconClicked: (item: any) => void;
   getExpandableStatusForRow: (item: any) => ExpandableRowIcon;
@@ -142,8 +142,8 @@ function getRowComponent({
             {!readonly &&
           <Checkbox
             value={rowIsSelected}
-            onChange={() => {
-              toggleRowSelected(row);
+            onChange={(event) => {
+              toggleRowSelected(row.id, event);
             }}
           />
             }
