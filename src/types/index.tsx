@@ -32,6 +32,7 @@ export type TableProps = {
   dataSource: any[];
   columns: TableColumn[];
   onRowStyle: (item: any) => any;
+  onRowStatus?: (item: any) => any;
   onRowDoubleClick?: (item: any) => void;
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   sortEnabled?: boolean;

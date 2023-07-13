@@ -11,6 +11,7 @@ export const Headers = ({
   getColumnSorter,
   sortEnabled,
   readonly,
+  status = false,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   allRowsAreSelected: boolean;
@@ -21,6 +22,7 @@ export const Headers = ({
   getColumnSorter: (columnId: string) => Sorter | undefined;
   sortEnabled: boolean;
   readonly?: boolean;
+  status?: boolean;
 }) => {
   return (
     <>
@@ -56,6 +58,10 @@ export const Headers = ({
           </div>
         </th>
       )}
+      {status &&
+        <th key="th-status">
+        </th>
+      }
       {columns.map((column: any) => (
         <th
           key={column.key}
