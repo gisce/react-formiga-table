@@ -25,7 +25,7 @@ export const Checkbox = ({
       cbRef.checked = false;
       cbRef.indeterminate = true;
     }
-  }, [value]);
+  });
 
   return (
     <input
