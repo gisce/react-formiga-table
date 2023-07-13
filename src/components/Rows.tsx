@@ -167,7 +167,6 @@ function getRowComponent({
   if (expandableOpts !== undefined && keyIsOpened(row.id)) {
     components = components.concat(
       getChildsForParent(row.id)?.map((item: any) => {
-        console.log(item);
         return getRowComponent({
           row: item.data,
           columns,
