@@ -15,6 +15,7 @@ export const Rows = ({
   columns,
   getColumnSorter,
   onRowStyle,
+  onRowStatus,
   onRowDoubleClick,
   isRowSelected,
   toggleRowSelected,
@@ -32,6 +33,7 @@ export const Rows = ({
   columns: TableColumn[];
   getColumnSorter: (columnId: string) => Sorter | undefined;
   onRowStyle: (item: any) => any;
+  onRowStatus?: (item: any) => any;
   onRowDoubleClick?: (item: any) => void;
   isRowSelected: (row: any) => boolean;
   toggleRowSelected: (row: any, event: any) => void;
@@ -55,6 +57,7 @@ export const Rows = ({
             row,
             columns,
             onRowStyle,
+            onRowStatus,
             onRowDoubleClick,
             onRowSelectionChange,
             isRowSelected,
@@ -86,6 +89,7 @@ function getRowComponent({
   keyIsOpened,
   getChildsForParent,
   onRowStyle,
+  onRowStatus,
   level = 0,
   onCellRender,
   readonly,
@@ -103,6 +107,7 @@ function getRowComponent({
   keyIsOpened: (key: number) => boolean;
   getChildsForParent: (key: number) => any[] | undefined;
   onRowStyle: (item: any) => any;
+  onRowStatus?: (item: any) => any;
   level?: number;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   readonly?: boolean;
@@ -145,6 +150,22 @@ function getRowComponent({
           </div>
         </td>
       )}
+      {onRowStatus &&
+        <>
+        <Cell
+          row={row}
+          key={`status-${row.id}`}
+          getColumnSorter={() => undefined}
+          column="row-status"
+          columnIdx={-1}
+          onCellRender={() => onRowStatus(row)}
+          expandableOpts={expandableOpts}
+          getExpandableStatusForRow={getExpandableStatusForRow}
+          onExpandableIconClicked={onExpandableIconClicked}
+          level={level}
+        />
+        </>
+      }
       {columns.map((column: any, columnIdx: number) => {
         return (
           <Cell

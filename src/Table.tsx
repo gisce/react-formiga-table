@@ -17,6 +17,7 @@ export const Table = (props: TableProps) => {
     columns,
     onRowDoubleClick,
     onRowStyle,
+    onRowStatus,
     onRowSelectionChange,
     onChangeSort,
     sorter,
@@ -90,6 +91,7 @@ export const Table = (props: TableProps) => {
               getColumnSorter={getColumnSorter}
               sortEnabled={expandableOpts === undefined}
               readonly={readonly}
+              status={!!onRowStatus}
             />
           </tr>
         </thead>
@@ -101,6 +103,7 @@ export const Table = (props: TableProps) => {
             getColumnSorter={getColumnSorter}
             onRowDoubleClick={onRowDoubleClick}
             onRowStyle={onRowStyle}
+            onRowStatus={onRowStatus}
             isRowSelected={isRowSelected}
             toggleRowSelected={onChange}
             expandableOpts={expandableOpts}
