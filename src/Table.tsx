@@ -6,6 +6,7 @@ import { useSortable } from "./hooks/useSortable";
 import { TableProps } from "./types";
 import { Headers } from "./components/Headers";
 import { Rows } from "./components/Rows";
+import { useShiftSelected } from "./hooks/useShiftSelect";
 
 export const Table = (props: TableProps) => {
   const {
@@ -31,9 +32,10 @@ export const Table = (props: TableProps) => {
   const {
     selectedRowKeys,
     toggleAllRowsSelected,
-    toggleRowSelected,
     isRowSelected,
+    changeSelected,
   } = useSelectable();
+  const onChange = useShiftSelected(dataSource.map(el => el.id), changeSelected);
   const { localSorter, getColumnSorter, handleColumnClick } =
     useSortable(sorter);
 
@@ -100,7 +102,7 @@ export const Table = (props: TableProps) => {
             onRowDoubleClick={onRowDoubleClick}
             onRowStyle={onRowStyle}
             isRowSelected={isRowSelected}
-            toggleRowSelected={toggleRowSelected}
+            toggleRowSelected={onChange}
             expandableOpts={expandableOpts}
             onExpandableIconClicked={onExpandableIconClicked}
             getExpandableStatusForRow={getExpandableStatusForRow}

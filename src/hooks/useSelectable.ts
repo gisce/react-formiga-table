@@ -18,6 +18,19 @@ export const useSelectable = () => {
     [selectedRowKeys, setSelectedRowKeys]
   );
 
+  const changeSelected = useCallback(
+    (check: boolean, items: Array<number>): void => {
+      if (items.length === 0) {
+        return;
+      }
+      if (check) {
+        setSelectedRowKeys([...new Set([...selectedRowKeys, ...items])])
+      } else {
+        setSelectedRowKeys(selectedRowKeys.filter((id: number) => !items.includes(id)))
+      }
+    }, [selectedRowKeys, setSelectedRowKeys]
+  );
+
   const toggleRowSelected = useCallback(
     (row: any) => {
       const selectedFoundRow = selectedRowKeys.find(
@@ -36,6 +49,7 @@ export const useSelectable = () => {
 
   const isRowSelected = useCallback(
     (row: any) => {
+
       const selectedFoundRow = selectedRowKeys.find(
         (id: number) => row.id === id
       );
@@ -50,5 +64,6 @@ export const useSelectable = () => {
     isRowSelected,
     toggleAllRowsSelected,
     toggleRowSelected,
+    changeSelected,
   };
 };
