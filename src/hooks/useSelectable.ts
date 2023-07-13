@@ -20,7 +20,6 @@ export const useSelectable = () => {
 
   const changeSelected = useCallback(
     (check: boolean, items: Array<number>): void => {
-      console.log('changeSelected!', check, items);
       if (items.length === 0) {
         return;
       }
@@ -51,11 +50,9 @@ export const useSelectable = () => {
   const isRowSelected = useCallback(
     (row: any) => {
 
-      //console.log('selectedRowKeys', selectedRowKeys);
       const selectedFoundRow = selectedRowKeys.find(
         (id: number) => row.id === id
       );
-      console.log('isRowSelected', row, selectedFoundRow);
 
       return selectedFoundRow !== undefined;
     },

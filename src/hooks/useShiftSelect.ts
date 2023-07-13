@@ -17,10 +17,8 @@ export const useShiftSelected = <P>(
         const previousCurrent = initialState.findIndex(
           (x) => x === currentSelected
         );
-        console.log('current', current, 'previous', previous, 'previousCurrent', previousCurrent);
         const start = Math.min(current, previous);
         const end = Math.max(current, previous);
-        console.log('start', start, 'end', end);
         if (start > -1 && end > -1) {
           change(previousChecked, initialState.slice(start, end + 1));
           if (previousCurrent > end) {
@@ -36,7 +34,6 @@ export const useShiftSelected = <P>(
             );
           }
           setCurrentSelected(item);
-          console.log(item);
           return;
         }
       } else {
