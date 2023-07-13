@@ -13,7 +13,6 @@ export const Checkbox = ({
 
   React.useEffect(() => {
     const cbRef = checkboxRef.current as any;
-    console.log("checkbox", id, value);
 
     if (value === true) {
       cbRef.checked = true;
