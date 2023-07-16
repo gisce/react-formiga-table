@@ -264,7 +264,7 @@ export const Status: ComponentStoryObj<typeof Table> = {
       alert("double clicked record" + JSON.stringify(record));
     },
     sorter: { id: "name", desc: true },
-    readonly: true,
+    readonly: false,
     onChangeSort: (sorter: Sorter | undefined) => {
       console.log("onChangeSort: ", sorter);
     },

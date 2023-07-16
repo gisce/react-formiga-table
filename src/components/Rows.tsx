@@ -163,6 +163,7 @@ function getRowComponent({
           getExpandableStatusForRow={getExpandableStatusForRow}
           onExpandableIconClicked={onExpandableIconClicked}
           level={level}
+          rowIsSelected={rowIsSelected}
         />
         </>
       }
