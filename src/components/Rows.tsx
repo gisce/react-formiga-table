@@ -8,6 +8,7 @@ import {
 } from "../types";
 import { Cell } from "./Cell";
 import { Checkbox } from "./Checkbox";
+import {useMediaQuery} from "react-responsive";
 
 export const Rows = ({
   onRowSelectionChange,
@@ -114,10 +115,12 @@ function getRowComponent({
 }): React.ReactNode {
   const style = onRowStyle(row);
   const rowIsSelected = isRowSelected(row);
+  const isMobile = useMediaQuery({query: '(max-width: 991px)'});
+  const mobileStyle = isMobile ? {display: 'block', width: 'auto !important'} : {};
   let components: React.ReactNode[] = [
     <tr
       key={`tr-${row.id}`}
-      style={style}
+      style={{...style, ...mobileStyle}}
       onDoubleClick={() => {
         onRowDoubleClick?.(row);
       }}
@@ -125,11 +128,11 @@ function getRowComponent({
       {onRowSelectionChange && !readonly && (
         <td
           key={`react_formiga_table_selection-${row.id}`}
-          style={{
+          style={{...{
             left: 0,
             position: "sticky",
             backgroundColor: rowIsSelected ? "#E6F7FF" : "#f2f2f2",
-          }}
+          }, ...mobileStyle}}
         >
           <div
             style={{

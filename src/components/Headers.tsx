@@ -1,5 +1,7 @@
 import { Sorter, TableColumn } from "../types";
 import { Checkbox } from "./Checkbox";
+import { useMediaQuery } from 'react-responsive'
+
 
 export const Headers = ({
   onRowSelectionChange,
@@ -24,6 +26,10 @@ export const Headers = ({
   readonly?: boolean;
   status?: boolean;
 }) => {
+  const isMobile = useMediaQuery({query: '(max-width: 991px)'});
+  if (isMobile) {
+    return <></>
+  }
   return (
     <>
       {onRowSelectionChange && !readonly && (

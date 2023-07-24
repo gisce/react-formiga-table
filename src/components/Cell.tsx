@@ -4,6 +4,7 @@ import {
   OnCellRenderOpts,
   Sorter,
 } from "../types";
+import {useMediaQuery} from "react-responsive";
 
 export const Cell = ({
   column,
@@ -28,6 +29,8 @@ export const Cell = ({
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   rowIsSelected?: boolean;
 }) => {
+  const isMobile = useMediaQuery({query: '(max-width: 991px)'});
+  const mobileStyle = isMobile ? {display: 'block', width: 'auto !important'} : {};
   const tdStyle =
     getColumnSorter(column.key) !== undefined
       ? {
@@ -55,7 +58,7 @@ export const Cell = ({
   }
 
   return (
-    <td style={tdStyle}>
+    <td style={{...tdStyle, ...mobileStyle}}>
       <ExpandableComponent
         row={row}
         columnIdx={columnIdx}
@@ -65,6 +68,7 @@ export const Cell = ({
         level={level}
       />
       <div style={{ display: "inline-block", width: "100%" }}>
+        <div style={isMobile ? {} : {display: 'none'}}>{column.title}</div>
         {renderedContent}
       </div>
     </td>
