@@ -120,7 +120,7 @@ function getRowComponent({
   let components: React.ReactNode[] = [
     <tr
       key={`tr-${row.id}`}
-      style={{...style, ...mobileStyle}}
+      style={style}
       onDoubleClick={() => {
         onRowDoubleClick?.(row);
       }}
@@ -132,15 +132,15 @@ function getRowComponent({
             left: 0,
             position: "sticky",
             backgroundColor: rowIsSelected ? "#E6F7FF" : "#f2f2f2",
-          }, ...mobileStyle}}
+          }, ...(isMobile ? {width: '10px'} : {})}}
         >
           <div
-            style={{
+            style={{...{
               width: 50,
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-            }}
+            }, ...(isMobile ? {width: '5px'} : {})}}
           >
             {!readonly &&
           <Checkbox
