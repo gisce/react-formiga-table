@@ -31,7 +31,6 @@ export const Headers = ({
           style={{
             width: 10,
             left: 0,
-            zIndex: 100,
             position: "sticky",
             backgroundColor: "#f2f2f2",
           }}
