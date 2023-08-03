@@ -15,23 +15,7 @@ const meta: ComponentMeta<typeof Table> = {
 };
 export default meta;
 
-export const Primary: ComponentStoryObj<typeof Table> = {
-  args: {
-    loading: false,
-    loadingComponent: <Spin />,
-    height: 300,
-    onRowSelectionChange: (selectedRows: any) => {
-      console.log("selectedRows: " + JSON.stringify(selectedRows));
-    },
-    onRowStyle: () => undefined,
-    onRowDoubleClick: (record: any) => {
-      alert("double clicked record" + JSON.stringify(record));
-    },
-    sorter: { id: "name", desc: true },
-    onChangeSort: (sorter: Sorter | undefined) => {
-      console.log("onChangeSort: ", sorter);
-    },
-    columns: [
+const columns = [
       {
         title: "Name",
         key: "name",
@@ -90,8 +74,9 @@ export const Primary: ComponentStoryObj<typeof Table> = {
           return <pre>{JSON.stringify(item, null, 2)}</pre>;
         },
       },
-    ],
-    dataSource: [
+    ];
+
+const dataSource = [
       {
         id: 0,
         name: "A. John",
@@ -114,7 +99,26 @@ export const Primary: ComponentStoryObj<typeof Table> = {
           value: "Test value",
         },
       },
-    ],
+    ];
+
+export const Primary: ComponentStoryObj<typeof Table> = {
+  args: {
+    loading: false,
+    loadingComponent: <Spin />,
+    height: 300,
+    onRowSelectionChange: (selectedRows: any) => {
+      console.log("selectedRows: " + JSON.stringify(selectedRows));
+    },
+    onRowStyle: () => undefined,
+    onRowDoubleClick: (record: any) => {
+      alert("double clicked record" + JSON.stringify(record));
+    },
+    sorter: { id: "name", desc: true },
+    onChangeSort: (sorter: Sorter | undefined) => {
+      console.log("onChangeSort: ", sorter);
+    },
+    columns,
+    dataSource,
   },
 };
 
@@ -136,90 +140,8 @@ export const Readonly: ComponentStoryObj<typeof Table> = {
     onChangeSort: (sorter: Sorter | undefined) => {
       console.log("onChangeSort: ", sorter);
     },
-    columns: [
-      {
-        title: "Name",
-        key: "name",
-      },
-      {
-        title: "Surnames",
-        key: "surnames",
-      },
-      {
-        title: "Address",
-        key: "address",
-      },
-      {
-        title: "Address 2",
-        key: "address2",
-      },
-      {
-        title: "Address 3",
-        key: "address3",
-      },
-      {
-        title: "Address",
-        key: "address",
-      },
-      {
-        title: "Address 2",
-        key: "address2",
-      },
-      {
-        title: "Address 3",
-        key: "address3",
-      },
-      {
-        title: "Address",
-        key: "address",
-      },
-      {
-        title: "Address 2",
-        key: "address2",
-      },
-      {
-        title: "Address 3",
-        key: "address3",
-      },
-      {
-        title: "Image",
-        key: "image",
-        render: (item: any) => {
-          return <img src={item} />;
-        },
-      },
-      {
-        title: "Object",
-        key: "object",
-        render: (item: any) => {
-          return <pre>{JSON.stringify(item, null, 2)}</pre>;
-        },
-      },
-    ],
-    dataSource: [
-      {
-        id: 0,
-        name: "A. John",
-        surnames: "Doe",
-        image:
-          "https://pickaface.net/gallery/avatar/unr_sample_161118_2054_ynlrg.png",
-        object: {
-          model: "test",
-          value: "Test value",
-        },
-      },
-      {
-        id: 1,
-        name: "B. Jane",
-        surnames: "Doe",
-        image:
-          "https://pickaface.net/gallery/avatar/unr_sample_170130_2257_9qgawp.png",
-        object: {
-          model: "test",
-          value: "Test value",
-        },
-      },
-    ],
+    columns,
+    dataSource,
   },
 };
 
@@ -268,90 +190,8 @@ export const Status: ComponentStoryObj<typeof Table> = {
     onChangeSort: (sorter: Sorter | undefined) => {
       console.log("onChangeSort: ", sorter);
     },
-    columns: [
-      {
-        title: "Name",
-        key: "name",
-      },
-      {
-        title: "Surnames",
-        key: "surnames",
-      },
-      {
-        title: "Address",
-        key: "address",
-      },
-      {
-        title: "Address 2",
-        key: "address2",
-      },
-      {
-        title: "Address 3",
-        key: "address3",
-      },
-      {
-        title: "Address",
-        key: "address",
-      },
-      {
-        title: "Address 2",
-        key: "address2",
-      },
-      {
-        title: "Address 3",
-        key: "address3",
-      },
-      {
-        title: "Address",
-        key: "address",
-      },
-      {
-        title: "Address 2",
-        key: "address2",
-      },
-      {
-        title: "Address 3",
-        key: "address3",
-      },
-      {
-        title: "Image",
-        key: "image",
-        render: (item: any) => {
-          return <img src={item} />;
-        },
-      },
-      {
-        title: "Object",
-        key: "object",
-        render: (item: any) => {
-          return <pre>{JSON.stringify(item, null, 2)}</pre>;
-        },
-      },
-    ],
-    dataSource: [
-      {
-        id: 0,
-        name: "A. John",
-        surnames: "Doe",
-        image:
-          "https://pickaface.net/gallery/avatar/unr_sample_161118_2054_ynlrg.png",
-        object: {
-          model: "test",
-          value: "Test value",
-        },
-      },
-      {
-        id: 1,
-        name: "B. Jane",
-        surnames: "Doe",
-        image:
-          "https://pickaface.net/gallery/avatar/unr_sample_170130_2257_9qgawp.png",
-        object: {
-          model: "test",
-          value: "Test value",
-        },
-      },
-    ],
+    columns,
+    dataSource,
   },
 };
 
@@ -361,6 +201,29 @@ const otherChilds = [
   { id: 5, name: "Five Bob", surnames: "Asdt", child_id: [6] },
   { id: 6, name: "Six thur", surnames: "Ficht" },
 ];
+
+export const StatusReadonly: ComponentStoryObj<typeof Table> = {
+  args: {
+    loading: false,
+    loadingComponent: <Spin />,
+    height: 300,
+    onRowSelectionChange: (selectedRows: any) => {
+      console.log("selectedRows: " + JSON.stringify(selectedRows));
+    },
+    onRowStyle: () => undefined,
+    onRowStatus: getStatusForItem,
+    onRowDoubleClick: (record: any) => {
+      alert("double clicked record" + JSON.stringify(record));
+    },
+    sorter: { id: "name", desc: true },
+    readonly: true,
+    onChangeSort: (sorter: Sorter | undefined) => {
+      console.log("onChangeSort: ", sorter);
+    },
+    columns,
+    dataSource,
+  },
+};
 
 export const Expandable = (): React.ReactElement => {
   const [results, setResults] = useState<any[]>([
@@ -439,54 +302,8 @@ export const CustomCellRender: ComponentStoryObj<typeof Table> = {
     onCellRender: (opts: OnCellRenderOpts) => {
       return <>onCellRender content: {JSON.stringify(opts, null, 2)}</>;
     },
-    columns: [
-      {
-        title: "Name",
-        key: "name",
-      },
-      {
-        title: "Surnames",
-        key: "surnames",
-      },
-      {
-        title: "Image",
-        key: "image",
-        render: (item: any) => {
-          return <img src={item} />;
-        },
-      },
-      {
-        title: "Object",
-        key: "object",
-        render: (item: any) => {
-          return <pre>{JSON.stringify(item, null, 2)}</pre>;
-        },
-      },
-    ],
-    dataSource: [
-      {
-        id: 0,
-        name: "A. John",
-        surnames: "Doe",
-        image:
-          "https://pickaface.net/gallery/avatar/unr_sample_161118_2054_ynlrg.png",
-        object: {
-          model: "test",
-          value: "Test value",
-        },
-      },
-      {
-        id: 1,
-        name: "B. Jane",
-        surnames: "Doe",
-        image:
-          "https://pickaface.net/gallery/avatar/unr_sample_170130_2257_9qgawp.png",
-        object: {
-          model: "test",
-          value: "Test value",
-        },
-      },
-    ],
+    columns,
+    dataSource,
   },
 };
 

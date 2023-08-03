@@ -77,7 +77,7 @@ export const Table = (props: TableProps) => {
   }, [toggleAllRowsSelected, getAllVisibleKeys]);
 
   return (
-    <Container height={height} canClick={onRowDoubleClick !== undefined}>
+    <Container height={height} canClick={onRowDoubleClick !== undefined} readonly={readonly}>
       <table>
         <thead>
           <tr>
