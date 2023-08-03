@@ -65,6 +65,7 @@ export const Cell = ({
         level={level}
       />
       <div style={{ display: "inline-block", width: "100%" }}>
+        <div className="rft-label" style={{display: 'none'}}>{column.title}</div>
         {renderedContent}
       </div>
     </td>

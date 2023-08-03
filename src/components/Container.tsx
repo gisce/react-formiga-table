@@ -1,8 +1,14 @@
 import styled from "styled-components";
 
+type ContainerProps = {
+  height?: number,
+  canClick: boolean,
+  readonly?: boolean,
+}
+
 export const Container = styled.div`
   overflow-x: auto;
-  height: ${({ height }: { height?: number; canClick: boolean }) =>
+  height: ${({ height }: ContainerProps) =>
     `${height}px` || "auto"};
   border-bottom: 1px solid #f0f0f0;
 
@@ -12,7 +18,7 @@ export const Container = styled.div`
     width: 100%;
 
     tr {
-      cursor: ${({ canClick }: { height?: number; canClick: boolean }) =>
+      cursor: ${({ canClick }: ContainerProps) =>
         canClick ? "pointer" : "auto"};
       user-select: none;
 
@@ -68,6 +74,27 @@ export const Container = styled.div`
 
       :last-child {
         border-right: 0;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 991px) {
+      thead {
+        display: none;
+      }
+
+      td:nth-of-type(1) {
+        width: ${(props: ContainerProps) => props.readonly ? 'auto !important' : '50px'};
+        display: ${(props: ContainerProps) => props.readonly ? 'block' : ''};
+      }
+
+      td:nth-of-type(n + 2) {
+        display: block;
+        width: auto !important;
+      }
+
+      .rft-label {
+        display: block !important;
       }
     }
   }
