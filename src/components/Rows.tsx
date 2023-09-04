@@ -205,6 +205,7 @@ function getRowComponent({
           getChildsForParent,
           level: item.level,
           onCellRender,
+          onRowStatus,
         });
       })
     );
