@@ -23,7 +23,8 @@ export const Table = (props: TableProps) => {
     sorter,
     expandableOpts,
     onCellRender,
-    readonly
+    readonly,
+    selectionRowKeys: selectionRowKeysProps,
   } = props;
 
   if (loading) {
@@ -35,7 +36,10 @@ export const Table = (props: TableProps) => {
     toggleAllRowsSelected,
     isRowSelected,
     changeSelected,
-  } = useSelectable();
+  } = useSelectable({
+    selectionRowKeysProps
+  });
+  
   const onChange = useShiftSelected(dataSource.map(el => el.id), changeSelected);
   const { localSorter, getColumnSorter, handleColumnClick } =
     useSortable(sorter);
