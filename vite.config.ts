@@ -19,7 +19,7 @@ export default defineConfig({
       fileName: (format) => `react-formiga-table.${format}.js`,
     },
     rollupOptions: {
-      external: ["react", "react-dom", "styled-components"],
+      external: ["react", "react-dom", "styled-components", "use-deep-compare-effect"],
       output: {
         globals: {
           react: "React",

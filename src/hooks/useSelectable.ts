@@ -1,7 +1,18 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import useDeepCompareEffect from "use-deep-compare-effect";
 
-export const useSelectable = () => {
-  const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
+export const useSelectable = ({
+  selectionRowKeysProps = [],
+}: {
+  selectionRowKeysProps?: number[];
+}) => {
+  const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>(
+    selectionRowKeysProps
+  );
+
+  useDeepCompareEffect(() => {
+    setSelectedRowKeys(selectionRowKeysProps);
+  }, [selectionRowKeysProps]);
 
   const toggleAllRowsSelected = useCallback(
     (allVisibleKeys: number[]) => {
@@ -24,11 +35,14 @@ export const useSelectable = () => {
         return;
       }
       if (check) {
-        setSelectedRowKeys([...new Set([...selectedRowKeys, ...items])])
+        setSelectedRowKeys([...new Set([...selectedRowKeys, ...items])]);
       } else {
-        setSelectedRowKeys(selectedRowKeys.filter((id: number) => !items.includes(id)))
+        setSelectedRowKeys(
+          selectedRowKeys.filter((id: number) => !items.includes(id))
+        );
       }
-    }, [selectedRowKeys, setSelectedRowKeys]
+    },
+    [selectedRowKeys, setSelectedRowKeys]
   );
 
   const toggleRowSelected = useCallback(
@@ -49,7 +63,6 @@ export const useSelectable = () => {
 
   const isRowSelected = useCallback(
     (row: any) => {
-
       const selectedFoundRow = selectedRowKeys.find(
         (id: number) => row.id === id
       );
