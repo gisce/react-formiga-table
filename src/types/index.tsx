@@ -44,4 +44,5 @@ export type TableProps = {
   height?: number;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   readonly?: boolean;
+  selectionRowKeys?: number[];
 };

@@ -13,7 +13,8 @@
   "dependencies": {
     "react": "^16.8.0 || 17.x",
     "react-dom": "^16.8.0 || 17.x",
-    "styled-components": "^5.0.0"
+    "styled-components": "^5.0.0",
+    "use-deep-compare-effect": "^1.8.1"
   },
   "devDependencies": {
     "@babel/core": "^7.17.8",
