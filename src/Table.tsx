@@ -27,20 +27,19 @@ export const Table = (props: TableProps) => {
     selectionRowKeys: selectionRowKeysProps,
   } = props;
 
-  if (loading) {
-    return loadingComponent;
-  }
-
   const {
     selectedRowKeys,
     toggleAllRowsSelected,
     isRowSelected,
     changeSelected,
   } = useSelectable({
-    selectionRowKeysProps
+    selectionRowKeysProps,
   });
-  
-  const onChange = useShiftSelected(dataSource.map(el => el.id), changeSelected);
+
+  const onChange = useShiftSelected(
+    dataSource.map((el) => el.id),
+    changeSelected
+  );
   const { localSorter, getColumnSorter, handleColumnClick } =
     useSortable(sorter);
 
@@ -80,8 +79,16 @@ export const Table = (props: TableProps) => {
     toggleAllRowsSelected(getAllVisibleKeys());
   }, [toggleAllRowsSelected, getAllVisibleKeys]);
 
+  if (loading) {
+    return loadingComponent;
+  }
+
   return (
-    <Container height={height} canClick={onRowDoubleClick !== undefined} readonly={readonly}>
+    <Container
+      height={height}
+      canClick={onRowDoubleClick !== undefined}
+      readonly={readonly}
+    >
       <table>
         <thead>
           <tr>
