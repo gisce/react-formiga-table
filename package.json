@@ -2,6 +2,7 @@
   "name": "@gisce/react-formiga-table",
   "version": "0.8.7-rc.0",
   "scripts": {
+    "start": "while :; do tsc && vite build --watch --force; done",
     "build": "tsc && vite build",
     "prepublishOnly": "npm run build",
     "storybook": "start-storybook -p 6006",
@@ -11,7 +12,6 @@
     "access": "public"
   },
   "dependencies": {
-    "start": "while :; do tsc && vite build --watch --force; done",
     "react": "^16.8.0 || 17.x",
     "react-dom": "^16.8.0 || 17.x",
     "styled-components": "^5.0.0",
