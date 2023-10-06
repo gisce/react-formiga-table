@@ -1,6 +1,6 @@
 {
   "name": "@gisce/react-formiga-table",
-  "version": "0.8.7-rc.0",
+  "version": "0.8.7-rc.1",
   "scripts": {
     "start": "while :; do tsc && vite build --watch --force; done",
     "build": "tsc && vite build",
