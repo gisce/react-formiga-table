@@ -2,16 +2,14 @@ import styled from "styled-components";
 import { LocalizedStrings } from "../types";
 import { useState } from "react";
 
-export const Container = styled.tr`
-  cursor: auto !important;
+export const Container = styled.div`
   height: 50px;
-  &:hover {
-    background-color: transparent !important;
-  }
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 export const SelectAllRecordsRow = ({
-  numberOfColumns,
   numberOfVisibleSelectedRows,
   totalRecords,
   numberOfTotalRows,
@@ -20,7 +18,6 @@ export const SelectAllRecordsRow = ({
   loadingComponent,
   numberOfRealSelectedRows,
 }: {
-  numberOfColumns: number;
   numberOfVisibleSelectedRows: number;
   totalRecords: number;
   numberOfTotalRows: number;
@@ -81,11 +78,9 @@ export const SelectAllRecordsRow = ({
 
   return (
     <Container>
-      <td colSpan={numberOfColumns} style={{ textAlign: "center" }}>
-        {numberOfRealSelectedRows > numberOfTotalRows
-          ? allRowsAreSelected
-          : selectRowsComponent}
-      </td>
+      {numberOfRealSelectedRows > numberOfTotalRows
+        ? allRowsAreSelected
+        : selectRowsComponent}
     </Container>
   );
 };

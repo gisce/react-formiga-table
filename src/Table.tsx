@@ -92,7 +92,6 @@ export const Table = (props: TableProps) => {
     return loadingComponent;
   }
 
-  const numberOfColumns = 1 + columns.length + (!!onRowStatus ? 1 : 0);
   const numberOfVisibleSelectedRows = dataSource
     .filter((entry) => getLevelForKey(entry.id) === 0)
     .filter((entry) => selectedRowKeys.includes(entry.id)).length;
@@ -103,6 +102,17 @@ export const Table = (props: TableProps) => {
       canClick={onRowDoubleClick !== undefined}
       readonly={readonly}
     >
+      {onSelectAllRecords && (
+        <SelectAllRecordsRow
+          numberOfVisibleSelectedRows={numberOfVisibleSelectedRows}
+          numberOfRealSelectedRows={selectedRowKeys.length}
+          numberOfTotalRows={dataSource.length}
+          totalRecords={totalItems}
+          translations={translations}
+          onSelectAllRecords={onSelectAllRecords}
+          loadingComponent={loadingComponent}
+        />
+      )}
       <table>
         <thead>
           <tr>
@@ -121,18 +131,6 @@ export const Table = (props: TableProps) => {
           </tr>
         </thead>
         <tbody>
-          {onSelectAllRecords && (
-            <SelectAllRecordsRow
-              numberOfColumns={numberOfColumns}
-              numberOfVisibleSelectedRows={numberOfVisibleSelectedRows}
-              numberOfRealSelectedRows={selectedRowKeys.length}
-              numberOfTotalRows={dataSource.length}
-              totalRecords={totalItems}
-              translations={translations}
-              onSelectAllRecords={onSelectAllRecords}
-              loadingComponent={loadingComponent}
-            />
-          )}
           <Rows
             dataSource={dataSource}
             columns={columns}
