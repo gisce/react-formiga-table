@@ -28,12 +28,6 @@ export type OnCellRenderOpts = {
   value: any;
 };
 
-export interface LocalizedStrings {
-  recordsSelected: string;
-  allRecordsSelected: string;
-  selectAllRecords: string;
-}
-
 export type TableProps = {
   dataSource: any[];
   columns: TableColumn[];
@@ -51,7 +45,4 @@ export type TableProps = {
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   readonly?: boolean;
   selectionRowKeys?: number[];
-  translations?: LocalizedStrings;
-  onSelectAllRecords?: () => Promise<void>;
-  totalItems?: number;
 };

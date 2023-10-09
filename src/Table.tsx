@@ -7,7 +7,6 @@ import { TableProps } from "./types";
 import { Headers } from "./components/Headers";
 import { Rows } from "./components/Rows";
 import { useShiftSelected } from "./hooks/useShiftSelect";
-import { SelectAllRecordsRow } from "./components/SelectAllRecordsRow";
 
 export const Table = (props: TableProps) => {
   const {
@@ -26,14 +25,6 @@ export const Table = (props: TableProps) => {
     onCellRender,
     readonly,
     selectionRowKeys: selectionRowKeysProps,
-    translations = {
-      recordsSelected:
-        "{numberOfSelectedRows} records are selected from this page.",
-      selectAllRecords: "Select all {totalRecords} records.",
-      allRecordsSelected: "There are {totalRecords} records selected.",
-    },
-    onSelectAllRecords,
-    totalItems = 0,
   } = props;
 
   const {
@@ -92,11 +83,6 @@ export const Table = (props: TableProps) => {
     return loadingComponent;
   }
 
-  const numberOfColumns = 1 + columns.length + (!!onRowStatus ? 1 : 0);
-  const numberOfVisibleSelectedRows = dataSource
-    .filter((entry) => getLevelForKey(entry.id) === 0)
-    .filter((entry) => selectedRowKeys.includes(entry.id)).length;
-
   return (
     <Container
       height={height}
@@ -121,18 +107,6 @@ export const Table = (props: TableProps) => {
           </tr>
         </thead>
         <tbody>
-          {onSelectAllRecords && (
-            <SelectAllRecordsRow
-              numberOfColumns={numberOfColumns}
-              numberOfVisibleSelectedRows={numberOfVisibleSelectedRows}
-              numberOfRealSelectedRows={selectedRowKeys.length}
-              numberOfTotalRows={dataSource.length}
-              totalRecords={totalItems}
-              translations={translations}
-              onSelectAllRecords={onSelectAllRecords}
-              loadingComponent={loadingComponent}
-            />
-          )}
           <Rows
             dataSource={dataSource}
             columns={columns}
