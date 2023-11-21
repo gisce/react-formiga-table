@@ -25,6 +25,7 @@ export const Table = (props: TableProps) => {
     onCellRender,
     readonly,
     selectionRowKeys: selectionRowKeysProps,
+    style,
   } = props;
 
   const {
@@ -88,8 +89,9 @@ export const Table = (props: TableProps) => {
       height={height}
       canClick={onRowDoubleClick !== undefined}
       readonly={readonly}
+      containerStyle={style?.containerStyle}
     >
-      <table>
+      <table style={style?.tableStyle}>
         <thead>
           <tr>
             <Headers
@@ -103,6 +105,7 @@ export const Table = (props: TableProps) => {
               sortEnabled={expandableOpts === undefined}
               readonly={readonly}
               status={!!onRowStatus}
+              headerStyle={style?.headerStyle}
             />
           </tr>
         </thead>
@@ -124,6 +127,7 @@ export const Table = (props: TableProps) => {
             getChildsForParent={getChildsForParent}
             getLevelForKey={getLevelForKey}
             onCellRender={onCellRender}
+            cellStyle={style?.cellStyle}
             readonly={readonly}
           />
         </tbody>

@@ -1,3 +1,7 @@
+// import { CSSProperties } from "react";
+
+import { CSSProperties } from "react";
+
 export type TableColumn = {
   key: string;
   dataIndex?: string;
@@ -28,10 +32,25 @@ export type OnCellRenderOpts = {
   value: any;
 };
 
+export interface cellStyle extends CSSProperties {
+  rftLabel?: CSSProperties
+}
+
+export interface headerStyle extends CSSProperties {
+  rftLabel?: CSSProperties
+}
+
+export type style = {
+  containerStyle?: CSSProperties;
+  tableStyle?: CSSProperties;
+  cellStyle?: cellStyle;
+  headerStyle?: headerStyle;
+}
+
 export type TableProps = {
   dataSource: any[];
   columns: TableColumn[];
-  onRowStyle: (item: any) => any;
+  onRowStyle?: (item: any) => any;
   onRowStatus?: (item: any) => any;
   onRowDoubleClick?: (item: any) => void;
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
@@ -45,4 +64,5 @@ export type TableProps = {
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   readonly?: boolean;
   selectionRowKeys?: number[];
+  style?: style;
 };

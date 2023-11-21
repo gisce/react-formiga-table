@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import {
+  cellStyle,
   ExpandableRowIcon,
   ExpandOptions,
   OnCellRenderOpts,
@@ -26,13 +27,14 @@ export const Rows = ({
   getChildsForParent,
   getLevelForKey,
   onCellRender,
+  cellStyle,
   readonly,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   dataSource: any[];
   columns: TableColumn[];
   getColumnSorter: (columnId: string) => Sorter | undefined;
-  onRowStyle: (item: any) => any;
+  onRowStyle?: (item: any) => any;
   onRowStatus?: (item: any) => any;
   onRowDoubleClick?: (item: any) => void;
   isRowSelected: (row: any) => boolean;
@@ -44,6 +46,7 @@ export const Rows = ({
   getChildsForParent: (key: number) => any[] | undefined;
   getLevelForKey: (key: number) => number;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
+  cellStyle?: cellStyle
   readonly?: boolean;
 }) => {
   return (
@@ -68,6 +71,7 @@ export const Rows = ({
             getColumnSorter,
             keyIsOpened,
             getChildsForParent,
+            cellStyle,
             readonly,
           });
         })}
@@ -92,6 +96,7 @@ function getRowComponent({
   onRowStatus,
   level = 0,
   onCellRender,
+  cellStyle,
   readonly,
 }: {
   row: any;
@@ -106,18 +111,19 @@ function getRowComponent({
   getExpandableStatusForRow: (item: any) => ExpandableRowIcon;
   keyIsOpened: (key: number) => boolean;
   getChildsForParent: (key: number) => any[] | undefined;
-  onRowStyle: (item: any) => any;
+  onRowStyle?: (item: any) => any;
+  cellStyle?: cellStyle;
   onRowStatus?: (item: any) => any;
   level?: number;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   readonly?: boolean;
 }): React.ReactNode {
-  const style = onRowStyle(row);
+  const rowStyle = onRowStyle ? onRowStyle(row) : '';
   const rowIsSelected = isRowSelected(row);
   let components: React.ReactNode[] = [
     <tr
       key={`tr-${row.id}`}
-      style={style}
+      style={rowStyle}
       onDoubleClick={() => {
         onRowDoubleClick?.(row);
       }}
@@ -164,6 +170,7 @@ function getRowComponent({
           onExpandableIconClicked={onExpandableIconClicked}
           level={level}
           rowIsSelected={rowIsSelected}
+          cellStyle={cellStyle}
         />
         </>
       }
@@ -180,6 +187,7 @@ function getRowComponent({
             onExpandableIconClicked={onExpandableIconClicked}
             level={level}
             rowIsSelected={rowIsSelected}
+            cellStyle={cellStyle}
           />
         );
       })}

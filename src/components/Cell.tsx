@@ -3,6 +3,7 @@ import {
   ExpandOptions,
   OnCellRenderOpts,
   Sorter,
+  cellStyle
 } from "../types";
 
 export const Cell = ({
@@ -16,6 +17,7 @@ export const Cell = ({
   onExpandableIconClicked,
   onCellRender,
   rowIsSelected,
+  cellStyle,
 }: {
   column: any;
   row: any;
@@ -27,6 +29,7 @@ export const Cell = ({
   onExpandableIconClicked: (item: any) => void;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   rowIsSelected?: boolean;
+  cellStyle?: cellStyle;
 }) => {
   const tdStyle =
     getColumnSorter(column.key) !== undefined
@@ -64,8 +67,8 @@ export const Cell = ({
         onExpandableIconClicked={onExpandableIconClicked}
         level={level}
       />
-      <div style={{ display: "inline-block", width: "100%" }}>
-        <div className="rft-label" style={{display: 'none'}}>{column.title}</div>
+      <div style={{...cellStyle, display: "inline-block", width: "100%" }}>
+        <div className="rft-label" style={{ ...cellStyle?.rftLabel, display: 'none'}}>{column.title}</div>
         {renderedContent}
       </div>
     </td>

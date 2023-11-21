@@ -1,9 +1,12 @@
+import { CSSProperties } from "react";
+import styleToCss from "style-object-to-css-string";
 import styled from "styled-components";
 
 type ContainerProps = {
   height?: number,
   canClick: boolean,
   readonly?: boolean,
+  containerStyle?: CSSProperties
 }
 
 export const Container = styled.div`
@@ -11,6 +14,7 @@ export const Container = styled.div`
   height: ${({ height }: ContainerProps) =>
     `${height}px` || "auto"};
   border-bottom: 1px solid #f0f0f0;
+  ${(props: ContainerProps) => styleToCss(props.containerStyle ?? {})}
 
   table {
     white-space: nowrap;
@@ -63,8 +67,6 @@ export const Container = styled.div`
 
     th .ctx {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
     }
 
     th,

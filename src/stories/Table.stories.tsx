@@ -37,30 +37,6 @@ const columns = [
         key: "address3",
       },
       {
-        title: "Address",
-        key: "address",
-      },
-      {
-        title: "Address 2",
-        key: "address2",
-      },
-      {
-        title: "Address 3",
-        key: "address3",
-      },
-      {
-        title: "Address",
-        key: "address",
-      },
-      {
-        title: "Address 2",
-        key: "address2",
-      },
-      {
-        title: "Address 3",
-        key: "address3",
-      },
-      {
         title: "Image",
         key: "image",
         render: (item: any) => {
@@ -119,6 +95,12 @@ export const Primary: ComponentStoryObj<typeof Table> = {
     },
     columns,
     dataSource,
+    style: {
+      cellStyle: {rftLabel: {color: "grey"}},
+      containerStyle: {},
+      tableStyle: { whiteSpace: "inherit" },
+      headerStyle: { backgroundColor: "red", rftLabel: { color: "blue"} }
+    }
   },
 };
 
@@ -142,6 +124,12 @@ export const Readonly: ComponentStoryObj<typeof Table> = {
     },
     columns,
     dataSource,
+    style: {
+      cellStyle: {rftLabel: {color: "grey"}},
+      containerStyle: {},
+      tableStyle: { whiteSpace: "inherit" },
+      headerStyle: { justifyContent: "center" }
+    }
   },
 };
 
