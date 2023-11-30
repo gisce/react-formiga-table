@@ -2,7 +2,10 @@
   "name": "@gisce/react-formiga-table",
   "version": "0.8.6",
   "scripts": {
-    "build": "tsc && vite build",
+    "dev:vite": "vite build --watch --force",
+    "dev:tsc": "tsc --noEmit --watch",
+    "start": "concurrently npm:dev:*",
+    "build": "tsc --noEmit && vite build",
     "prepublishOnly": "npm run build",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook"
@@ -13,7 +16,6 @@
   "dependencies": {
     "react": "^16.8.0 || 17.x",
     "react-dom": "^16.8.0 || 17.x",
-    "react-jss": "^10.10.0",
     "style-object-to-css-string": "^1.1.3",
     "styled-components": "^5.0.0",
     "use-deep-compare-effect": "^1.8.1"
@@ -35,6 +37,7 @@
     "acorn-jsx": "^5.3.2",
     "antd": "^5.5.2",
     "babel-loader": "^8.2.4",
+    "concurrently": "^8.2.2",
     "json": "^11.0.0",
     "storybook-builder-vite": "0.1.21",
     "typescript": "^4.6.3",

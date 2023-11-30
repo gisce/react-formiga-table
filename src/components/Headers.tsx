@@ -31,11 +31,11 @@ export const Headers = ({
       {onRowSelectionChange && !readonly && (
         <th
           style={{
-            ...headerStyle,
             width: 10,
             left: 0,
             position: "sticky",
             backgroundColor: "#f2f2f2",
+            ...headerStyle,
           }}
           key={"react_formiga_table_selection"}
         >
@@ -61,7 +61,7 @@ export const Headers = ({
         </th>
       )}
       {status &&
-        <th key="th-status">
+        <th key="th-status" style={{...headerStyle}}>
         </th>
       }
       {columns.map((column: any) => (

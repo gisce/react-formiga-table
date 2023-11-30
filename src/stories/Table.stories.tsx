@@ -95,11 +95,27 @@ export const Primary: ComponentStoryObj<typeof Table> = {
     },
     columns,
     dataSource,
-    style: {
-      cellStyle: {rftLabel: {color: "grey"}},
-      containerStyle: {},
-      tableStyle: { whiteSpace: "inherit" },
-      headerStyle: { backgroundColor: "red", rftLabel: { color: "blue"} }
+  },
+};
+
+export const Customized: ComponentStoryObj<typeof Table> = {
+  args: {
+    ...Primary.args,
+    height: undefined,
+    style: { //Only inline styles can be applied since this isn't jss
+      cellStyle: {rftLabel: {color: "grey" }},
+      containerStyle: { fontFamily: "Helvetica", boxShadow: "0 1.5px 5px #80808094" },
+      headerStyle: { 
+        // backgroundColor: "#dbd7d7",
+        boxShadow: "4px 4px 4px 0 #80808094",
+        fontSize: "13px",
+        letterSpacing: ".1rem",
+        padding: 15,
+        rftLabel: { 
+          justifyContent: "center",
+        }, 
+        textTransform: "uppercase",
+      }
     }
   },
 };
