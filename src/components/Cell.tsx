@@ -67,8 +67,8 @@ export const Cell = ({
         onExpandableIconClicked={onExpandableIconClicked}
         level={level}
       />
-      <div style={{...cellStyle, display: "inline-block", width: "100%" }}>
-        <div className="rft-label" style={{ ...cellStyle?.rftLabel, display: 'none'}}>{column.title}</div>
+      <div style={{display: "inline-block", width: "100%", ...cellStyle }}>
+        <div className="rft-label" style={{ display: 'none', ...cellStyle?.rftLabel}}>{column.title}</div>
         {renderedContent}
       </div>
     </td>

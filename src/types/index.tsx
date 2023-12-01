@@ -40,7 +40,7 @@ export interface headerStyle extends CSSProperties {
   rftLabel?: CSSProperties
 }
 
-export type style = {
+export type customStyle = {
   containerStyle?: CSSProperties;
   tableStyle?: CSSProperties;
   cellStyle?: cellStyle;
@@ -64,5 +64,5 @@ export type TableProps = {
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   readonly?: boolean;
   selectionRowKeys?: number[];
-  style?: style;
+  customStyle?: customStyle;
 };
