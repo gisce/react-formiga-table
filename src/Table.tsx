@@ -105,7 +105,7 @@ export const Table = (props: TableProps) => {
               sortEnabled={expandableOpts === undefined}
               readonly={readonly}
               status={!!onRowStatus}
-              headerStyle={style?.headerStyle}
+              headerStyle={customStyle?.headerStyle}
             />
           </tr>
         </thead>

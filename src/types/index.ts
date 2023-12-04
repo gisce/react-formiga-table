@@ -1,5 +1,3 @@
-// import { CSSProperties } from "react";
-
 import { CSSProperties } from "react";
 
 export type TableColumn = {
@@ -32,19 +30,15 @@ export type OnCellRenderOpts = {
   value: any;
 };
 
-export interface cellStyle extends CSSProperties {
-  rftLabel?: CSSProperties
-}
-
-export interface headerStyle extends CSSProperties {
+export interface RFTLabelStyle extends CSSProperties {
   rftLabel?: CSSProperties
 }
 
 export type customStyle = {
   containerStyle?: CSSProperties;
   tableStyle?: CSSProperties;
-  cellStyle?: cellStyle;
-  headerStyle?: headerStyle;
+  cellStyle?: RFTLabelStyle;
+  headerStyle?: RFTLabelStyle;
 }
 
 export type TableProps = {

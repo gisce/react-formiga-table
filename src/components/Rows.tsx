@@ -1,6 +1,5 @@
-import styled from "styled-components";
 import {
-  cellStyle,
+  RFTLabelStyle,
   ExpandableRowIcon,
   ExpandOptions,
   OnCellRenderOpts,
@@ -46,7 +45,7 @@ export const Rows = ({
   getChildsForParent: (key: number) => any[] | undefined;
   getLevelForKey: (key: number) => number;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
-  cellStyle?: cellStyle
+  cellStyle?: RFTLabelStyle
   readonly?: boolean;
 }) => {
   return (
@@ -112,7 +111,7 @@ function getRowComponent({
   keyIsOpened: (key: number) => boolean;
   getChildsForParent: (key: number) => any[] | undefined;
   onRowStyle?: (item: any) => any;
-  cellStyle?: cellStyle;
+  cellStyle?: RFTLabelStyle;
   onRowStatus?: (item: any) => any;
   level?: number;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;

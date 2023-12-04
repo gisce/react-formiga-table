@@ -1,4 +1,4 @@
-import { Sorter, TableColumn, headerStyle } from "../types";
+import { Sorter, TableColumn, RFTLabelStyle } from "../types";
 import { Checkbox } from "./Checkbox";
 
 export const Headers = ({
@@ -24,7 +24,7 @@ export const Headers = ({
   sortEnabled: boolean;
   readonly?: boolean;
   status?: boolean;
-  headerStyle?: headerStyle
+  headerStyle?: RFTLabelStyle
 }) => {
   return (
     <>

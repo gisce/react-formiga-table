@@ -3,7 +3,7 @@ import {
   ExpandOptions,
   OnCellRenderOpts,
   Sorter,
-  cellStyle
+  RFTLabelStyle
 } from "../types";
 
 export const Cell = ({
@@ -29,7 +29,7 @@ export const Cell = ({
   onExpandableIconClicked: (item: any) => void;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   rowIsSelected?: boolean;
-  cellStyle?: cellStyle;
+  cellStyle?: RFTLabelStyle;
 }) => {
   const tdStyle =
     getColumnSorter(column.key) !== undefined
