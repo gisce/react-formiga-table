@@ -28,8 +28,7 @@ export default defineConfig({
     rollupOptions: {
       // We manually add these since they are not directly in package.json, but they end up in the bundle if we don't exclude them.
       // Reason for this is using imports for specific components
-      external: [
-      ],
+      external: [],
     },
   },
 });
