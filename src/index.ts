@@ -1,2 +1,2 @@
-export { Table } from "./Table";
+export { Table } from "./components/Table";
 export * from "./types";

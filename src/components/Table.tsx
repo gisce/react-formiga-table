@@ -1,12 +1,12 @@
-import { useCallback, useEffect } from "react";
-import { Container } from "./components/Container";
-import { useExpandable } from "./hooks/useExpandable";
-import { useSelectable } from "./hooks/useSelectable";
-import { useSortable } from "./hooks/useSortable";
-import { TableProps } from "./types";
-import { Headers } from "./components/Headers";
-import { Rows } from "./components/Rows";
-import { useShiftSelected } from "./hooks/useShiftSelect";
+import React, { useCallback, useEffect } from "react";
+import { useExpandable } from "../hooks/useExpandable";
+import { useSelectable } from "../hooks/useSelectable";
+import { useShiftSelected } from "../hooks/useShiftSelect";
+import { useSortable } from "../hooks/useSortable";
+import { TableProps } from "../types";
+import { Container } from "./Container";
+import { Headers } from "./Headers";
+import { Rows } from "./Rows";
 
 export const Table = (props: TableProps) => {
   const {
@@ -39,7 +39,7 @@ export const Table = (props: TableProps) => {
 
   const onChange = useShiftSelected(
     dataSource.map((el) => el.id),
-    changeSelected
+    changeSelected,
   );
   const { localSorter, getColumnSorter, handleColumnClick } =
     useSortable(sorter);
@@ -59,10 +59,12 @@ export const Table = (props: TableProps) => {
 
   useEffect(() => {
     onRowSelectionChange?.(selectedRowKeys);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRowKeys]);
 
   useEffect(() => {
     onChangeSort?.(localSorter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localSorter]);
 
   const allRowsAreSelected = useCallback(() => {
@@ -74,7 +76,8 @@ export const Table = (props: TableProps) => {
       return dataSource.length === selectedRowKeys.length;
     }
     return getAllVisibleKeys().length === selectedRowKeys.length;
-  }, [dataSource, selectedRowKeys]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataSource.length, expandableOpts, selectedRowKeys.length]);
 
   const onToggleAllRowsSelected = useCallback(() => {
     toggleAllRowsSelected(getAllVisibleKeys());
