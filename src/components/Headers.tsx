@@ -1,4 +1,4 @@
-import { Sorter, TableColumn } from "../types";
+import { Sorter, TableColumn, RFTLabelStyle } from "../types";
 import { Checkbox } from "./Checkbox";
 
 export const Headers = ({
@@ -12,6 +12,7 @@ export const Headers = ({
   sortEnabled,
   readonly,
   status = false,
+  headerStyle
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   allRowsAreSelected: boolean;
@@ -23,6 +24,7 @@ export const Headers = ({
   sortEnabled: boolean;
   readonly?: boolean;
   status?: boolean;
+  headerStyle?: RFTLabelStyle
 }) => {
   return (
     <>
@@ -33,6 +35,7 @@ export const Headers = ({
             left: 0,
             position: "sticky",
             backgroundColor: "#f2f2f2",
+            ...headerStyle,
           }}
           key={"react_formiga_table_selection"}
         >
@@ -58,11 +61,12 @@ export const Headers = ({
         </th>
       )}
       {status &&
-        <th key="th-status">
+        <th key="th-status" style={{...headerStyle}}>
         </th>
       }
       {columns.map((column: any) => (
         <th
+          style={{...headerStyle}}
           key={column.key}
           onClick={
             sortEnabled
@@ -73,22 +77,27 @@ export const Headers = ({
           }
         >
           <div className="ctx">
-            {column.title}
-            <span
-              key={column.key}
-              className="arrow"
-              style={{
-                visibility:
-                  getColumnSorter(column.key) !== undefined
-                    ? undefined
-                    : "hidden",
-              }}
-            >
-              {getColumnSorter(column.key) !== undefined &&
-              getColumnSorter(column.key)!.desc
-                ? " ▼"
-                : " ▲"}
-            </span>
+            <div style={{flex: 1, display: "flex", justifyContent: "space-between", ...headerStyle?.rftLabel}}>
+              {column.title}
+            </div>
+            <div style={{display:  "flex", alignItems: "center"}}>
+              <span
+                key={column.key}
+                className="arrow"
+                style={{
+                  visibility:
+                    getColumnSorter(column.key) !== undefined
+                      ? undefined
+                      : "hidden",
+                  marginLeft: "auto"
+                }}
+              >
+                {getColumnSorter(column.key) !== undefined &&
+                getColumnSorter(column.key)!.desc
+                  ? " ▼"
+                  : " ▲"}
+              </span>
+            </div>
           </div>
         </th>
       ))}

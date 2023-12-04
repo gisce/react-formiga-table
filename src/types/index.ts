@@ -1,3 +1,5 @@
+import { CSSProperties } from "react";
+
 export type TableColumn = {
   key: string;
   dataIndex?: string;
@@ -28,10 +30,21 @@ export type OnCellRenderOpts = {
   value: any;
 };
 
+export interface RFTLabelStyle extends CSSProperties {
+  rftLabel?: CSSProperties
+}
+
+export type customStyle = {
+  containerStyle?: CSSProperties;
+  tableStyle?: CSSProperties;
+  cellStyle?: RFTLabelStyle;
+  headerStyle?: RFTLabelStyle;
+}
+
 export type TableProps = {
   dataSource: any[];
   columns: TableColumn[];
-  onRowStyle: (item: any) => any;
+  onRowStyle?: (item: any) => any;
   onRowStatus?: (item: any) => any;
   onRowDoubleClick?: (item: any) => void;
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
@@ -45,4 +58,5 @@ export type TableProps = {
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   readonly?: boolean;
   selectionRowKeys?: number[];
+  customStyle?: customStyle;
 };
