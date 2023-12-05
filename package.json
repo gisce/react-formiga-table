@@ -16,7 +16,8 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/react-formiga-table.es.js"
+      "import": "./dist/react-formiga-table.es.js",
+      "types": "./dist/index.d.ts"
     }
   },
   "scripts": {
