@@ -31,7 +31,7 @@ export type OnCellRenderOpts = {
 };
 
 export interface RFTLabelStyle extends CSSProperties {
-  rftLabel?: CSSProperties
+  rftLabel?: CSSProperties;
 }
 
 export type customStyle = {
@@ -39,7 +39,7 @@ export type customStyle = {
   tableStyle?: CSSProperties;
   cellStyle?: RFTLabelStyle;
   headerStyle?: RFTLabelStyle;
-}
+};
 
 export type TableProps = {
   dataSource: any[];
@@ -54,7 +54,7 @@ export type TableProps = {
   expandableOpts?: ExpandOptions;
   loading: boolean;
   loadingComponent: any;
-  height?: number;
+  height?: number | string;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   readonly?: boolean;
   selectionRowKeys?: number[];

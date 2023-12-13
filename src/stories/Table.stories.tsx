@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ComponentMeta, ComponentStoryObj } from "@storybook/react";
-import { Table } from "../Table";
+import { Table } from "../components/Table";
 import { Button, Spin } from "antd";
 import { OnCellRenderOpts, Sorter } from "../types";
 import {
@@ -8,6 +8,7 @@ import {
   MinusSquareOutlined,
   LoadingOutlined,
 } from "@ant-design/icons";
+import heavyTable from "./heavy_table.json";
 
 const meta: ComponentMeta<typeof Table> = {
   title: "Table/Basic",
@@ -279,7 +280,7 @@ export const Expandable = (): React.ReactElement => {
           await new Promise((resolve) => setTimeout(resolve, 2000));
           const childIdsToRetrieve: number[] = parent.child_id;
           const filteredChilds = otherChilds.filter((item) =>
-            childIdsToRetrieve.includes(item.id)
+            childIdsToRetrieve.includes(item.id),
           );
           setResults([...results, ...filteredChilds]);
           return filteredChilds;
@@ -390,5 +391,25 @@ export const AddingMoreChilds = (): React.ReactElement => {
         loading={false}
       />
     </>
+  );
+};
+
+export const HeavyTable = (): React.ReactElement => {
+  return (
+    <Table
+      dataSource={heavyTable}
+      columns={columns}
+      onRowSelectionChange={(selectedRows: any) => {
+        console.log("selectedRows: " + JSON.stringify(selectedRows));
+      }}
+      onRowStyle={() => undefined}
+      onRowDoubleClick={(record: any) => {
+        alert("double clicked record" + JSON.stringify(record));
+      }}
+      loadingComponent={<Spin />}
+      height={"100%"}
+      sorter={undefined}
+      loading={false}
+    />
   );
 };

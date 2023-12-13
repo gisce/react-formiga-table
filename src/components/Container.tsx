@@ -3,16 +3,15 @@ import styleToCss from "style-object-to-css-string";
 import styled from "styled-components";
 
 type ContainerProps = {
-  height?: number,
-  canClick: boolean,
-  readonly?: boolean,
-  containerStyle?: CSSProperties
-}
+  height?: number | string;
+  canClick: boolean;
+  readonly?: boolean;
+  containerStyle?: CSSProperties;
+};
 
 export const Container = styled.div`
   overflow-x: auto;
-  height: ${({ height }: ContainerProps) =>
-    `${height}px` || "auto"};
+  height: ${({ height }: ContainerProps) => `${height}px` || "auto"};
   border-bottom: 1px solid #f0f0f0;
   ${(props: ContainerProps) => styleToCss(props.containerStyle ?? {})}
 
@@ -86,8 +85,9 @@ export const Container = styled.div`
       }
 
       td:nth-of-type(1) {
-        width: ${(props: ContainerProps) => props.readonly ? 'auto !important' : '50px'};
-        display: ${(props: ContainerProps) => props.readonly ? 'block' : ''};
+        width: ${(props: ContainerProps) =>
+          props.readonly ? "auto !important" : "50px"};
+        display: ${(props: ContainerProps) => (props.readonly ? "block" : "")};
       }
 
       td:nth-of-type(n + 2) {
