@@ -1,9 +1,10 @@
+import { memo } from "react";
 import {
   ExpandableRowIcon,
   ExpandOptions,
   OnCellRenderOpts,
   Sorter,
-  RFTLabelStyle
+  RFTLabelStyle,
 } from "../types";
 
 export const Cell = ({
@@ -52,7 +53,7 @@ export const Cell = ({
       value: row[column.key],
     });
   } else if (column.render) {
-    renderedContent = column.render(row[column.key]);
+    renderedContent = memo(column.render(row[column.key]));
   } else {
     renderedContent = row[column.key];
   }
@@ -67,8 +68,13 @@ export const Cell = ({
         onExpandableIconClicked={onExpandableIconClicked}
         level={level}
       />
-      <div style={{display: "inline-block", width: "100%", ...cellStyle }}>
-        <div className="rft-label" style={{ display: 'none', ...cellStyle?.rftLabel}}>{column.title}</div>
+      <div style={{ display: "inline-block", width: "100%", ...cellStyle }}>
+        <div
+          className="rft-label"
+          style={{ display: "none", ...cellStyle?.rftLabel }}
+        >
+          {column.title}
+        </div>
         {renderedContent}
       </div>
     </td>
