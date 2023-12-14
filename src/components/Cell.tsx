@@ -53,7 +53,7 @@ export const Cell = ({
       value: row[column.key],
     });
   } else if (column.render) {
-    renderedContent = memo(column.render(row[column.key]));
+    renderedContent = column.render(row[column.key]);
   } else {
     renderedContent = row[column.key];
   }

@@ -8,6 +8,7 @@ import {
 } from "../types";
 import { Cell } from "./Cell";
 import { Checkbox } from "./Checkbox";
+import ErrorBoundary from "./ErrorBoundary";
 
 export const Rows = ({
   onRowSelectionChange,
@@ -45,7 +46,7 @@ export const Rows = ({
   getChildsForParent: (key: number) => any[] | undefined;
   getLevelForKey: (key: number) => number;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
-  cellStyle?: RFTLabelStyle
+  cellStyle?: RFTLabelStyle;
   readonly?: boolean;
 }) => {
   return (
@@ -117,7 +118,7 @@ function getRowComponent({
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   readonly?: boolean;
 }): React.ReactNode {
-  const rowStyle = onRowStyle ? onRowStyle(row) : '';
+  const rowStyle = onRowStyle ? onRowStyle(row) : "";
   const rowIsSelected = isRowSelected(row);
   let components: React.ReactNode[] = [
     <tr
@@ -144,43 +145,25 @@ function getRowComponent({
               alignItems: "center",
             }}
           >
-            {!readonly &&
-          <Checkbox
-            value={rowIsSelected}
-            onChange={(event) => {
-              toggleRowSelected(row.id, event);
-            }}
-          />
-            }
+            {!readonly && (
+              <Checkbox
+                value={rowIsSelected}
+                onChange={(event) => {
+                  toggleRowSelected(row.id, event);
+                }}
+              />
+            )}
           </div>
         </td>
       )}
-      {onRowStatus &&
-        <>
-        <Cell
-          row={row}
-          key={`status-${row.id}`}
-          getColumnSorter={() => undefined}
-          column="row-status"
-          columnIdx={-1}
-          onCellRender={() => onRowStatus(row)}
-          expandableOpts={expandableOpts}
-          getExpandableStatusForRow={getExpandableStatusForRow}
-          onExpandableIconClicked={onExpandableIconClicked}
-          level={level}
-          rowIsSelected={rowIsSelected}
-          cellStyle={cellStyle}
-        />
-        </>
-      }
-      {columns.map((column: any, columnIdx: number) => {
-        return (
+      {onRowStatus && (
+        <ErrorBoundary key={`status-${row.id}`}>
           <Cell
-            key={`${column.key}-${row.id}`}
-            column={column}
-            columnIdx={columnIdx}
             row={row}
-            getColumnSorter={getColumnSorter}
+            getColumnSorter={() => undefined}
+            column="row-status"
+            columnIdx={-1}
+            onCellRender={() => onRowStatus(row)}
             expandableOpts={expandableOpts}
             getExpandableStatusForRow={getExpandableStatusForRow}
             onExpandableIconClicked={onExpandableIconClicked}
@@ -188,6 +171,24 @@ function getRowComponent({
             rowIsSelected={rowIsSelected}
             cellStyle={cellStyle}
           />
+        </ErrorBoundary>
+      )}
+      {columns.map((column: any, columnIdx: number) => {
+        return (
+          <ErrorBoundary key={`${column.key}-${row.id}`}>
+            <Cell
+              column={column}
+              columnIdx={columnIdx}
+              row={row}
+              getColumnSorter={getColumnSorter}
+              expandableOpts={expandableOpts}
+              getExpandableStatusForRow={getExpandableStatusForRow}
+              onExpandableIconClicked={onExpandableIconClicked}
+              level={level}
+              rowIsSelected={rowIsSelected}
+              cellStyle={cellStyle}
+            />
+          </ErrorBoundary>
         );
       })}
     </tr>,
@@ -214,7 +215,7 @@ function getRowComponent({
           onCellRender,
           onRowStatus,
         });
-      })
+      }),
     );
   }
 
