@@ -135,6 +135,11 @@ function getRowComponent({
             left: 0,
             position: "sticky",
             backgroundColor: rowIsSelected ? "#E6F7FF" : "#f2f2f2",
+            cursor: "auto",
+          }}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
           }}
         >
           <div

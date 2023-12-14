@@ -12,7 +12,7 @@ export const Headers = ({
   sortEnabled,
   readonly,
   status = false,
-  headerStyle
+  headerStyle,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   allRowsAreSelected: boolean;
@@ -24,7 +24,7 @@ export const Headers = ({
   sortEnabled: boolean;
   readonly?: boolean;
   status?: boolean;
-  headerStyle?: RFTLabelStyle
+  headerStyle?: RFTLabelStyle;
 }) => {
   return (
     <>
@@ -36,6 +36,7 @@ export const Headers = ({
             position: "sticky",
             backgroundColor: "#f2f2f2",
             ...headerStyle,
+            cursor: "auto",
           }}
           key={"react_formiga_table_selection"}
         >
@@ -60,13 +61,10 @@ export const Headers = ({
           </div>
         </th>
       )}
-      {status &&
-        <th key="th-status" style={{...headerStyle}}>
-        </th>
-      }
+      {status && <th key="th-status" style={{ ...headerStyle }}></th>}
       {columns.map((column: any) => (
         <th
-          style={{...headerStyle}}
+          style={{ ...headerStyle }}
           key={column.key}
           onClick={
             sortEnabled
@@ -77,10 +75,17 @@ export const Headers = ({
           }
         >
           <div className="ctx">
-            <div style={{flex: 1, display: "flex", justifyContent: "space-between", ...headerStyle?.rftLabel}}>
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                justifyContent: "space-between",
+                ...headerStyle?.rftLabel,
+              }}
+            >
               {column.title}
             </div>
-            <div style={{display:  "flex", alignItems: "center"}}>
+            <div style={{ display: "flex", alignItems: "center" }}>
               <span
                 key={column.key}
                 className="arrow"
@@ -89,7 +94,7 @@ export const Headers = ({
                     getColumnSorter(column.key) !== undefined
                       ? undefined
                       : "hidden",
-                  marginLeft: "auto"
+                  marginLeft: "auto",
                 }}
               >
                 {getColumnSorter(column.key) !== undefined &&
