@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import useDeepCompareEffect from "use-deep-compare-effect";
 
 export const useSelectable = ({
@@ -7,7 +7,7 @@ export const useSelectable = ({
   selectionRowKeysProps?: number[];
 }) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>(
-    selectionRowKeysProps
+    selectionRowKeysProps,
   );
 
   useDeepCompareEffect(() => {
@@ -26,11 +26,11 @@ export const useSelectable = ({
 
       setSelectedRowKeys(allVisibleKeys);
     },
-    [selectedRowKeys, setSelectedRowKeys]
+    [selectedRowKeys, setSelectedRowKeys],
   );
 
   const changeSelected = useCallback(
-    (check: boolean, items: Array<number>): void => {
+    (check: boolean, items: number[]): void => {
       if (items.length === 0) {
         return;
       }
@@ -38,17 +38,17 @@ export const useSelectable = ({
         setSelectedRowKeys([...new Set([...selectedRowKeys, ...items])]);
       } else {
         setSelectedRowKeys(
-          selectedRowKeys.filter((id: number) => !items.includes(id))
+          selectedRowKeys.filter((id: number) => !items.includes(id)),
         );
       }
     },
-    [selectedRowKeys, setSelectedRowKeys]
+    [selectedRowKeys, setSelectedRowKeys],
   );
 
   const toggleRowSelected = useCallback(
     (row: any) => {
       const selectedFoundRow = selectedRowKeys.find(
-        (id: number) => row.id === id
+        (id: number) => row.id === id,
       );
 
       if (selectedFoundRow === undefined) {
@@ -58,18 +58,18 @@ export const useSelectable = ({
 
       setSelectedRowKeys([...selectedRowKeys.filter((id) => id !== row.id)]);
     },
-    [selectedRowKeys, setSelectedRowKeys]
+    [selectedRowKeys, setSelectedRowKeys],
   );
 
   const isRowSelected = useCallback(
     (row: any) => {
       const selectedFoundRow = selectedRowKeys.find(
-        (id: number) => row.id === id
+        (id: number) => row.id === id,
       );
 
       return selectedFoundRow !== undefined;
     },
-    [selectedRowKeys, setSelectedRowKeys]
+    [selectedRowKeys],
   );
 
   return {

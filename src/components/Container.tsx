@@ -37,7 +37,7 @@ export const Container = styled.div`
         background-color: #f2f2f2;
       }
 
-      td  {
+      td {
         border-bottom: 1px solid #f0f0f0;
       }
 

@@ -4,3 +4,4 @@ build
 docs
 report
 vite.config.ts
+dist

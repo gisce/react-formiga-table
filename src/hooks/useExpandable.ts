@@ -3,7 +3,7 @@ import { ExpandableRowIcon } from "../types";
 
 export type ExpandableItem = {
   id: number;
-  child_id?: Array<number>;
+  child_id?: number[];
   isLoading: boolean;
   level: number;
   data: any;
@@ -22,10 +22,14 @@ export const useExpandable = ({
   const [loadedKeys, setLoadedKeys] = useState<number[]>([]);
   const idLevelMap = useRef<Map<number, number>>(new Map<number, number>());
 
-  const [items, setItems] = useState<Array<ExpandableItem>>(
+  const [items, setItems] = useState<ExpandableItem[]>(
     dataSource.map((item) =>
-      transformData({ entry: item, childField, idLevelMap: idLevelMap.current })
-    )
+      transformData({
+        entry: item,
+        childField,
+        idLevelMap: idLevelMap.current,
+      }),
+    ),
   );
 
   useEffect(() => {
@@ -35,9 +39,10 @@ export const useExpandable = ({
           entry: item,
           childField,
           idLevelMap: idLevelMap.current,
-        })
-      )
+        }),
+      ),
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataSource]);
 
   const toggleOpenedKey = useCallback(
@@ -49,21 +54,21 @@ export const useExpandable = ({
         setOpenedKeys(openedKeys.filter((item) => item !== key));
       }
     },
-    [openedKeys]
+    [openedKeys],
   );
 
   const keyIsOpened = useCallback(
     (key: number) => {
       return openedKeys.includes(key);
     },
-    [openedKeys]
+    [openedKeys],
   );
 
   const keyIsLoaded = useCallback(
     (key: number) => {
       return loadedKeys.includes(key);
     },
-    [loadedKeys]
+    [loadedKeys],
   );
 
   const getLevelForKey = (key: number) => {
@@ -80,7 +85,7 @@ export const useExpandable = ({
 
       return item[childField] !== undefined && item[childField].length > 0;
     },
-    [items]
+    [childField, items],
   );
 
   const keyIsLoading = useCallback(
@@ -92,7 +97,7 @@ export const useExpandable = ({
       }
       return item.isLoading;
     },
-    [items]
+    [items],
   );
 
   const getChildsForParent = useCallback(
@@ -109,7 +114,7 @@ export const useExpandable = ({
 
       return items.filter((item) => child_id.includes(item.id));
     },
-    [items]
+    [childField, items],
   );
 
   const onExpandableIconClicked = useCallback(
@@ -131,8 +136,8 @@ export const useExpandable = ({
               ...item,
               isLoading: true,
             },
-            items
-          )
+            items,
+          ),
         );
 
         try {
@@ -155,8 +160,8 @@ export const useExpandable = ({
                     idLevelMap: idLevelMap.current,
                   });
                 }),
-              ]
-            )
+              ],
+            ),
           );
 
           loadedKeys.push(item.id);
@@ -169,15 +174,23 @@ export const useExpandable = ({
                 ...item,
                 isLoading: false,
               },
-              items
-            )
+              items,
+            ),
           );
         }
       }
 
       toggleOpenedKey(record.id);
     },
-    [items, openedKeys, loadedKeys]
+    [
+      items,
+      keyIsOpened,
+      keyIsLoaded,
+      toggleOpenedKey,
+      onFetchChildrenForRecord,
+      loadedKeys,
+      childField,
+    ],
   );
 
   const getExpandableStatusForRow = useCallback(
@@ -190,7 +203,7 @@ export const useExpandable = ({
         return "none";
       }
     },
-    [openedKeys, items]
+    [keyIsLoading, keyHasChilds, keyIsOpened],
   );
 
   const getAllVisibleKeys = useCallback((): number[] => {
@@ -244,7 +257,7 @@ function transformData({
 
 const updateItemInArray = (
   itemToUpdate: ExpandableItem,
-  items: any[]
+  items: any[],
 ): any[] => {
   return items.map((localItem: any) => {
     if (localItem.id === itemToUpdate.id) {

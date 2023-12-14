@@ -1,8 +1,8 @@
-import {useState, useCallback, ChangeEvent} from "react";
+import { useState, useCallback, ChangeEvent } from "react";
 
-export const useShiftSelected = <P>(
-  initialState: Array<number>,
-  change: (addOrRemove: boolean, items: Array<number>) => void
+export const useShiftSelected = (
+  initialState: number[],
+  change: (addOrRemove: boolean, items: number[]) => void,
 ) => {
   const [previousSelected, setPreviousSelected] = useState<number | null>(null);
   const [previousChecked, setPreviousChecked] = useState<boolean>(false);
@@ -10,12 +10,12 @@ export const useShiftSelected = <P>(
 
   const onChange = useCallback(
     (item: number, event: ChangeEvent<HTMLInputElement>) => {
-      // @ts-ignore shiftKey is defined for click events
+      // @ts-expect-error shiftKey is defined for click events
       if (event.nativeEvent.shiftKey) {
         const current = initialState.findIndex((x) => x === item);
         const previous = initialState.findIndex((x) => x === previousSelected);
         const previousCurrent = initialState.findIndex(
-          (x) => x === currentSelected
+          (x) => x === currentSelected,
         );
         const start = Math.min(current, previous);
         const end = Math.max(current, previous);
@@ -24,13 +24,13 @@ export const useShiftSelected = <P>(
           if (previousCurrent > end) {
             change(
               !previousChecked,
-              initialState.slice(end + 1, previousCurrent + 1)
+              initialState.slice(end + 1, previousCurrent + 1),
             );
           }
           if (previousCurrent < start) {
             change(
               !previousChecked,
-              initialState.slice(previousCurrent, start)
+              initialState.slice(previousCurrent, start),
             );
           }
           setCurrentSelected(item);
@@ -52,7 +52,7 @@ export const useShiftSelected = <P>(
       setPreviousChecked,
       currentSelected,
       setCurrentSelected,
-    ]
+    ],
   );
 
   return onChange;
