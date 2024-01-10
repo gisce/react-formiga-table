@@ -92,9 +92,9 @@
   },
   "release": {
     "branches": [
-      "main",
+      "v2",
       {
-        "name": "develop",
+        "name": "v2-develop",
         "prerelease": "rc"
       },
       {
