@@ -60,3 +60,7 @@ export type TableProps = {
   selectionRowKeys?: number[];
   customStyle?: customStyle;
 };
+
+export interface TableRef {
+  unselectAll: () => void;
+}
