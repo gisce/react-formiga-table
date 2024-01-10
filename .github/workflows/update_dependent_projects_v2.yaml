@@ -10,7 +10,7 @@ env:
 
 jobs:
   update-dependents:
-    if: github.event.release.prerelease == false && contains(github.event.release.tag_name, 'v2')
+    if: github.event.release.prerelease == false && contains(github.event.release.tag_name, 'v1')
     runs-on: ubuntu-latest
     strategy:
       matrix:
