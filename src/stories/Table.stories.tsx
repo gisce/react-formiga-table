@@ -404,7 +404,7 @@ export const HeavyTable = (): React.ReactElement => {
           tableRef.current?.unselectAll();
         }}
       >
-        Unselect all
+        Unselect all registers
       </Button>
       <Table
         ref={tableRef}
