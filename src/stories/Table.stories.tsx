@@ -409,6 +409,22 @@ export const HeavyTable = (): React.ReactElement => {
       <Table
         ref={tableRef}
         dataSource={heavyTable}
+        infiniteOpts={{
+          initialNumberOfRows: 10,
+          numberOfRowsToLoad: 5,
+          fetchRows: async (start, end) => {
+            // simulate a fetch timeout
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            console.log({
+              start,
+              end,
+              total: heavyTable.length,
+            });
+            if (start >= heavyTable.length) return [];
+            if (end > heavyTable.length) return [];
+            return heavyTable.slice(start, end);
+          },
+        }}
         columns={columns}
         onRowSelectionChange={(selectedRows: any) => {
           console.log("selectedRows: " + JSON.stringify(selectedRows));
@@ -418,7 +434,7 @@ export const HeavyTable = (): React.ReactElement => {
           alert("double clicked record" + JSON.stringify(record));
         }}
         loadingComponent={<Spin />}
-        height={"100%"}
+        height={300}
         sorter={undefined}
         loading={false}
       />

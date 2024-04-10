@@ -59,8 +59,12 @@ export type TableProps = {
   readonly?: boolean;
   selectionRowKeys?: number[];
   customStyle?: customStyle;
+  infiniteOpts?: {
+    initialNumberOfRows: number;
+    numberOfRowsToLoad: number;
+    fetchRows: (startIndex: number, stopIndex: number) => Promise<any[]>;
+  };
 };
-
 export interface TableRef {
   unselectAll: () => void;
 }

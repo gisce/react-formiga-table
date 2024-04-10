@@ -1,3 +1,4 @@
+import { ReactElement } from "react";
 import {
   RFTLabelStyle,
   ExpandableRowIcon,
@@ -29,6 +30,7 @@ export const Rows = ({
   onCellRender,
   cellStyle,
   readonly,
+  moreRowsLoadingComponent,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   dataSource: any[];
@@ -48,6 +50,7 @@ export const Rows = ({
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   cellStyle?: RFTLabelStyle;
   readonly?: boolean;
+  moreRowsLoadingComponent: ReactElement | null;
 }) => {
   return (
     <>
@@ -75,6 +78,7 @@ export const Rows = ({
             readonly,
           });
         })}
+      {moreRowsLoadingComponent}
     </>
   );
 };

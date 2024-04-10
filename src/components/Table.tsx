@@ -1,4 +1,10 @@
-import { forwardRef, useImperativeHandle, useCallback, useEffect } from "react";
+import {
+  forwardRef,
+  useImperativeHandle,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import { useExpandable } from "../hooks/useExpandable";
 import { useSelectable } from "../hooks/useSelectable";
 import { useShiftSelected } from "../hooks/useShiftSelect";
@@ -7,13 +13,14 @@ import { TableProps, TableRef } from "../types";
 import { Container } from "./Container";
 import { Headers } from "./Headers";
 import { Rows } from "./Rows";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 
 export const Table = forwardRef<TableRef, TableProps>((props, ref) => {
   const {
     height,
     loading,
     loadingComponent,
-    dataSource,
+    dataSource: dataSourceProps,
     columns,
     onRowDoubleClick,
     onRowStyle,
@@ -26,8 +33,26 @@ export const Table = forwardRef<TableRef, TableProps>((props, ref) => {
     readonly,
     selectionRowKeys: selectionRowKeysProps,
     customStyle,
+    infiniteOpts,
   } = props;
 
+  const parentRef = useRef(null);
+
+  const {
+    dataSource: dataSourceInfinite,
+    moreRowsLoading,
+    fetchMoreOnBottomReached,
+  } = (infiniteOpts &&
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useInfiniteScroll({
+      fetchRows: infiniteOpts?.fetchRows,
+      parentRef,
+      numberOfRowsToLoad: infiniteOpts?.numberOfRowsToLoad,
+      initialNumberOfRows: infiniteOpts?.initialNumberOfRows,
+    })) ||
+  {};
+
+  const dataSource = infiniteOpts ? dataSourceInfinite! : dataSourceProps!;
   const {
     selectedRowKeys,
     toggleAllRowsSelected,
@@ -99,6 +124,8 @@ export const Table = forwardRef<TableRef, TableProps>((props, ref) => {
       canClick={onRowDoubleClick !== undefined}
       readonly={readonly}
       containerStyle={customStyle?.containerStyle}
+      ref={parentRef}
+      onScroll={infiniteOpts ? (e) => fetchMoreOnBottomReached?.(e) : undefined}
     >
       <table style={customStyle?.tableStyle}>
         <thead>
@@ -138,6 +165,22 @@ export const Table = forwardRef<TableRef, TableProps>((props, ref) => {
             onCellRender={onCellRender}
             cellStyle={customStyle?.cellStyle}
             readonly={readonly}
+            moreRowsLoadingComponent={
+              moreRowsLoading ? (
+                <tr>
+                  <td
+                    colSpan={columns.length + 1}
+                    style={{
+                      textAlign: "center",
+                      paddingTop: "10px",
+                      paddingBottom: "10px",
+                    }}
+                  >
+                    Loading... {loadingComponent}
+                  </td>
+                </tr>
+              ) : null
+            }
           />
         </tbody>
       </table>
