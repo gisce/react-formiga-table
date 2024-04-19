@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo, useRef } from "react";
 import { AgGridReact, CustomCellRendererProps } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
@@ -24,17 +24,9 @@ export type InfiniteTableProps = Omit<
 const InfiniteTableWrapper = (props: InfiniteTableProps) => {
   const { columns } = props;
   const columnsMemoized = useDeepArrayMemo(columns, "key");
-
-  return (
-    <InfiniteTableComp
-      {...props}
-      // dataSource={dataSourceMemoized}
-      columns={columnsMemoized}
-    />
-  );
+  return <InfiniteTableComp {...props} columns={columnsMemoized} />;
 };
 
-// Create new GridExample component
 const InfiniteTableComp = (props: InfiniteTableProps) => {
   const {
     onRequestData,
@@ -42,6 +34,7 @@ const InfiniteTableComp = (props: InfiniteTableProps) => {
     onRowDoubleClick,
     onRowSelectionChange,
     height,
+    onRowStyle,
   } = props;
 
   useWhyDidYouRender("InfiniteTableComp", props);
@@ -88,6 +81,10 @@ const InfiniteTableComp = (props: InfiniteTableProps) => {
           }
           rowParams.successCallback(data, lastRow);
           params.api.hideOverlay();
+
+          setTimeout(() => {
+            !params?.api.isDestroyed() && params?.api.autoSizeAllColumns();
+          }, 300);
         },
       };
       params.api.setGridOption("datasource", dataSource);
@@ -111,26 +108,32 @@ const InfiniteTableComp = (props: InfiniteTableProps) => {
     [onRowSelectionChange],
   );
 
+  const gridRef = useRef<AgGridReact>(null);
+
   return (
     <div
       className={`ag-grid-default-table ag-theme-quartz`}
       style={{ height: height || 600 }}
     >
       <AgGridReact
+        ref={gridRef}
         columnDefs={colDefs}
         defaultColDef={defaultColDef}
         onRowDoubleClicked={onRowDoubleClicked}
         rowStyle={{
           cursor: onRowDoubleClick ? "pointer" : "auto",
         }}
+        getRowStyle={onRowStyle}
         suppressCellFocus={true}
+        suppressRowClickSelection={true}
         rowBuffer={0}
         rowSelection={"multiple"}
         rowModelType={"infinite"}
-        cacheBlockSize={10}
+        cacheBlockSize={20}
+        onSelectionChanged={onSelectionChanged}
         cacheOverflowSize={2}
         maxConcurrentDatasourceRequests={1}
-        infiniteInitialRowCount={1000}
+        infiniteInitialRowCount={50}
         maxBlocksInCache={10}
         onGridReady={onGridReady}
       />
