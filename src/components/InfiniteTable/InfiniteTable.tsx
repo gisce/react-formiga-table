@@ -1,80 +1,141 @@
-import { useState } from "react";
-import { AgGridReact } from "ag-grid-react";
+import { memo, useCallback, useMemo } from "react";
+import { AgGridReact, CustomCellRendererProps } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
-import { ColDef } from "ag-grid-community";
+import {
+  ColDef,
+  GridReadyEvent,
+  IDatasource,
+  RowDoubleClickedEvent,
+  SelectionChangedEvent,
+} from "ag-grid-community";
+import { TableProps } from "@/types";
+import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
+import { useWhyDidYouRender } from "@/hooks/useWhyDidYouRender";
 
-// Row Data Interface
-interface IRow {
-  make: string;
-  model: string;
-  price: number;
-  electric: boolean;
-}
+export type InfiniteTableProps = Omit<
+  TableProps,
+  "dataSource" & "loading" & "loadingComponent" & "height"
+> & {
+  onRequestData: (startRow: number, endRow: number) => Promise<any[]>;
+  height?: number;
+};
+
+const InfiniteTableWrapper = (props: InfiniteTableProps) => {
+  const { columns } = props;
+  const columnsMemoized = useDeepArrayMemo(columns, "key");
+
+  return (
+    <InfiniteTableComp
+      {...props}
+      // dataSource={dataSourceMemoized}
+      columns={columnsMemoized}
+    />
+  );
+};
 
 // Create new GridExample component
-export const InfiniteTable = () => {
-  // Row Data: The data to be displayed.
-  const [rowData, setRowData] = useState<IRow[]>([
-    {
-      make: "Tesla model x super guay de la ostia",
-      model: "Model Y",
-      price: 64950,
-      electric: true,
-    },
-    { make: "Ford", model: "F-Series", price: 33850, electric: false },
-    { make: "Toyota", model: "Corolla", price: 29600, electric: false },
-    { make: "Mercedes", model: "EQA", price: 48890, electric: true },
-    { make: "Fiat", model: "500", price: 15774, electric: false },
-    { make: "Nissan", model: "Juke", price: 20675, electric: false },
-  ]);
+const InfiniteTableComp = (props: InfiniteTableProps) => {
+  const {
+    onRequestData,
+    columns,
+    onRowDoubleClick,
+    onRowSelectionChange,
+    height,
+  } = props;
 
-  const defaultColumnDef = {
-    resizable: false,
-    suppressMovable: true,
-    sortable: false,
-  };
+  useWhyDidYouRender("InfiniteTableComp", props);
+  const defaultColDef = useMemo<ColDef>(() => {
+    return {};
+  }, []);
 
-  // Column Definitions: Defines & controls grid columns.
-  const [colDefs, setColDefs] = useState<ColDef<IRow>[]>([
-    {
-      ...defaultColumnDef,
-      headerCheckboxSelection: true,
-      checkboxSelection: true,
-      showDisabledCheckboxes: true,
+  const colDefs = useMemo((): ColDef[] => {
+    return [
+      {
+        // headerCheckboxSelection: true,
+        checkboxSelection: true,
+        showDisabledCheckboxes: true,
+        suppressMovable: true,
+        sortable: false,
+        pinned: "left",
+        maxWidth: 50,
+        resizable: false,
+      },
+      ...columns.map((column) => ({
+        field: column.key,
+        headerName: column.title,
+        cellRenderer: column.render
+          ? (cell: CustomCellRendererProps) => {
+              return column.render?.(cell.value);
+            }
+          : undefined,
+      })),
+    ];
+  }, [columns]);
+
+  const onGridReady = useCallback(
+    (params: GridReadyEvent) => {
+      const dataSource: IDatasource = {
+        rowCount: undefined,
+        getRows: async (rowParams) => {
+          params.api.showLoadingOverlay();
+          const { startRow, endRow } = rowParams;
+          let lastRow = -1;
+          const data = await onRequestData(startRow, endRow);
+
+          if (data.length < endRow - startRow) {
+            lastRow = startRow + data.length;
+          }
+          rowParams.successCallback(data, lastRow);
+          params.api.hideOverlay();
+        },
+      };
+      params.api.setGridOption("datasource", dataSource);
     },
-    { ...defaultColumnDef, field: "make" },
-    { ...defaultColumnDef, field: "model" },
-    { ...defaultColumnDef, field: "price" },
-    { ...defaultColumnDef, field: "electric" },
-  ]);
+    [onRequestData],
+  );
+
+  const onRowDoubleClicked = useCallback(
+    ({ data: item }: RowDoubleClickedEvent) => {
+      onRowDoubleClick?.(item);
+    },
+    [onRowDoubleClick],
+  );
+
+  const onSelectionChanged = useCallback(
+    (event: SelectionChangedEvent) => {
+      const allSelectedNodes = event.api.getSelectedNodes();
+      const selectedData = allSelectedNodes.map((node) => node.data);
+      onRowSelectionChange?.(selectedData);
+    },
+    [onRowSelectionChange],
+  );
 
   return (
     <div
       className={`ag-grid-default-table ag-theme-quartz`}
-      style={{ height: 600 }}
+      style={{ height: height || 600 }}
     >
       <AgGridReact
-        rowData={rowData}
         columnDefs={colDefs}
-        autoSizeStrategy={{
-          type: "fitCellContents",
-        }}
-        onRowDoubleClicked={(event) => {
-          alert("Row Double Clicked: ");
-        }}
+        defaultColDef={defaultColDef}
+        onRowDoubleClicked={onRowDoubleClicked}
         rowStyle={{
-          cursor: "pointer",
+          cursor: onRowDoubleClick ? "pointer" : "auto",
         }}
         suppressCellFocus={true}
+        rowBuffer={0}
         rowSelection={"multiple"}
-        suppressRowClickSelection={true}
-        onSelectionChanged={(event) => {
-          const allSelectedNodes = event.api.getSelectedNodes();
-          const selectedData = allSelectedNodes.map((node) => node.data);
-          console.log("Selected rows data:", selectedData);
-        }}
+        rowModelType={"infinite"}
+        cacheBlockSize={10}
+        cacheOverflowSize={2}
+        maxConcurrentDatasourceRequests={1}
+        infiniteInitialRowCount={1000}
+        maxBlocksInCache={10}
+        onGridReady={onGridReady}
       />
     </div>
   );
 };
+
+export const InfiniteTable = memo(InfiniteTableWrapper);
