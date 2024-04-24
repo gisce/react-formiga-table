@@ -1,8 +1,11 @@
-import React from "react";
-import { Meta, Story } from "@storybook/react";
-import { InfiniteTable } from "../components/InfiniteTable/InfiniteTable";
-import { Spin } from "antd";
+import React, { useRef } from "react";
+import { Meta } from "@storybook/react";
+import {
+  InfiniteTable,
+  InfiniteTableRef,
+} from "../components/InfiniteTable/InfiniteTable";
 import heavyTable from "./heavy_table.json";
+import { Button } from "antd";
 
 export default {
   title: "Components/InfiniteTable",
@@ -34,7 +37,7 @@ const columns = [
     title: "Image",
     key: "image",
     render: (item: any) => {
-      return <img src={item} />;
+      return <img src={item} alt="Image" />;
     },
   },
   {
@@ -46,28 +49,34 @@ const columns = [
   },
 ];
 
+const onRequestData = async (startRow: number, endRow: number) => {
+  await new Promise((resolve) => setTimeout(resolve, 1000)); // simulate fetch delay
+  return heavyTable.slice(startRow, endRow);
+};
+
 export const HeavyTable = (): React.ReactElement => {
+  const tableRef = useRef<InfiniteTableRef>(null);
+
+  const refresh = () => {
+    tableRef.current?.refresh();
+  };
+
   return (
     <>
+      <Button onClick={refresh} style={{ marginBottom: "10px" }}>
+        Refresh table
+      </Button>
       <InfiniteTable
-        dataSource={heavyTable}
-        onRequestData={async (startRow: number, endRow: number) => {
-          // simulate timeout
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          return heavyTable.slice(startRow, endRow);
-        }}
+        onRequestData={onRequestData}
         columns={columns}
         onRowSelectionChange={(selectedRows: any) => {
           console.log("selectedRows: " + JSON.stringify(selectedRows));
         }}
-        onRowStyle={() => undefined}
         onRowDoubleClick={(record: any) => {
-          alert("double clicked record" + JSON.stringify(record));
+          alert("Double clicked record: " + JSON.stringify(record));
         }}
-        loadingComponent={<Spin />}
         height={600}
-        sorter={undefined}
-        loading={false}
+        ref={tableRef}
       />
     </>
   );
