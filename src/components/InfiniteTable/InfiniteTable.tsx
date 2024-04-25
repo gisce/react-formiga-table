@@ -10,10 +10,12 @@ import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
 import {
+  BodyScrollEvent,
   ColDef,
   ColumnMovedEvent,
   ColumnResizedEvent,
   ColumnState,
+  FirstDataRenderedEvent,
   GridReadyEvent,
   IDatasource,
   RowDoubleClickedEvent,
@@ -33,6 +35,8 @@ export type InfiniteTableProps = Omit<
   height?: number;
   onColumnChanged?: (columnsState: ColumnState[]) => void;
   onGetColumnsState?: () => ColumnState[] | undefined;
+  onGetFirstVisibleRowIndex?: () => number | undefined;
+  onChangeFirstVisibleRowIndex?: (index: number) => void;
 };
 
 export type InfiniteTableRef = {
@@ -51,6 +55,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onRowStyle,
       onColumnChanged: onColumnsChangedProps,
       onGetColumnsState,
+      onChangeFirstVisibleRowIndex,
+      onGetFirstVisibleRowIndex,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -157,6 +163,30 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       [onRowDoubleClick],
     );
 
+    const firstTimeOnBodyScroll = useRef(true);
+
+    const onFirstDataRendered = useCallback(
+      (params: FirstDataRenderedEvent) => {
+        const firstVisibleRowIndex = onGetFirstVisibleRowIndex?.();
+        if (firstVisibleRowIndex) {
+          params.api.ensureIndexVisible(firstVisibleRowIndex, "top");
+        }
+      },
+      [onGetFirstVisibleRowIndex],
+    );
+
+    const onBodyScroll = useCallback(
+      (params: BodyScrollEvent) => {
+        if (!firstTimeOnBodyScroll.current) {
+          onChangeFirstVisibleRowIndex?.(
+            params.api.getFirstDisplayedRowIndex(),
+          );
+        }
+        firstTimeOnBodyScroll.current = false;
+      },
+      [onChangeFirstVisibleRowIndex],
+    );
+
     return (
       <div
         className={`ag-grid-default-table ag-theme-quartz`}
@@ -185,6 +215,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           infiniteInitialRowCount={50}
           maxBlocksInCache={10}
           onGridReady={onGridReady}
+          onFirstDataRendered={onFirstDataRendered}
+          onBodyScroll={onBodyScroll}
         />
       </div>
     );
