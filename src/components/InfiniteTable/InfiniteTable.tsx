@@ -37,6 +37,7 @@ export type InfiniteTableProps = Omit<
   onGetColumnsState?: () => ColumnState[] | undefined;
   onGetFirstVisibleRowIndex?: () => number | undefined;
   onChangeFirstVisibleRowIndex?: (index: number) => void;
+  onGetSelectedRowKeys?: () => any[] | undefined;
 };
 
 export type InfiniteTableRef = {
@@ -57,6 +58,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onGetColumnsState,
       onChangeFirstVisibleRowIndex,
       onGetFirstVisibleRowIndex,
+      onGetSelectedRowKeys,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -124,10 +126,22 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             lastRow = startRow + data.length;
           }
           params.successCallback(data, lastRow);
+
+          const selectedRowKeys = onGetSelectedRowKeys?.();
+          if (selectedRowKeys && selectedRowKeys.length > 0) {
+            gridRef?.current?.api.forEachNode((node) => {
+              if (node?.data?.id && selectedRowKeys.includes(node.data.id)) {
+                node.setSelected(true);
+              }
+            });
+          } else {
+            firstTimeSelectionSet.current = false;
+          }
+
           gridRef.current?.api.hideOverlay();
         },
       }),
-      [onRequestData],
+      [onGetSelectedRowKeys, onRequestData],
     );
 
     const onGridReady = useCallback(
@@ -147,6 +161,11 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const onSelectionChanged = useCallback(
       (event: { api: { getSelectedNodes: () => any } }) => {
+        if (firstTimeSelectionSet.current) {
+          firstTimeSelectionSet.current = false;
+          return;
+        }
+        firstTimeSelectionSet.current = false;
         const allSelectedNodes = event.api.getSelectedNodes();
         const selectedData = allSelectedNodes.map(
           (node: { data: any }) => node.data,
@@ -164,6 +183,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     );
 
     const firstTimeOnBodyScroll = useRef(true);
+    const firstTimeSelectionSet = useRef(true);
 
     const onFirstDataRendered = useCallback(
       (params: FirstDataRenderedEvent) => {
