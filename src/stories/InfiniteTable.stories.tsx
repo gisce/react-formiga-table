@@ -77,6 +77,13 @@ export const HeavyTable = (): React.ReactElement => {
         }}
         height={600}
         ref={tableRef}
+        onColumnChanged={(columnsState) => {
+          localStorage.setItem("columnsState", JSON.stringify(columnsState));
+        }}
+        onGetColumnsState={() => {
+          const columnsState = localStorage.getItem("columnsState");
+          return columnsState ? JSON.parse(columnsState) : undefined;
+        }}
       />
     </>
   );

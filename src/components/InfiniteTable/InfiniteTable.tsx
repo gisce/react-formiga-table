@@ -11,6 +11,9 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
 import {
   ColDef,
+  ColumnMovedEvent,
+  ColumnResizedEvent,
+  ColumnState,
   GridReadyEvent,
   IDatasource,
   RowDoubleClickedEvent,
@@ -18,6 +21,9 @@ import {
 import { TableProps } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import { useWhyDidYouRender } from "@/hooks/useWhyDidYouRender";
+import debounce from "lodash/debounce";
+
+const DEBOUNCE_TIME = 500;
 
 export type InfiniteTableProps = Omit<
   TableProps,
@@ -25,6 +31,8 @@ export type InfiniteTableProps = Omit<
 > & {
   onRequestData: (startRow: number, endRow: number) => Promise<any[]>;
   height?: number;
+  onColumnChanged?: (columnsState?: ColumnState[]) => void;
+  onGetColumnsState?: () => ColumnState[];
 };
 
 export type InfiniteTableRef = {
@@ -41,9 +49,27 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onRowSelectionChange,
       height,
       onRowStyle,
+      onColumnChanged: onColumnsChangedProps,
+      onGetColumnsState,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const debouncedOnColumnChanged = useCallback(
+      debounce((state) => {
+        onColumnsChangedProps?.(state);
+      }, DEBOUNCE_TIME),
+      [onColumnsChangedProps],
+    );
+
+    const onColumnChanged = useCallback(
+      (event: ColumnResizedEvent | ColumnMovedEvent) => {
+        const state = event.api.getColumnState();
+        debouncedOnColumnChanged(state);
+      },
+      [debouncedOnColumnChanged],
+    );
 
     useImperativeHandle(ref, () => ({
       unselectAll: () => {
@@ -99,9 +125,17 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
+        const savedState = onGetColumnsState?.();
+        if (savedState) {
+          params.api.applyColumnState({
+            state: savedState,
+            applyOrder: true,
+          });
+        }
+
         params.api.setGridOption("datasource", createDatasource());
       },
-      [createDatasource],
+      [createDatasource, onGetColumnsState],
     );
 
     const onSelectionChanged = useCallback(
@@ -140,6 +174,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           suppressRowClickSelection={true}
           rowBuffer={0}
           rowSelection={"multiple"}
+          onColumnMoved={onColumnChanged}
+          onColumnResized={onColumnChanged}
           rowModelType={"infinite"}
           cacheBlockSize={20}
           onSelectionChanged={onSelectionChanged}
