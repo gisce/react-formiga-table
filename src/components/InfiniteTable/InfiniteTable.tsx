@@ -31,8 +31,8 @@ export type InfiniteTableProps = Omit<
 > & {
   onRequestData: (startRow: number, endRow: number) => Promise<any[]>;
   height?: number;
-  onColumnChanged?: (columnsState?: ColumnState[]) => void;
-  onGetColumnsState?: () => ColumnState[];
+  onColumnChanged?: (columnsState: ColumnState[]) => void;
+  onGetColumnsState?: () => ColumnState[] | undefined;
 };
 
 export type InfiniteTableRef = {
@@ -92,6 +92,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           checkboxSelection: true,
           suppressMovable: true,
           sortable: false,
+          lockPosition: true,
           pinned: "left",
           maxWidth: 50,
           resizable: false,

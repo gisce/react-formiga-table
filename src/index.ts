@@ -5,4 +5,6 @@ export type {
   InfiniteTableRef,
 } from "./components/InfiniteTable/InfiniteTable";
 
+export type { ColumnState } from "ag-grid-community";
+
 export * from "./types";
