@@ -5,6 +5,7 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
@@ -24,9 +25,10 @@ import { TableProps } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import { useWhyDidYouRender } from "@/hooks/useWhyDidYouRender";
 import debounce from "lodash/debounce";
-import throttle from "lodash/throttle";
+import { HeaderCheckbox } from "./HeaderCheckbox";
+import { useDeepCompareMemo } from "use-deep-compare";
 
-const DEBOUNCE_TIME = 500;
+const DEBOUNCE_TIME = 50;
 
 export type InfiniteTableProps = Omit<
   TableProps,
@@ -39,6 +41,7 @@ export type InfiniteTableProps = Omit<
   onGetFirstVisibleRowIndex?: () => number | undefined;
   onChangeFirstVisibleRowIndex?: (index: number) => void;
   onGetSelectedRowKeys?: () => any[] | undefined;
+  totalRows: number;
 };
 
 export type InfiniteTableRef = {
@@ -60,9 +63,17 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onChangeFirstVisibleRowIndex,
       onGetFirstVisibleRowIndex,
       onGetSelectedRowKeys,
+      totalRows,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
+    const [internalSelectedRowKeys, setInternalSelectedRowKeys] = useState<
+      any[]
+    >([]);
+    const [allRowSelected, setAllRowSelected] = useState<boolean>(false);
+    const allRowSelectedRef = useRef<boolean>(allRowSelected);
+    const selectedRowKeysPendingToRender = useRef<any[]>([]);
+    const firstTimeOnBodyScroll = useRef(true);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedOnColumnChanged = useCallback(
@@ -82,6 +93,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     useImperativeHandle(ref, () => ({
       unselectAll: () => {
+        selectedRowKeysPendingToRender.current = [];
         gridRef.current?.api?.deselectAll();
       },
       refresh: () => {
@@ -95,7 +107,34 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const defaultColDef = useMemo<ColDef>(() => ({}), []);
 
-    const colDefs = useMemo((): ColDef[] => {
+    const onHeaderCheckboxChange = useCallback(() => {
+      // Check if all rows are currently selected or if the selection count matches total rows
+      const allRowsSelected =
+        allRowSelectedRef.current ||
+        totalRows === internalSelectedRowKeys.length;
+
+      // Determine the new selection state based on current conditions
+      let newAllSelectedState = false;
+      if (!allRowsSelected && internalSelectedRowKeys.length === 0) {
+        newAllSelectedState = true; // No rows are selected and selection should be toggled to all
+      } else if (
+        allRowsSelected ||
+        (internalSelectedRowKeys.length > 0 && !allRowSelectedRef.current)
+      ) {
+        newAllSelectedState = false; // Either all are selected or some are selected but not all
+      }
+
+      // Apply the determined state to all nodes
+      gridRef?.current?.api.forEachNode((node) => {
+        node.setSelected(newAllSelectedState);
+      });
+
+      // Update state references to reflect the new state
+      allRowSelectedRef.current = newAllSelectedState;
+      setAllRowSelected(newAllSelectedState);
+    }, [internalSelectedRowKeys.length, totalRows]);
+
+    const colDefs = useDeepCompareMemo((): ColDef[] => {
       return [
         {
           checkboxSelection: true,
@@ -105,6 +144,14 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           pinned: "left",
           maxWidth: 50,
           resizable: false,
+          headerComponent: () => (
+            <HeaderCheckbox
+              totalRows={totalRows}
+              selectedRowKeysLength={internalSelectedRowKeys.length}
+              allRowSelected={allRowSelected}
+              onHeaderCheckboxChange={onHeaderCheckboxChange}
+            />
+          ),
         },
         ...columns.map((column) => ({
           field: column.key,
@@ -114,10 +161,13 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             : undefined,
         })),
       ];
-    }, [columns]);
-
-    const selectedRowKeysPendingToRender = useRef<any[]>([]);
-    const firstTimeOnBodyScroll = useRef(true);
+    }, [
+      allRowSelected,
+      columns,
+      internalSelectedRowKeys.length,
+      onHeaderCheckboxChange,
+      totalRows,
+    ]);
 
     const createDatasource = useCallback(
       (): IDatasource => ({
@@ -136,6 +186,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
           if (selectedRowKeys && selectedRowKeys.length > 0) {
             gridRef?.current?.api.forEachNode((node) => {
+              if (allRowSelectedRef.current) {
+                node.setSelected(true);
+                return;
+              }
               if (node?.data?.id && selectedRowKeys.includes(node.data.id)) {
                 node.setSelected(true);
                 // remove from selectedRowKeysPendingToRender
@@ -167,17 +221,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       [createDatasource, onGetColumnsState],
     );
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     const onSelectionChanged = useCallback(
       (event: { api: { getSelectedNodes: () => any } }) => {
-        // if (!firstTimeSelectionSet) {
-        //   return;
-        // }
-        // firstTimeSelectionSet.current = false;
-        //
-        console.log("onSelectionChanged");
         const allSelectedNodes = event.api.getSelectedNodes();
-        console.log({ allSelectedNodes });
         let selectedKeys = allSelectedNodes.map(
           (node: { data: any }) => node.data.id,
         );
@@ -186,8 +232,17 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           selectedRowKeysPendingToRender.current,
         );
         onRowSelectionChange?.(selectedKeys);
+        setInternalSelectedRowKeys(selectedKeys);
       },
       [onRowSelectionChange],
+    );
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const onSelectionChangedDebounced = useCallback(
+      debounce((event: { api: { getSelectedNodes: () => any } }) => {
+        onSelectionChanged?.(event);
+      }, DEBOUNCE_TIME),
+      [onSelectionChanged],
     );
 
     const onRowDoubleClicked = useCallback(
@@ -241,7 +296,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           onColumnResized={onColumnChanged}
           rowModelType={"infinite"}
           cacheBlockSize={20}
-          onSelectionChanged={onSelectionChanged}
+          onSelectionChanged={onSelectionChangedDebounced}
           cacheOverflowSize={2}
           maxConcurrentDatasourceRequests={1}
           infiniteInitialRowCount={50}
@@ -249,6 +304,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           onGridReady={onGridReady}
           onFirstDataRendered={onFirstDataRendered}
           onBodyScroll={onBodyScroll}
+          blockLoadDebounceMillis={DEBOUNCE_TIME}
         />
       </div>
     );
