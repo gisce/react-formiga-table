@@ -47,7 +47,7 @@ export type TableProps = {
   onRowStyle?: (item: any) => any;
   onRowStatus?: (item: any) => any;
   onRowDoubleClick?: (item: any) => void;
-  onRowSelectionChange?: (selectedRowItems: any[]) => void;
+  onRowSelectionChange?: (selectedRowKeys: any[]) => void;
   sortEnabled?: boolean;
   onChangeSort?: (sorter: Sorter | undefined) => void;
   sorter?: Sorter | undefined;

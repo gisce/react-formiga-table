@@ -24,6 +24,7 @@ import { TableProps } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import { useWhyDidYouRender } from "@/hooks/useWhyDidYouRender";
 import debounce from "lodash/debounce";
+import throttle from "lodash/throttle";
 
 const DEBOUNCE_TIME = 500;
 
@@ -115,6 +116,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       ];
     }, [columns]);
 
+    const selectedRowKeysPendingToRender = useRef<any[]>([]);
+    const firstTimeOnBodyScroll = useRef(true);
+
     const createDatasource = useCallback(
       (): IDatasource => ({
         getRows: async (params) => {
@@ -128,16 +132,20 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           params.successCallback(data, lastRow);
 
           const selectedRowKeys = onGetSelectedRowKeys?.();
+          selectedRowKeysPendingToRender.current = selectedRowKeys || [];
+
           if (selectedRowKeys && selectedRowKeys.length > 0) {
             gridRef?.current?.api.forEachNode((node) => {
               if (node?.data?.id && selectedRowKeys.includes(node.data.id)) {
                 node.setSelected(true);
+                // remove from selectedRowKeysPendingToRender
+                selectedRowKeysPendingToRender.current =
+                  selectedRowKeysPendingToRender.current.filter(
+                    (key) => node.data.id && key !== node.data.id,
+                  );
               }
             });
-          } else {
-            firstTimeSelectionSet.current = false;
           }
-
           gridRef.current?.api.hideOverlay();
         },
       }),
@@ -159,18 +167,25 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       [createDatasource, onGetColumnsState],
     );
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const onSelectionChanged = useCallback(
       (event: { api: { getSelectedNodes: () => any } }) => {
-        if (firstTimeSelectionSet.current) {
-          firstTimeSelectionSet.current = false;
-          return;
-        }
-        firstTimeSelectionSet.current = false;
+        // if (!firstTimeSelectionSet) {
+        //   return;
+        // }
+        // firstTimeSelectionSet.current = false;
+        //
+        console.log("onSelectionChanged");
         const allSelectedNodes = event.api.getSelectedNodes();
-        const selectedData = allSelectedNodes.map(
-          (node: { data: any }) => node.data,
+        console.log({ allSelectedNodes });
+        let selectedKeys = allSelectedNodes.map(
+          (node: { data: any }) => node.data.id,
         );
-        onRowSelectionChange?.(selectedData);
+        // merge the pending selected rows
+        selectedKeys = selectedKeys.concat(
+          selectedRowKeysPendingToRender.current,
+        );
+        onRowSelectionChange?.(selectedKeys);
       },
       [onRowSelectionChange],
     );
@@ -181,9 +196,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       },
       [onRowDoubleClick],
     );
-
-    const firstTimeOnBodyScroll = useRef(true);
-    const firstTimeSelectionSet = useRef(true);
 
     const onFirstDataRendered = useCallback(
       (params: FirstDataRenderedEvent) => {
