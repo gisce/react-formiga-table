@@ -1,3 +1,4 @@
+import { useWhyDidYouRender } from "@/hooks/useWhyDidYouRender";
 import React, { memo, useEffect } from "react";
 
 const HeaderCheckboxComp = memo(
@@ -53,11 +54,13 @@ export const HeaderCheckbox = memo(
     totalRows,
     allRowSelected,
     onHeaderCheckboxChange,
+    allRowSelectedMode,
   }: {
     selectedRowKeysLength: number;
     totalRows: number;
     allRowSelected: boolean;
     onHeaderCheckboxChange: (value: boolean | null) => void;
+    allRowSelectedMode: boolean;
   }) => {
     const noRowsSelected = selectedRowKeysLength === 0;
     const someRowsSelected =
@@ -65,15 +68,31 @@ export const HeaderCheckbox = memo(
 
     let value: boolean | null = false;
 
-    if (totalRows === selectedRowKeysLength && totalRows > 0) {
+    useWhyDidYouRender("HeaderCheckbox", [
+      selectedRowKeysLength,
+      totalRows,
+      allRowSelected,
+      onHeaderCheckboxChange,
+    ]);
+
+    console.log(
+      "HeaderCheckbox rendered: ",
+      selectedRowKeysLength,
+      totalRows,
+      allRowSelected,
+      allRowSelectedMode,
+    );
+
+    if (allRowSelectedMode) {
+      value = true;
+    } else if (totalRows === selectedRowKeysLength && totalRows > 0) {
       value = true;
     } else if (allRowSelected) {
       value = true;
     } else if (noRowsSelected) {
       value = false;
     } else if (someRowsSelected) {
-      // value = null;
-      value = true;
+      value = null;
     }
 
     return (

@@ -2,10 +2,10 @@ import {
   forwardRef,
   memo,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
-  useState,
 } from "react";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
@@ -18,7 +18,7 @@ import {
   ColumnState,
   FirstDataRenderedEvent,
   GridReadyEvent,
-  IDatasource,
+  IGetRowsParams,
   RowDoubleClickedEvent,
 } from "ag-grid-community";
 import { TableProps } from "@/types";
@@ -26,7 +26,7 @@ import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import { useWhyDidYouRender } from "@/hooks/useWhyDidYouRender";
 import debounce from "lodash/debounce";
 import { HeaderCheckbox } from "./HeaderCheckbox";
-import { useDeepCompareMemo } from "use-deep-compare";
+import { useRowSelection } from "./useRowSelection";
 
 const DEBOUNCE_TIME = 50;
 
@@ -42,6 +42,7 @@ export type InfiniteTableProps = Omit<
   onChangeFirstVisibleRowIndex?: (index: number) => void;
   onGetSelectedRowKeys?: () => any[] | undefined;
   totalRows: number;
+  onAllRowSelectedModeChange?: (allRowSelectedMode: boolean) => void;
 };
 
 export type InfiniteTableRef = {
@@ -64,16 +65,12 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onGetFirstVisibleRowIndex,
       onGetSelectedRowKeys,
       totalRows,
+      onAllRowSelectedModeChange,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
-    const [internalSelectedRowKeys, setInternalSelectedRowKeys] = useState<
-      any[]
-    >([]);
-    const [allRowSelected, setAllRowSelected] = useState<boolean>(false);
-    const allRowSelectedRef = useRef<boolean>(allRowSelected);
-    const selectedRowKeysPendingToRender = useRef<any[]>([]);
     const firstTimeOnBodyScroll = useRef(true);
+    const allRowSelectedModeRef = useRef<boolean>(false);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedOnColumnChanged = useCallback(
@@ -93,7 +90,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     useImperativeHandle(ref, () => ({
       unselectAll: () => {
-        selectedRowKeysPendingToRender.current = [];
+        setSelectedRowKeysPendingToRender([]);
         gridRef.current?.api?.deselectAll();
       },
       refresh: () => {
@@ -101,40 +98,30 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       },
     }));
 
+    const {
+      onHeaderCheckboxChange,
+      onSelectionChangedDebounced,
+      selectedRowKeysPendingToRender,
+      allRowSelectedMode,
+      internalSelectedRowKeys,
+      setSelectedRowKeysPendingToRender,
+    } = useRowSelection({
+      gridRef,
+      onRowSelectionChange,
+      onAllRowSelectedModeChange,
+      totalRows,
+    });
+
+    useEffect(() => {
+      allRowSelectedModeRef.current = allRowSelectedMode;
+    }, [allRowSelectedMode]);
     const columns = useDeepArrayMemo(columnsProps, "key");
 
     useWhyDidYouRender("InfiniteTableComp", props);
 
     const defaultColDef = useMemo<ColDef>(() => ({}), []);
 
-    const onHeaderCheckboxChange = useCallback(() => {
-      // Check if all rows are currently selected or if the selection count matches total rows
-      const allRowsSelected =
-        allRowSelectedRef.current ||
-        totalRows === internalSelectedRowKeys.length;
-
-      // Determine the new selection state based on current conditions
-      let newAllSelectedState = false;
-      if (!allRowsSelected && internalSelectedRowKeys.length === 0) {
-        newAllSelectedState = true; // No rows are selected and selection should be toggled to all
-      } else if (
-        allRowsSelected ||
-        (internalSelectedRowKeys.length > 0 && !allRowSelectedRef.current)
-      ) {
-        newAllSelectedState = false; // Either all are selected or some are selected but not all
-      }
-
-      // Apply the determined state to all nodes
-      gridRef?.current?.api.forEachNode((node) => {
-        node.setSelected(newAllSelectedState);
-      });
-
-      // Update state references to reflect the new state
-      allRowSelectedRef.current = newAllSelectedState;
-      setAllRowSelected(newAllSelectedState);
-    }, [internalSelectedRowKeys.length, totalRows]);
-
-    const colDefs = useDeepCompareMemo((): ColDef[] => {
+    const colDefs = useMemo((): ColDef[] => {
       return [
         {
           checkboxSelection: true,
@@ -148,7 +135,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             <HeaderCheckbox
               totalRows={totalRows}
               selectedRowKeysLength={internalSelectedRowKeys.length}
-              allRowSelected={allRowSelected}
+              allRowSelected={totalRows === internalSelectedRowKeys.length}
+              allRowSelectedMode={allRowSelectedMode}
               onHeaderCheckboxChange={onHeaderCheckboxChange}
             />
           ),
@@ -162,48 +150,53 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         })),
       ];
     }, [
-      allRowSelected,
+      allRowSelectedMode,
       columns,
       internalSelectedRowKeys.length,
       onHeaderCheckboxChange,
       totalRows,
     ]);
 
-    const createDatasource = useCallback(
-      (): IDatasource => ({
-        getRows: async (params) => {
-          gridRef.current?.api.showLoadingOverlay();
-          const { startRow, endRow } = params;
-          const data = await onRequestData(startRow, endRow);
-          let lastRow = -1;
-          if (data.length < endRow - startRow) {
-            lastRow = startRow + data.length;
-          }
-          params.successCallback(data, lastRow);
-
+    const getRows = useCallback(
+      async (params: IGetRowsParams) => {
+        gridRef.current?.api.showLoadingOverlay();
+        const { startRow, endRow } = params;
+        const data = await onRequestData(startRow, endRow);
+        let lastRow = -1;
+        if (data.length < endRow - startRow) {
+          lastRow = startRow + data.length;
+        }
+        params.successCallback(data, lastRow);
+        if (allRowSelectedModeRef.current) {
+          gridRef?.current?.api.forEachNode((node) => {
+            node.setSelected(true);
+          });
+        } else {
           const selectedRowKeys = onGetSelectedRowKeys?.();
-          selectedRowKeysPendingToRender.current = selectedRowKeys || [];
+          setSelectedRowKeysPendingToRender(selectedRowKeys || []);
 
           if (selectedRowKeys && selectedRowKeys.length > 0) {
             gridRef?.current?.api.forEachNode((node) => {
-              if (allRowSelectedRef.current) {
-                node.setSelected(true);
-                return;
-              }
               if (node?.data?.id && selectedRowKeys.includes(node.data.id)) {
-                node.setSelected(true);
                 // remove from selectedRowKeysPendingToRender
-                selectedRowKeysPendingToRender.current =
-                  selectedRowKeysPendingToRender.current.filter(
+                node.setSelected(true);
+                setSelectedRowKeysPendingToRender(
+                  selectedRowKeysPendingToRender.filter(
                     (key) => node.data.id && key !== node.data.id,
-                  );
+                  ),
+                );
               }
             });
           }
-          gridRef.current?.api.hideOverlay();
-        },
-      }),
-      [onGetSelectedRowKeys, onRequestData],
+        }
+        gridRef.current?.api.hideOverlay();
+      },
+      [
+        onGetSelectedRowKeys,
+        onRequestData,
+        selectedRowKeysPendingToRender,
+        setSelectedRowKeysPendingToRender,
+      ],
     );
 
     const onGridReady = useCallback(
@@ -216,33 +209,11 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           });
         }
 
-        params.api.setGridOption("datasource", createDatasource());
+        params.api.setGridOption("datasource", {
+          getRows,
+        });
       },
-      [createDatasource, onGetColumnsState],
-    );
-
-    const onSelectionChanged = useCallback(
-      (event: { api: { getSelectedNodes: () => any } }) => {
-        const allSelectedNodes = event.api.getSelectedNodes();
-        let selectedKeys = allSelectedNodes.map(
-          (node: { data: any }) => node.data.id,
-        );
-        // merge the pending selected rows
-        selectedKeys = selectedKeys.concat(
-          selectedRowKeysPendingToRender.current,
-        );
-        onRowSelectionChange?.(selectedKeys);
-        setInternalSelectedRowKeys(selectedKeys);
-      },
-      [onRowSelectionChange],
-    );
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const onSelectionChangedDebounced = useCallback(
-      debounce((event: { api: { getSelectedNodes: () => any } }) => {
-        onSelectionChanged?.(event);
-      }, DEBOUNCE_TIME),
-      [onSelectionChanged],
+      [getRows, onGetColumnsState],
     );
 
     const onRowDoubleClicked = useCallback(
