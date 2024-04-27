@@ -42,6 +42,7 @@ export type InfiniteTableProps = Omit<
   onChangeFirstVisibleRowIndex?: (index: number) => void;
   onGetSelectedRowKeys?: () => any[] | undefined;
   totalRows: number;
+  allRowSelectedMode?: boolean;
   onAllRowSelectedModeChange?: (allRowSelectedMode: boolean) => void;
 };
 
@@ -66,6 +67,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onGetSelectedRowKeys,
       totalRows,
       onAllRowSelectedModeChange,
+      allRowSelectedMode: allRowSelectedModeProps,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -110,6 +112,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onRowSelectionChange,
       onAllRowSelectedModeChange,
       totalRows,
+      allRowSelectedModeProps,
     });
 
     useEffect(() => {
