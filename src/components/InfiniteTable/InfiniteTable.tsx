@@ -23,7 +23,6 @@ import {
 } from "ag-grid-community";
 import { TableProps } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
-import { useWhyDidYouRender } from "@/hooks/useWhyDidYouRender";
 import debounce from "lodash/debounce";
 import { HeaderCheckbox } from "./HeaderCheckbox";
 import { useRowSelection } from "./useRowSelection";
@@ -119,8 +118,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       allRowSelectedModeRef.current = allRowSelectedMode;
     }, [allRowSelectedMode]);
     const columns = useDeepArrayMemo(columnsProps, "key");
-
-    useWhyDidYouRender("InfiniteTableComp", props);
 
     const defaultColDef = useMemo<ColDef>(() => ({}), []);
 
