@@ -1,14 +1,14 @@
-import React, { useCallback, useEffect } from "react";
+import { forwardRef, useImperativeHandle, useCallback, useEffect } from "react";
 import { useExpandable } from "../hooks/useExpandable";
 import { useSelectable } from "../hooks/useSelectable";
 import { useShiftSelected } from "../hooks/useShiftSelect";
 import { useSortable } from "../hooks/useSortable";
-import { TableProps } from "../types";
+import { TableProps, TableRef } from "../types";
 import { Container } from "./Container";
 import { Headers } from "./Headers";
 import { Rows } from "./Rows";
 
-export const Table = (props: TableProps) => {
+export const Table = forwardRef<TableRef, TableProps>((props, ref) => {
   const {
     height,
     loading,
@@ -36,6 +36,12 @@ export const Table = (props: TableProps) => {
   } = useSelectable({
     selectionRowKeysProps,
   });
+
+  useImperativeHandle(ref, () => ({
+    unselectAll: () => {
+      toggleAllRowsSelected([]);
+    },
+  }));
 
   const onChange = useShiftSelected(
     dataSource.map((el) => el.id),
@@ -137,4 +143,6 @@ export const Table = (props: TableProps) => {
       </table>
     </Container>
   );
-};
+});
+
+Table.displayName = "Table";

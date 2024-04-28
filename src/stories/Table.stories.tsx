@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { ComponentMeta, ComponentStoryObj } from "@storybook/react";
 import { Table } from "../components/Table";
 import { Button, Spin } from "antd";
-import { OnCellRenderOpts, Sorter } from "../types";
+import { OnCellRenderOpts, Sorter, TableRef } from "../types";
 import {
   PlusSquareOutlined,
   MinusSquareOutlined,
@@ -395,21 +395,33 @@ export const AddingMoreChilds = (): React.ReactElement => {
 };
 
 export const HeavyTable = (): React.ReactElement => {
+  const tableRef = useRef<TableRef>(null);
+
   return (
-    <Table
-      dataSource={heavyTable}
-      columns={columns}
-      onRowSelectionChange={(selectedRows: any) => {
-        console.log("selectedRows: " + JSON.stringify(selectedRows));
-      }}
-      onRowStyle={() => undefined}
-      onRowDoubleClick={(record: any) => {
-        alert("double clicked record" + JSON.stringify(record));
-      }}
-      loadingComponent={<Spin />}
-      height={"100%"}
-      sorter={undefined}
-      loading={false}
-    />
+    <>
+      <Button
+        onClick={() => {
+          tableRef.current?.unselectAll();
+        }}
+      >
+        Unselect all registers
+      </Button>
+      <Table
+        ref={tableRef}
+        dataSource={heavyTable}
+        columns={columns}
+        onRowSelectionChange={(selectedRows: any) => {
+          console.log("selectedRows: " + JSON.stringify(selectedRows));
+        }}
+        onRowStyle={() => undefined}
+        onRowDoubleClick={(record: any) => {
+          alert("double clicked record" + JSON.stringify(record));
+        }}
+        loadingComponent={<Spin />}
+        height={"100%"}
+        sorter={undefined}
+        loading={false}
+      />
+    </>
   );
 };
