@@ -34,6 +34,14 @@ export const useRowSelection = ({
   }, [allRowSelectedMode]);
 
   useEffect(() => {
+    setAllRowSelectedMode(allRowSelectedModeProps);
+    if (allRowSelectedModeProps) {
+      setInternalSelectedRowKeys([]);
+      allRowSelectedModeLock.current = true;
+    }
+  }, [allRowSelectedModeProps]);
+
+  useEffect(() => {
     onAllRowSelectedModeChange?.(allRowSelectedMode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allRowSelectedMode]);
