@@ -67,14 +67,6 @@ export const HeaderCheckbox = memo(
 
     let value: boolean | null = false;
 
-    console.log(
-      "HeaderCheckbox rendered: ",
-      selectedRowKeysLength,
-      totalRows,
-      allRowSelected,
-      allRowSelectedMode,
-    );
-
     if (allRowSelectedMode) {
       value = true;
     } else if (totalRows === selectedRowKeysLength && totalRows > 0) {
