@@ -6,6 +6,7 @@
   },
   "files": [
     "dist",
+    "dist/style.css",
     "src",
     "README.md"
   ],
@@ -18,7 +19,8 @@
     ".": {
       "import": "./dist/react-formiga-table.es.js",
       "types": "./dist/index.d.ts"
-    }
+    },
+    "./style.css": "./dist/style.css"
   },
   "scripts": {
     "build": "tsc --noEmit && vite build",

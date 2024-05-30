@@ -28,8 +28,8 @@ const HeaderCheckboxComp = memo(
     return (
       <input
         style={{
-          width: "16px",
-          height: "16px",
+          width: "15px",
+          height: "15px",
           border: "1px solid grey",
           cursor: "pointer",
         }}
