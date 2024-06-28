@@ -143,6 +143,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         },
         ...columns.map((column) => ({
           field: column.key,
+          sortable: false,
           headerName: column.title,
           cellRenderer: column.render
             ? (cell: any) => column.render(cell.value)
