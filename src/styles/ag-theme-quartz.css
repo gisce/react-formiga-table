@@ -138,9 +138,9 @@
   --ag-header-column-resize-handle-width: 2px;
   --ag-header-column-resize-handle-height: 30%;
   --ag-grid-size: 8px;
-  --ag-icon-size: 16px;
-  --ag-header-height: calc(var(--ag-font-size) + var(--ag-grid-size) * 4.25);
-  --ag-row-height: calc(var(--ag-font-size) + var(--ag-grid-size) * 3.5);
+  --ag-icon-size: 14px;
+  --ag-header-height: 34px;
+  --ag-row-height: 36px;
   --ag-list-item-height: calc(
     var(--ag-icon-size) + var(--ag-widget-vertical-spacing)
   );

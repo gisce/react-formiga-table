@@ -32,6 +32,7 @@ const HeaderCheckboxComp = memo(
           height: "15px",
           border: "1px solid grey",
           cursor: "pointer",
+          margin: 0,
         }}
         onDoubleClick={(e) => {
           e.stopPropagation();
