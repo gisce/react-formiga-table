@@ -72,6 +72,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const gridRef = useRef<AgGridReact>(null);
     const firstTimeOnBodyScroll = useRef(true);
     const allRowSelectedModeRef = useRef<boolean>(false);
+    const columnsPersistedState = useRef<any>();
+    const firstTimeResized = useRef(false);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedOnColumnChanged = useCallback(
@@ -117,6 +119,13 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     useEffect(() => {
       allRowSelectedModeRef.current = allRowSelectedMode;
     }, [allRowSelectedMode]);
+
+    useEffect(() => {
+      if (!columnsPersistedState.current) {
+        columnsPersistedState.current = onGetColumnsState?.();
+      }
+    }, [onGetColumnsState]);
+
     const columns = useDeepArrayMemo(columnsProps, "key");
 
     const defaultColDef = useMemo<ColDef>(() => ({}), []);
@@ -158,6 +167,15 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       totalRows,
     ]);
 
+    const autoResizeColumnsIfNecessary = useCallback(() => {
+      if (!columnsPersistedState.current && !firstTimeResized.current) {
+        firstTimeResized.current = true;
+        setTimeout(() => {
+          gridRef.current?.api.autoSizeAllColumns();
+        }, 50);
+      }
+    }, []);
+
     const getRows = useCallback(
       async (params: IGetRowsParams) => {
         gridRef.current?.api.showLoadingOverlay();
@@ -191,8 +209,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           }
         }
         gridRef.current?.api.hideOverlay();
+        autoResizeColumnsIfNecessary();
       },
       [
+        autoResizeColumnsIfNecessary,
         onGetSelectedRowKeys,
         onRequestData,
         selectedRowKeysPendingToRender,
@@ -202,10 +222,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
-        const savedState = onGetColumnsState?.();
-        if (savedState) {
+        if (columnsPersistedState.current) {
           params.api.applyColumnState({
-            state: savedState,
+            state: columnsPersistedState.current,
             applyOrder: true,
           });
         }
@@ -214,7 +233,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           getRows,
         });
       },
-      [getRows, onGetColumnsState],
+      [getRows],
     );
 
     const onRowDoubleClicked = useCallback(
