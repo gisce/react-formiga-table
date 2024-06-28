@@ -32,6 +32,7 @@ const HeaderCheckboxComp = memo(
           height: "15px",
           border: "1px solid grey",
           cursor: "pointer",
+          margin: 0,
         }}
         onDoubleClick={(e) => {
           e.stopPropagation();
@@ -66,14 +67,6 @@ export const HeaderCheckbox = memo(
       selectedRowKeysLength > 0 && totalRows !== selectedRowKeysLength;
 
     let value: boolean | null = false;
-
-    console.log(
-      "HeaderCheckbox rendered: ",
-      selectedRowKeysLength,
-      totalRows,
-      allRowSelected,
-      allRowSelectedMode,
-    );
 
     if (allRowSelectedMode) {
       value = true;
