@@ -26,6 +26,7 @@ import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import debounce from "lodash/debounce";
 import { HeaderCheckbox } from "./HeaderCheckbox";
 import { useRowSelection } from "./useRowSelection";
+import { useAutoFitColumns } from "@/hooks/useAutoFitColumns";
 
 const DEBOUNCE_TIME = 50;
 
@@ -72,8 +73,14 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const gridRef = useRef<AgGridReact>(null);
     const firstTimeOnBodyScroll = useRef(true);
     const allRowSelectedModeRef = useRef<boolean>(false);
-    const columnsPersistedState = useRef<any>();
-    const firstTimeResized = useRef(false);
+    const columnsPersistedStateRef = useRef<any>();
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    const { autoSizeColumnsIfNecessary } = useAutoFitColumns({
+      gridRef,
+      containerRef,
+      columnsPersistedStateRef,
+    });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedOnColumnChanged = useCallback(
@@ -121,8 +128,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     }, [allRowSelectedMode]);
 
     useEffect(() => {
-      if (!columnsPersistedState.current) {
-        columnsPersistedState.current = onGetColumnsState?.();
+      if (!columnsPersistedStateRef.current) {
+        columnsPersistedStateRef.current = onGetColumnsState?.();
       }
     }, [onGetColumnsState]);
 
@@ -167,15 +174,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       totalRows,
     ]);
 
-    const autoResizeColumnsIfNecessary = useCallback(() => {
-      if (!columnsPersistedState.current && !firstTimeResized.current) {
-        firstTimeResized.current = true;
-        setTimeout(() => {
-          gridRef.current?.api.autoSizeAllColumns();
-        }, 50);
-      }
-    }, []);
-
     const getRows = useCallback(
       async (params: IGetRowsParams) => {
         gridRef.current?.api.showLoadingOverlay();
@@ -209,10 +207,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           }
         }
         gridRef.current?.api.hideOverlay();
-        autoResizeColumnsIfNecessary();
+        autoSizeColumnsIfNecessary();
       },
       [
-        autoResizeColumnsIfNecessary,
+        autoSizeColumnsIfNecessary,
         onGetSelectedRowKeys,
         onRequestData,
         selectedRowKeysPendingToRender,
@@ -222,9 +220,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
-        if (columnsPersistedState.current) {
+        if (columnsPersistedStateRef.current) {
           params.api.applyColumnState({
-            state: columnsPersistedState.current,
+            state: columnsPersistedStateRef.current,
             applyOrder: true,
           });
         }
@@ -267,8 +265,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     return (
       <div
+        ref={containerRef}
         className={`ag-grid-default-table ag-theme-quartz`}
-        style={{ height: height || 600 }}
+        style={{ height: height || 600, width: "100%" }}
       >
         <AgGridReact
           ref={gridRef}
