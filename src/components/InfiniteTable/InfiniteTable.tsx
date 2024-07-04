@@ -174,20 +174,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       totalRows,
     ]);
 
-    const columnKeys = useMemo(
-      () => columns.map((column) => column.key),
-      [columns],
-    );
-
-    useEffect(() => {
-      if (!columnsPersistedStateRef.current) {
-        columnsPersistedStateRef.current = getPersistedColumnState({
-          actualColumnKeys: columnKeys,
-          persistedColumnState: columnsPersistedStateRef.current,
-        });
-      }
-    }, [columnKeys, onGetColumnsState]);
-
     const getRows = useCallback(
       async (params: IGetRowsParams) => {
         gridRef.current?.api.showLoadingOverlay();
@@ -234,6 +220,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
+        columnsPersistedStateRef.current = getPersistedColumnState({
+          actualColumnKeys: columns.map((column) => column.key),
+          persistedColumnState: onGetColumnsState?.(),
+        });
         if (columnsPersistedStateRef.current) {
           params.api.applyColumnState({
             state: columnsPersistedStateRef.current,
@@ -245,7 +235,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           getRows,
         });
       },
-      [getRows],
+      [columns, getRows, onGetColumnsState],
     );
 
     const onRowDoubleClicked = useCallback(
