@@ -36,11 +36,12 @@ export const useAutoFitColumns = ({
         if (!allColumns) return;
         const blankSpace = remainingBlankSpace(allColumns);
         if (blankSpace > 0) {
-          const spacePerColumn = blankSpace / allColumns.length;
+          const spacePerColumn = blankSpace / (allColumns.length - 1); // we skip the first checkbox column, since it's not resizable
           const state = gridRef?.current?.api.getColumnState()!;
-          const newState = state.map((col) => ({
+          const newState = state.map((col: any) => ({
             ...col,
-            width: col.width! + spacePerColumn,
+            // colId 0 is the checkbox column
+            width: col.colId !== "0" ? col.width + spacePerColumn : col.width,
           }));
           gridRef?.current?.api.applyColumnState({ state: newState });
         }
