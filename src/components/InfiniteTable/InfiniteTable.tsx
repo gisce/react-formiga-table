@@ -26,7 +26,8 @@ import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import debounce from "lodash/debounce";
 import { HeaderCheckbox } from "./HeaderCheckbox";
 import { useRowSelection } from "./useRowSelection";
-import { useAutoFitColumns } from "@/hooks/useAutoFitColumns";
+import { useAutoFitColumns } from "./useAutoFitColumns";
+import { getPersistedColumnState } from "./columnStateHelper";
 
 const DEBOUNCE_TIME = 50;
 
@@ -127,12 +128,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       allRowSelectedModeRef.current = allRowSelectedMode;
     }, [allRowSelectedMode]);
 
-    useEffect(() => {
-      if (!columnsPersistedStateRef.current) {
-        columnsPersistedStateRef.current = onGetColumnsState?.();
-      }
-    }, [onGetColumnsState]);
-
     const columns = useDeepArrayMemo(columnsProps, "key");
 
     const defaultColDef = useMemo<ColDef>(() => ({}), []);
@@ -173,6 +168,20 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onHeaderCheckboxChange,
       totalRows,
     ]);
+
+    const columnKeys = useMemo(
+      () => columns.map((column) => column.key),
+      [columns],
+    );
+
+    useEffect(() => {
+      if (!columnsPersistedStateRef.current) {
+        columnsPersistedStateRef.current = getPersistedColumnState({
+          actualColumnKeys: columnKeys,
+          persistedColumnState: columnsPersistedStateRef.current,
+        });
+      }
+    }, [columnKeys, onGetColumnsState]);
 
     const getRows = useCallback(
       async (params: IGetRowsParams) => {
