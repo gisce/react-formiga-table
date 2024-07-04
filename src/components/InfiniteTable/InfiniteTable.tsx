@@ -76,6 +76,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const allRowSelectedModeRef = useRef<boolean>(false);
     const columnsPersistedStateRef = useRef<any>();
     const containerRef = useRef<HTMLDivElement>(null);
+    const columnChangeListenerReady = useRef(false);
 
     const { autoSizeColumnsIfNecessary } = useAutoFitColumns({
       gridRef,
@@ -86,6 +87,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedOnColumnChanged = useCallback(
       debounce((state) => {
+        if (!columnChangeListenerReady.current) {
+          columnChangeListenerReady.current = true;
+          return;
+        }
         onColumnsChangedProps?.(state);
       }, DEBOUNCE_TIME),
       [onColumnsChangedProps],
