@@ -3,7 +3,7 @@ export const getPersistedColumnState = ({
   persistedColumnState,
 }: {
   actualColumnKeys: string[];
-  persistedColumnState: any[];
+  persistedColumnState?: any[];
 }) => {
   if (!persistedColumnState) {
     return undefined;
@@ -12,8 +12,11 @@ export const getPersistedColumnState = ({
     (col) => col.colId as string,
   );
   // we now have to sort both actualColumnKeys and persistedColumnKeys, and detect if there are differences
+  // we have to remove the "0" (checkbox column) from the persistedColumnKeys
   const sortedActualColumnKeys = [...actualColumnKeys].sort();
-  const sortedPersistedColumnKeys = [...persistedColumnKeys].sort();
+  const sortedPersistedColumnKeys = [
+    ...persistedColumnKeys.filter((key) => key !== "0"),
+  ].sort();
   const areColumnKeysEqual =
     JSON.stringify(sortedActualColumnKeys) ===
     JSON.stringify(sortedPersistedColumnKeys);
