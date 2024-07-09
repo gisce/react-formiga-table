@@ -151,7 +151,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             <HeaderCheckbox
               totalRows={totalRows}
               selectedRowKeysLength={internalSelectedRowKeys.length}
-              allRowSelected={totalRows === internalSelectedRowKeys.length}
+              allRowSelected={
+                totalRows === internalSelectedRowKeys.length && totalRows > 0
+              }
               allRowSelectedMode={allRowSelectedMode}
               onHeaderCheckboxChange={onHeaderCheckboxChange}
             />
