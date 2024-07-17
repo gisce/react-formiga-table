@@ -45,6 +45,8 @@ export type InfiniteTableProps = Omit<
   totalRows: number;
   allRowSelectedMode?: boolean;
   onAllRowSelectedModeChange?: (allRowSelectedMode: boolean) => void;
+  footer?: React.ReactNode;
+  footerHeight?: number;
 };
 
 export type InfiniteTableRef = {
@@ -59,7 +61,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       columns: columnsProps,
       onRowDoubleClick,
       onRowSelectionChange,
-      height,
+      height: heightProps = 600,
       onRowStyle,
       onColumnChanged: onColumnsChangedProps,
       onGetColumnsState,
@@ -69,6 +71,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       totalRows,
       onAllRowSelectedModeChange,
       allRowSelectedMode: allRowSelectedModeProps,
+      footer,
+      footerHeight = 50,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -77,6 +81,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const columnsPersistedStateRef = useRef<any>();
     const containerRef = useRef<HTMLDivElement>(null);
     const columnChangeListenerReady = useRef(false);
+    const totalHeight = footer ? heightProps + footerHeight : heightProps;
+    const tableHeight = footer ? heightProps - footerHeight : heightProps;
 
     const { autoSizeColumnsIfNecessary } = useAutoFitColumns({
       gridRef,
@@ -271,37 +277,50 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     return (
       <div
-        ref={containerRef}
-        className={`ag-grid-default-table ag-theme-quartz`}
-        style={{ height: height || 600, width: "100%" }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: totalHeight,
+        }}
       >
-        <AgGridReact
-          ref={gridRef}
-          columnDefs={colDefs}
-          defaultColDef={defaultColDef}
-          onRowDoubleClicked={onRowDoubleClicked}
-          rowStyle={{
-            cursor: onRowDoubleClick ? "pointer" : "auto",
-          }}
-          getRowStyle={onRowStyle}
-          suppressCellFocus={true}
-          suppressRowClickSelection={true}
-          rowBuffer={0}
-          rowSelection={"multiple"}
-          onColumnMoved={onColumnChanged}
-          onColumnResized={onColumnChanged}
-          rowModelType={"infinite"}
-          cacheBlockSize={20}
-          onSelectionChanged={onSelectionChangedDebounced}
-          cacheOverflowSize={2}
-          maxConcurrentDatasourceRequests={1}
-          infiniteInitialRowCount={50}
-          maxBlocksInCache={10}
-          onGridReady={onGridReady}
-          onFirstDataRendered={onFirstDataRendered}
-          onBodyScroll={onBodyScroll}
-          blockLoadDebounceMillis={DEBOUNCE_TIME}
-        />
+        <div
+          ref={containerRef}
+          className={`ag-grid-default-table ag-theme-quartz`}
+          style={{ height: tableHeight, width: "100%" }}
+        >
+          <AgGridReact
+            ref={gridRef}
+            columnDefs={colDefs}
+            defaultColDef={defaultColDef}
+            onRowDoubleClicked={onRowDoubleClicked}
+            rowStyle={{
+              cursor: onRowDoubleClick ? "pointer" : "auto",
+            }}
+            getRowStyle={onRowStyle}
+            suppressCellFocus={true}
+            suppressRowClickSelection={true}
+            rowBuffer={0}
+            rowSelection={"multiple"}
+            onColumnMoved={onColumnChanged}
+            onColumnResized={onColumnChanged}
+            rowModelType={"infinite"}
+            cacheBlockSize={20}
+            onSelectionChanged={onSelectionChangedDebounced}
+            cacheOverflowSize={2}
+            maxConcurrentDatasourceRequests={1}
+            infiniteInitialRowCount={50}
+            maxBlocksInCache={10}
+            onGridReady={onGridReady}
+            onFirstDataRendered={onFirstDataRendered}
+            onBodyScroll={onBodyScroll}
+            blockLoadDebounceMillis={DEBOUNCE_TIME}
+          />
+        </div>
+        {footer && (
+          <div style={{ height: footerHeight, backgroundColor: "red" }}>
+            {footer}
+          </div>
+        )}
       </div>
     );
   },
