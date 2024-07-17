@@ -316,11 +316,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             blockLoadDebounceMillis={DEBOUNCE_TIME}
           />
         </div>
-        {footer && (
-          <div style={{ height: footerHeight, backgroundColor: "red" }}>
-            {footer}
-          </div>
-        )}
+        {footer && <div style={{ height: footerHeight }}>{footer}</div>}
       </div>
     );
   },
