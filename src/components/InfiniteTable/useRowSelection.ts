@@ -78,12 +78,6 @@ export const useRowSelection = ({
     }, 1000);
   }, [allRowSelectedMode, internalSelectedRowKeys.length, totalRows, gridRef]);
 
-  useEffect(() => {
-    return () => {
-      timeoutRef.current && clearTimeout(timeoutRef.current);
-    };
-  }, [onHeaderCheckboxChange]);
-
   const onSelectionChanged = useCallback(
     (event: { api: { getSelectedNodes: () => any } }) => {
       if (allRowSelectedModeLock.current) {

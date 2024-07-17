@@ -87,6 +87,7 @@ export const HeavyTable = (): React.ReactElement => {
           const columnsState = localStorage.getItem("columnsState");
           return columnsState ? JSON.parse(columnsState) : undefined;
         }}
+        footer={<p>This is a footer</p>}
       />
     </>
   );
