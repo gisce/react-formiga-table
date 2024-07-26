@@ -47,6 +47,9 @@ export type InfiniteTableProps = Omit<
   onAllRowSelectedModeChange?: (allRowSelectedMode: boolean) => void;
   footer?: React.ReactNode;
   footerHeight?: number;
+  hasStatusColumn?: boolean;
+  onRowStatus?: (item: any) => any;
+  statusComponent?: (status: any) => React.ReactNode;
 };
 
 export type InfiniteTableRef = {
@@ -73,6 +76,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       allRowSelectedMode: allRowSelectedModeProps,
       footer,
       footerHeight = 50,
+      onRowStatus,
+      statusComponent,
+      hasStatusColumn = false,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -88,6 +94,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       gridRef,
       containerRef,
       columnsPersistedStateRef,
+      hasStatusColumn,
     });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,41 +151,60 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const defaultColDef = useMemo<ColDef>(() => ({}), []);
 
     const colDefs = useMemo((): ColDef[] => {
+      const checkboxColumn = {
+        checkboxSelection: true,
+        suppressMovable: true,
+        sortable: false,
+        lockPosition: true,
+        pinned: "left",
+        maxWidth: 50,
+        resizable: false,
+        headerComponent: () => (
+          <HeaderCheckbox
+            totalRows={totalRows}
+            selectedRowKeysLength={internalSelectedRowKeys.length}
+            allRowSelected={
+              totalRows === internalSelectedRowKeys.length && totalRows > 0
+            }
+            allRowSelectedMode={allRowSelectedMode}
+            onHeaderCheckboxChange={onHeaderCheckboxChange}
+          />
+        ),
+      } as ColDef;
+
+      const restOfColumns = columns.map((column) => ({
+        field: column.key,
+        sortable: false,
+        headerName: column.title,
+        cellRenderer: column.render
+          ? (cell: any) => column.render(cell.value)
+          : undefined,
+      }));
+
+      const statusColumn = {
+        field: "$status",
+        suppressMovable: true,
+        sortable: false,
+        lockPosition: true,
+        maxWidth: 50,
+        pinned: "left",
+        resizable: false,
+        headerComponent: () => null,
+        cellRenderer: (cell: any) => statusComponent?.(cell.value),
+      } as ColDef;
+
       return [
-        {
-          checkboxSelection: true,
-          suppressMovable: true,
-          sortable: false,
-          lockPosition: true,
-          pinned: "left",
-          maxWidth: 50,
-          resizable: false,
-          headerComponent: () => (
-            <HeaderCheckbox
-              totalRows={totalRows}
-              selectedRowKeysLength={internalSelectedRowKeys.length}
-              allRowSelected={
-                totalRows === internalSelectedRowKeys.length && totalRows > 0
-              }
-              allRowSelectedMode={allRowSelectedMode}
-              onHeaderCheckboxChange={onHeaderCheckboxChange}
-            />
-          ),
-        },
-        ...columns.map((column) => ({
-          field: column.key,
-          sortable: false,
-          headerName: column.title,
-          cellRenderer: column.render
-            ? (cell: any) => column.render(cell.value)
-            : undefined,
-        })),
+        checkboxColumn,
+        ...(hasStatusColumn ? [statusColumn] : []),
+        ...restOfColumns,
       ];
     }, [
       allRowSelectedMode,
       columns,
+      hasStatusColumn,
       internalSelectedRowKeys.length,
       onHeaderCheckboxChange,
+      statusComponent,
       totalRows,
     ]);
 
@@ -191,7 +217,22 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         if (data.length < endRow - startRow) {
           lastRow = startRow + data.length;
         }
-        params.successCallback(data, lastRow);
+
+        // We must call onRowStatus for each item of the data array and merge the result
+        // with the data array
+        const finalData = hasStatusColumn
+          ? await Promise.all(
+              data.map(async (item) => {
+                const status = await onRowStatus?.(item);
+                return {
+                  ...item,
+                  $status: status,
+                };
+              }),
+            )
+          : data;
+
+        params.successCallback(finalData, lastRow);
         if (allRowSelectedModeRef.current) {
           gridRef?.current?.api.forEachNode((node) => {
             node.setSelected(true);
@@ -219,8 +260,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       },
       [
         autoSizeColumnsIfNecessary,
+        hasStatusColumn,
         onGetSelectedRowKeys,
         onRequestData,
+        onRowStatus,
         selectedRowKeysPendingToRender,
         setSelectedRowKeysPendingToRender,
       ],

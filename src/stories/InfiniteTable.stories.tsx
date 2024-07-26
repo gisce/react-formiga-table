@@ -88,6 +88,10 @@ export const HeavyTable = (): React.ReactElement => {
           return columnsState ? JSON.parse(columnsState) : undefined;
         }}
         footer={<p>This is a footer</p>}
+        onRowStatus={(record: any) => {
+          return record.id;
+        }}
+        statusComponent={(status: any) => <strong>{status}</strong>}
       />
     </>
   );

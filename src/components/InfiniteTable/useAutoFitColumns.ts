@@ -6,12 +6,19 @@ export const useAutoFitColumns = ({
   gridRef,
   containerRef,
   columnsPersistedStateRef,
+  hasStatusColumn,
 }: {
   gridRef: RefObject<AgGridReact>;
   containerRef: RefObject<HTMLDivElement>;
   columnsPersistedStateRef: RefObject<any>;
+  hasStatusColumn: boolean;
 }) => {
   const firstTimeResized = useRef(false);
+
+  const columnsToIgnore = ["0"]; // 0 is for header checkbox column
+  if (hasStatusColumn) {
+    columnsToIgnore.push("$status");
+  }
 
   const remainingBlankSpace = useCallback(
     (allColumns: Array<Column<any>>) => {
@@ -36,12 +43,14 @@ export const useAutoFitColumns = ({
         if (!allColumns) return;
         const blankSpace = remainingBlankSpace(allColumns);
         if (blankSpace > 0) {
-          const spacePerColumn = blankSpace / (allColumns.length - 1); // we skip the first checkbox column, since it's not resizable
+          const spacePerColumn =
+            blankSpace / (allColumns.length - columnsToIgnore.length);
           const state = gridRef?.current?.api.getColumnState()!;
           const newState = state.map((col: any) => ({
             ...col,
-            // colId 0 is the checkbox column
-            width: col.colId !== "0" ? col.width + spacePerColumn : col.width,
+            width: columnsToIgnore.includes(col.colId)
+              ? col.width
+              : col.width + spacePerColumn,
           }));
           gridRef?.current?.api.applyColumnState({ state: newState });
         }
