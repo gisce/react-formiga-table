@@ -26,8 +26,8 @@ import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import debounce from "lodash/debounce";
 import { HeaderCheckbox } from "./HeaderCheckbox";
 import { useRowSelection } from "./useRowSelection";
-import { useAutoFitColumns } from "./useAutoFitColumns";
-import { getPersistedColumnState } from "./columnStateHelper";
+import { useColumnState } from "./useColumnState";
+import { CHECKBOX_COLUMN, STATUS_COLUMN } from "./columnStateHelper";
 
 const DEBOUNCE_TIME = 50;
 
@@ -84,18 +84,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const gridRef = useRef<AgGridReact>(null);
     const firstTimeOnBodyScroll = useRef(true);
     const allRowSelectedModeRef = useRef<boolean>(false);
-    const columnsPersistedStateRef = useRef<any>();
     const containerRef = useRef<HTMLDivElement>(null);
     const columnChangeListenerReady = useRef(false);
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
-
-    const { autoSizeColumnsIfNecessary } = useAutoFitColumns({
-      gridRef,
-      containerRef,
-      columnsPersistedStateRef,
-      hasStatusColumn,
-    });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedOnColumnChanged = useCallback(
@@ -148,6 +140,14 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const columns = useDeepArrayMemo(columnsProps, "key");
 
+    const { applyColumnState } = useColumnState({
+      gridRef,
+      containerRef,
+      hasStatusColumn,
+      columns,
+      onGetColumnsState,
+    });
+
     const defaultColDef = useMemo<ColDef>(() => ({}), []);
 
     const colDefs = useMemo((): ColDef[] => {
@@ -159,6 +159,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         pinned: "left",
         maxWidth: 50,
         resizable: false,
+        field: CHECKBOX_COLUMN,
         headerComponent: () => (
           <HeaderCheckbox
             totalRows={totalRows}
@@ -182,12 +183,11 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       }));
 
       const statusColumn = {
-        field: "$status",
+        field: STATUS_COLUMN,
         suppressMovable: true,
         sortable: false,
         lockPosition: true,
         maxWidth: 30,
-        type: "leftAligned",
         pinned: "left",
         resizable: false,
         headerComponent: () => null,
@@ -257,10 +257,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           }
         }
         gridRef.current?.api.hideOverlay();
-        autoSizeColumnsIfNecessary();
+        applyColumnState();
       },
       [
-        autoSizeColumnsIfNecessary,
+        applyColumnState,
         hasStatusColumn,
         onGetSelectedRowKeys,
         onRequestData,
@@ -272,22 +272,26 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
-        columnsPersistedStateRef.current = getPersistedColumnState({
-          actualColumnKeys: columns.map((column) => column.key),
-          persistedColumnState: onGetColumnsState?.(),
-        });
-        if (columnsPersistedStateRef.current) {
-          params.api.applyColumnState({
-            state: columnsPersistedStateRef.current,
-            applyOrder: true,
-          });
-        }
+        // columnsPersistedStateRef.current = getPersistedColumnState({
+        //   actualColumnKeys: columns.map((column) => column.key),
+        //   persistedColumnState: onGetColumnsState?.(),
+        // });
+        // if (columnsPersistedStateRef.current) {
+        //   console.log(
+        //     "Applying column state: ",
+        //     columnsPersistedStateRef.current,
+        //   );
+        //   params.api.applyColumnState({
+        //     state: columnsPersistedStateRef.current,
+        //     applyOrder: true,
+        //   });
+        // }
 
         params.api.setGridOption("datasource", {
           getRows,
         });
       },
-      [columns, getRows, onGetColumnsState],
+      [getRows],
     );
 
     const onRowDoubleClicked = useCallback(
