@@ -272,21 +272,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
-        // columnsPersistedStateRef.current = getPersistedColumnState({
-        //   actualColumnKeys: columns.map((column) => column.key),
-        //   persistedColumnState: onGetColumnsState?.(),
-        // });
-        // if (columnsPersistedStateRef.current) {
-        //   console.log(
-        //     "Applying column state: ",
-        //     columnsPersistedStateRef.current,
-        //   );
-        //   params.api.applyColumnState({
-        //     state: columnsPersistedStateRef.current,
-        //     applyOrder: true,
-        //   });
-        // }
-
         params.api.setGridOption("datasource", {
           getRows,
         });
