@@ -146,7 +146,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const columns = useDeepArrayMemo(columnsProps, "key");
 
-    const { applyColumnState } = useColumnState({
+    const { applyColumnState, columnsPersistedStateRef } = useColumnState({
       gridRef,
       containerRef,
       hasStatusColumn,
@@ -280,6 +280,14 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         setSelectedRowKeysPendingToRender,
       ],
     );
+
+    console.log("-----");
+    console.log("InfiniteTable render");
+    console.log({
+      internalState: gridRef.current?.api?.getColumnState(),
+      columnsPersistedStateRef: columnsPersistedStateRef.current,
+    });
+    console.log("-----");
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
