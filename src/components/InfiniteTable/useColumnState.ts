@@ -53,6 +53,10 @@ export const useColumnState = ({
 
   const applyPersistedState = useCallback(() => {
     runDeferredCallback(() => {
+      console.log(
+        "1- Applying column state: ",
+        columnsPersistedStateRef.current,
+      );
       gridRef?.current?.api.applyColumnState({
         state: columnsPersistedStateRef.current,
         applyOrder: true,
@@ -76,6 +80,7 @@ export const useColumnState = ({
             ? col.width
             : col.width + spacePerColumn,
         }));
+        console.log("2- Applying column state: ", newState);
         gridRef?.current?.api.applyColumnState({ state: newState });
       }
     });
