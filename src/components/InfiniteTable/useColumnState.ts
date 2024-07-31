@@ -105,5 +105,6 @@ export const useColumnState = ({
 
   return {
     applyColumnState,
+    columnsPersistedStateRef,
   };
 };
