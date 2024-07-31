@@ -97,6 +97,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           columnChangeListenerReady.current = true;
           return;
         }
+        gridRef.current?.api.applyColumnState({ state });
         onColumnsChangedProps?.(state);
       }, DEBOUNCE_TIME),
       [onColumnsChangedProps],
