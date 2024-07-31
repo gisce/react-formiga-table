@@ -101,13 +101,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       [onColumnsChangedProps],
     );
 
-    const onColumnChanged = useCallback(
-      (event: ColumnResizedEvent | ColumnMovedEvent) => {
-        const state = event.api.getColumnState();
-        debouncedOnColumnChanged(state);
-      },
-      [debouncedOnColumnChanged],
-    );
+    const onColumnChanged = useCallback(() => {
+      const state = gridRef?.current?.api.getColumnState();
+      debouncedOnColumnChanged(state);
+    }, [debouncedOnColumnChanged]);
 
     useImperativeHandle(ref, () => ({
       unselectAll: () => {
