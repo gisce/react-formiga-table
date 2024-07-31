@@ -101,13 +101,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       [onColumnsChangedProps],
     );
 
-    const onColumnChanged = useCallback(
-      (event: ColumnResizedEvent | ColumnMovedEvent) => {
-        const state = event.api.getColumnState();
-        debouncedOnColumnChanged(state);
-      },
-      [debouncedOnColumnChanged],
-    );
+    const onColumnChanged = useCallback(() => {
+      const state = gridRef?.current?.api.getColumnState();
+      debouncedOnColumnChanged(state);
+    }, [debouncedOnColumnChanged]);
 
     useImperativeHandle(ref, () => ({
       unselectAll: () => {
@@ -272,21 +269,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
-        // columnsPersistedStateRef.current = getPersistedColumnState({
-        //   actualColumnKeys: columns.map((column) => column.key),
-        //   persistedColumnState: onGetColumnsState?.(),
-        // });
-        // if (columnsPersistedStateRef.current) {
-        //   console.log(
-        //     "Applying column state: ",
-        //     columnsPersistedStateRef.current,
-        //   );
-        //   params.api.applyColumnState({
-        //     state: columnsPersistedStateRef.current,
-        //     applyOrder: true,
-        //   });
-        // }
-
         params.api.setGridOption("datasource", {
           getRows,
         });
