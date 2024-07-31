@@ -16,6 +16,7 @@ import {
   ColumnMovedEvent,
   ColumnResizedEvent,
   ColumnState,
+  DragStoppedEvent,
   FirstDataRenderedEvent,
   GridReadyEvent,
   IGetRowsParams,
@@ -102,8 +103,12 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     );
 
     const onColumnChanged = useCallback(
-      (e: any) => {
-        console.log({ e });
+      (event: DragStoppedEvent | ColumnResizedEvent) => {
+        // if (!event.finished) {
+        //   return;
+        // }
+        // const et = event.source === "uiColumnResized";
+        console.log({ event });
         const state = gridRef?.current?.api.getColumnState();
         debouncedOnColumnChanged(state);
       },
@@ -335,7 +340,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             suppressRowClickSelection={true}
             rowBuffer={0}
             rowSelection={"multiple"}
-            // onDragStopped={onColumnChanged}
+            onDragStopped={onColumnChanged}
             // onColumnMoved={onColumnChanged}
             onColumnResized={onColumnChanged}
             rowModelType={"infinite"}
