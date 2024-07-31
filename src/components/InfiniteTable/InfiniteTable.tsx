@@ -101,10 +101,14 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       [onColumnsChangedProps],
     );
 
-    const onColumnChanged = useCallback(() => {
-      const state = gridRef?.current?.api.getColumnState();
-      debouncedOnColumnChanged(state);
-    }, [debouncedOnColumnChanged]);
+    const onColumnChanged = useCallback(
+      (e: any) => {
+        console.log({ e });
+        const state = gridRef?.current?.api.getColumnState();
+        debouncedOnColumnChanged(state);
+      },
+      [debouncedOnColumnChanged],
+    );
 
     useImperativeHandle(ref, () => ({
       unselectAll: () => {
@@ -331,7 +335,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             suppressRowClickSelection={true}
             rowBuffer={0}
             rowSelection={"multiple"}
-            onColumnMoved={onColumnChanged}
+            // onDragStopped={onColumnChanged}
+            // onColumnMoved={onColumnChanged}
             onColumnResized={onColumnChanged}
             rowModelType={"infinite"}
             cacheBlockSize={20}
