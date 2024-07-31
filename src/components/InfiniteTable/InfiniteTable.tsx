@@ -161,11 +161,13 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         checkboxSelection: true,
         suppressMovable: true,
         sortable: false,
-        lockPosition: true,
-        // pinned: "left",
+        pinned: "left",
+        lockPosition: "left",
+        lockPinned: true,
         maxWidth: 50,
         resizable: false,
         field: CHECKBOX_COLUMN,
+        suppressDragLeaveHidesColumns: true,
         headerComponent: () => (
           <HeaderCheckbox
             totalRows={totalRows}
@@ -183,6 +185,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         field: column.key,
         sortable: false,
         headerName: column.title,
+        suppressDragLeaveHidesColumns: true,
         cellRenderer: column.render
           ? (cell: any) => column.render(cell.value)
           : undefined,
@@ -192,9 +195,11 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         field: STATUS_COLUMN,
         suppressMovable: true,
         sortable: false,
-        lockPosition: true,
+        lockPosition: "left",
+        lockPinned: true,
+        suppressDragLeaveHidesColumns: true,
         maxWidth: 30,
-        // pinned: "left",
+        pinned: "left",
         resizable: false,
         headerComponent: () => null,
         cellRenderer: (cell: any) => statusComponent?.(cell.value),
