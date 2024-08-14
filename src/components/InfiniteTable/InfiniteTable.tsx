@@ -13,10 +13,8 @@ import "@/styles/ag-theme-quartz.css";
 import {
   BodyScrollEvent,
   ColDef,
-  ColumnMovedEvent,
   ColumnResizedEvent,
   ColumnState,
-  DragStoppedEvent,
   FirstDataRenderedEvent,
   GridReadyEvent,
   IGetRowsParams,
@@ -24,7 +22,6 @@ import {
 } from "ag-grid-community";
 import { TableProps } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
-import debounce from "lodash/debounce";
 import { HeaderCheckbox } from "./HeaderCheckbox";
 import { useRowSelection } from "./useRowSelection";
 import { useColumnState } from "./useColumnState";
@@ -133,35 +130,32 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onGetColumnsState,
     });
 
-    const debouncedOnColumnChanged = useCallback(
-      (state: ColumnState[]) => {
-        if (!columnChangeListenerReady.current) {
-          columnChangeListenerReady.current = true;
+    const onColumnChanged = useCallback(() => {
+      const state = gridRef?.current?.api.getColumnState();
+      if (!columnChangeListenerReady.current) {
+        columnChangeListenerReady.current = true;
+        return;
+      }
+      if (!state) {
+        return;
+      }
+      applyAndUpdateNewState(state);
+      onColumnsChangedProps?.(state);
+    }, [applyAndUpdateNewState, onColumnsChangedProps]);
+
+    const onColumnMoved = useCallback(() => {
+      onColumnChanged();
+    }, [onColumnChanged]);
+
+    const onColumnResized = useCallback(
+      (event: ColumnResizedEvent) => {
+        if (!event.finished) {
           return;
         }
-        applyAndUpdateNewState(state);
-        onColumnsChangedProps?.(state);
+        onColumnChanged();
       },
-      [applyAndUpdateNewState, onColumnsChangedProps],
+      [onColumnChanged],
     );
-
-    const onColumnChanged = useCallback(
-      (event: DragStoppedEvent | ColumnResizedEvent) => {
-        // if (!event.finished) {
-        //   return;
-        // }
-        // const et = event.source === "uiColumnResized";
-        console.log({ event });
-        const state = gridRef?.current?.api.getColumnState();
-        if (!state) {
-          return;
-        }
-        debouncedOnColumnChanged(state);
-      },
-      [debouncedOnColumnChanged],
-    );
-
-    const defaultColDef = useMemo<ColDef>(() => ({}), []);
 
     const colDefs = useMemo((): ColDef[] => {
       const checkboxColumn = {
@@ -299,14 +293,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       ],
     );
 
-    console.log("-----");
-    console.log("InfiniteTable render");
-    console.log({
-      internalState: gridRef.current?.api?.getColumnState(),
-      columnsPersistedStateRef: columnsPersistedStateRef.current,
-    });
-    console.log("-----");
-
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
         params.api.setGridOption("datasource", {
@@ -361,7 +347,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           <AgGridReact
             ref={gridRef}
             columnDefs={colDefs}
-            // defaultColDef={defaultColDef}
             onRowDoubleClicked={onRowDoubleClicked}
             rowStyle={{
               cursor: onRowDoubleClick ? "pointer" : "auto",
@@ -371,9 +356,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             suppressRowClickSelection={true}
             rowBuffer={0}
             rowSelection={"multiple"}
-            onDragStopped={onColumnChanged}
-            // onColumnMoved={onColumnChanged}
-            onColumnResized={onColumnChanged}
+            onDragStopped={onColumnMoved}
+            onColumnResized={onColumnResized}
             rowModelType={"infinite"}
             cacheBlockSize={20}
             onSelectionChanged={onSelectionChangedDebounced}
