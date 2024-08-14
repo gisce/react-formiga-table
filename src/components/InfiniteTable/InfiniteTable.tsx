@@ -90,32 +90,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const debouncedOnColumnChanged = useCallback(
-      debounce((state) => {
-        if (!columnChangeListenerReady.current) {
-          columnChangeListenerReady.current = true;
-          return;
-        }
-        gridRef.current?.api.applyColumnState({ state });
-        onColumnsChangedProps?.(state);
-      }, DEBOUNCE_TIME),
-      [onColumnsChangedProps],
-    );
-
-    const onColumnChanged = useCallback(
-      (event: DragStoppedEvent | ColumnResizedEvent) => {
-        // if (!event.finished) {
-        //   return;
-        // }
-        // const et = event.source === "uiColumnResized";
-        console.log({ event });
-        const state = gridRef?.current?.api.getColumnState();
-        debouncedOnColumnChanged(state);
-      },
-      [debouncedOnColumnChanged],
-    );
-
     useImperativeHandle(ref, () => ({
       unselectAll: () => {
         setSelectedRowKeysPendingToRender([]);
@@ -147,13 +121,45 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const columns = useDeepArrayMemo(columnsProps, "key");
 
-    const { applyColumnState, columnsPersistedStateRef } = useColumnState({
+    const {
+      applyColumnState,
+      columnsPersistedStateRef,
+      applyAndUpdateNewState,
+    } = useColumnState({
       gridRef,
       containerRef,
       hasStatusColumn,
       columns,
       onGetColumnsState,
     });
+
+    const debouncedOnColumnChanged = useCallback(
+      (state: ColumnState[]) => {
+        if (!columnChangeListenerReady.current) {
+          columnChangeListenerReady.current = true;
+          return;
+        }
+        applyAndUpdateNewState(state);
+        onColumnsChangedProps?.(state);
+      },
+      [applyAndUpdateNewState, onColumnsChangedProps],
+    );
+
+    const onColumnChanged = useCallback(
+      (event: DragStoppedEvent | ColumnResizedEvent) => {
+        // if (!event.finished) {
+        //   return;
+        // }
+        // const et = event.source === "uiColumnResized";
+        console.log({ event });
+        const state = gridRef?.current?.api.getColumnState();
+        if (!state) {
+          return;
+        }
+        debouncedOnColumnChanged(state);
+      },
+      [debouncedOnColumnChanged],
+    );
 
     const defaultColDef = useMemo<ColDef>(() => ({}), []);
 
@@ -168,7 +174,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         maxWidth: 50,
         resizable: false,
         field: CHECKBOX_COLUMN,
-        suppressDragLeaveHidesColumns: true,
         headerComponent: () => (
           <HeaderCheckbox
             totalRows={totalRows}
@@ -182,15 +187,25 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         ),
       } as ColDef;
 
+      const storedState = columnsPersistedStateRef.current;
+      const storedStateKeys = storedState?.map((col: any) => col.colId);
+
       const restOfColumns = columns.map((column) => ({
         field: column.key,
         sortable: false,
         headerName: column.title,
-        suppressDragLeaveHidesColumns: true,
         cellRenderer: column.render
           ? (cell: any) => column.render(cell.value)
           : undefined,
       }));
+
+      // restOfColumns should be sorted by the order of the storedState
+      storedState &&
+        restOfColumns.sort((a, b) => {
+          const aIndex = storedStateKeys.indexOf(a.field);
+          const bIndex = storedStateKeys.indexOf(b.field);
+          return aIndex - bIndex;
+        });
 
       const statusColumn = {
         field: STATUS_COLUMN,
@@ -198,7 +213,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         sortable: false,
         lockPosition: "left",
         lockPinned: true,
-        suppressDragLeaveHidesColumns: true,
         maxWidth: 30,
         pinned: "left",
         resizable: false,
@@ -206,14 +220,17 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         cellRenderer: (cell: any) => statusComponent?.(cell.value),
       } as ColDef;
 
-      return [
+      const finalColumns = [
         checkboxColumn,
         ...(hasStatusColumn ? [statusColumn] : []),
         ...restOfColumns,
       ];
+
+      return finalColumns;
     }, [
       allRowSelectedMode,
       columns,
+      columnsPersistedStateRef,
       hasStatusColumn,
       internalSelectedRowKeys.length,
       onHeaderCheckboxChange,
@@ -344,7 +361,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           <AgGridReact
             ref={gridRef}
             columnDefs={colDefs}
-            defaultColDef={defaultColDef}
+            // defaultColDef={defaultColDef}
             onRowDoubleClicked={onRowDoubleClicked}
             rowStyle={{
               cursor: onRowDoubleClick ? "pointer" : "auto",
@@ -368,6 +385,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             onFirstDataRendered={onFirstDataRendered}
             onBodyScroll={onBodyScroll}
             blockLoadDebounceMillis={DEBOUNCE_TIME}
+            suppressDragLeaveHidesColumns={true}
           />
         </div>
         {footer && <div style={{ height: footerHeight }}>{footer}</div>}
