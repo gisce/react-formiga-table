@@ -61,8 +61,28 @@ export const useColumnState = ({
         state: columnsPersistedStateRef.current,
         applyOrder: true,
       });
+      console.log(
+        "Checking state after applyColumnState: ",
+        gridRef?.current?.api.getColumnState()!,
+      );
     });
   }, [gridRef, runDeferredCallback]);
+
+  const applyAndUpdateNewState = useCallback(
+    (state: ColumnState[]) => {
+      console.log("3- Applying column state: ", state);
+      columnsPersistedStateRef.current = state;
+      gridRef?.current?.api.applyColumnState({
+        state: columnsPersistedStateRef.current,
+        applyOrder: true,
+      });
+      console.log(
+        "Checking state after applyColumnState: ",
+        gridRef?.current?.api.getColumnState()!,
+      );
+    },
+    [gridRef],
+  );
 
   const applyAutoFitState = useDeepCompareCallback(() => {
     runDeferredCallback(() => {
@@ -82,6 +102,10 @@ export const useColumnState = ({
         }));
         console.log("2- Applying column state: ", newState);
         gridRef?.current?.api.applyColumnState({ state: newState });
+        console.log(
+          "Checking state after applyColumnState: ",
+          gridRef?.current?.api.getColumnState()!,
+        );
       }
     });
   }, [columnsToIgnore, gridRef, remainingBlankSpace, runDeferredCallback]);
@@ -106,5 +130,6 @@ export const useColumnState = ({
   return {
     applyColumnState,
     columnsPersistedStateRef,
+    applyAndUpdateNewState,
   };
 };
