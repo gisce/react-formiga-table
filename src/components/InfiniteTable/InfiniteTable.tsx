@@ -168,7 +168,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         maxWidth: 50,
         resizable: false,
         field: CHECKBOX_COLUMN,
-        suppressDragLeaveHidesColumns: true,
         headerComponent: () => (
           <HeaderCheckbox
             totalRows={totalRows}
@@ -186,7 +185,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         field: column.key,
         sortable: false,
         headerName: column.title,
-        suppressDragLeaveHidesColumns: true,
         cellRenderer: column.render
           ? (cell: any) => column.render(cell.value)
           : undefined,
@@ -198,7 +196,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         sortable: false,
         lockPosition: "left",
         lockPinned: true,
-        suppressDragLeaveHidesColumns: true,
         maxWidth: 30,
         pinned: "left",
         resizable: false,
@@ -368,6 +365,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             onFirstDataRendered={onFirstDataRendered}
             onBodyScroll={onBodyScroll}
             blockLoadDebounceMillis={DEBOUNCE_TIME}
+            suppressDragLeaveHidesColumns={true}
           />
         </div>
         {footer && <div style={{ height: footerHeight }}>{footer}</div>}
