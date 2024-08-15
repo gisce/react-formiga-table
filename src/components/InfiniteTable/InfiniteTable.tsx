@@ -19,6 +19,7 @@ import {
   GridReadyEvent,
   IGetRowsParams,
   RowDoubleClickedEvent,
+  SortDirection,
 } from "ag-grid-community";
 import { TableProps } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
@@ -33,7 +34,15 @@ export type InfiniteTableProps = Omit<
   TableProps,
   "dataSource" & "loading" & "loadingComponent" & "height"
 > & {
-  onRequestData: (startRow: number, endRow: number) => Promise<any[]>;
+  onRequestData: ({
+    startRow,
+    endRow,
+    sortFields,
+  }: {
+    startRow: number;
+    endRow: number;
+    sortFields?: Record<string, SortDirection>;
+  }) => Promise<any[]>;
   height?: number;
   onColumnChanged?: (columnsState: ColumnState[]) => void;
   onGetColumnsState?: () => ColumnState[] | undefined;
@@ -157,6 +166,30 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       [onColumnChanged],
     );
 
+    const onSortChanged = useCallback(() => {
+      gridRef.current?.api?.purgeInfiniteCache();
+    }, []);
+
+    const getSortedFields = useCallback(():
+      | Record<string, SortDirection>
+      | undefined => {
+      const state = gridRef?.current?.api.getColumnState()!;
+
+      const columnsWithSort = state.filter((col) => col.sort);
+      if (columnsWithSort.length === 0) {
+        return undefined;
+      }
+      const sortFields = columnsWithSort.reduce(
+        (acc, col) => ({
+          ...acc,
+          [col.colId]: col.sort,
+        }),
+        {},
+      );
+
+      return sortFields;
+    }, []);
+
     const colDefs = useMemo((): ColDef[] => {
       const checkboxColumn = {
         checkboxSelection: true,
@@ -186,7 +219,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
       const restOfColumns = columns.map((column) => ({
         field: column.key,
-        sortable: false,
+        sortable: column.isSortable,
         headerName: column.title,
         cellRenderer: column.render
           ? (cell: any) => column.render(cell.value)
@@ -236,7 +269,11 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       async (params: IGetRowsParams) => {
         gridRef.current?.api.showLoadingOverlay();
         const { startRow, endRow } = params;
-        const data = await onRequestData(startRow, endRow);
+        const data = await onRequestData({
+          startRow,
+          endRow,
+          sortFields: getSortedFields(),
+        });
         let lastRow = -1;
         if (data.length < endRow - startRow) {
           lastRow = startRow + data.length;
@@ -284,6 +321,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       },
       [
         applyColumnState,
+        getSortedFields,
         hasStatusColumn,
         onGetSelectedRowKeys,
         onRequestData,
@@ -370,6 +408,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             onBodyScroll={onBodyScroll}
             blockLoadDebounceMillis={DEBOUNCE_TIME}
             suppressDragLeaveHidesColumns={true}
+            onSortChanged={onSortChanged}
           />
         </div>
         {footer && <div style={{ height: footerHeight }}>{footer}</div>}
