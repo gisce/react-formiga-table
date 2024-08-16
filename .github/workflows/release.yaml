@@ -1,5 +1,8 @@
 name: Release
 
+env:
+  LIBRARY_NAME: "gisce/react-formiga-table"
+
 on:
   push:
     branches:
@@ -8,20 +11,28 @@ on:
       - alpha
   workflow_dispatch:
 
+concurrency:
+  group: "release"
+  cancel-in-progress: false
+
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    outputs:
+      release_type: ${{ steps.get_release_type.outputs.release_type }}
+      tag_name: ${{ steps.get_tag_name.outputs.tag_name }}
+      branch_name: ${{ steps.get_branch_name.outputs.branch_name }}
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: "20.5.0"
+          node-version: '20.5.0'
+
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
 
       - name: Install Dependencies
         run: npm ci
@@ -31,3 +42,52 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           NPM_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
         run: npx semantic-release
+
+      - name: Capture Release Type
+        id: get_release_type
+        run: |
+          if [ -f ".release-type" ]; then
+            release_type=$(cat .release-type)
+            echo "release_type=$release_type" >> $GITHUB_OUTPUT
+          else
+            echo "release_type=none" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Capture Tag Name
+        id: get_tag_name
+        run: |
+          if [ -f ".release-tag" ]; then
+            tag_name=$(cat .release-tag)
+            echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
+          else
+            echo "tag_name=none" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Capture Branch Name
+        id: get_branch_name
+        run: echo "branch_name=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
+        shell: bash
+
+  update-dependents:
+    name: Update dependent projects
+    needs: release
+    if: needs.release.outputs.release_type != 'none'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - project: "gisce/react-ooui"
+            # modify this in case that branches are not equivalent and exist between projects
+            branch: ${{ needs.release.outputs.branch_name }}
+    steps:
+      - name: Call update version dependency flow for each project
+        uses: gisce/create-update-version-pr@v0.0.9
+        with:
+          dependentProject: ${{ matrix.project }}
+          tagName: ${{ needs.release.outputs.tag_name }}
+          dependentProjectBranch: ${{ matrix.branch }}
+          libraryName: ${{ env.LIBRARY_NAME }}
+          githubToken: ${{ secrets.GH_PAT }}
+          releaseType: ${{ needs.release.outputs.release_type }}
