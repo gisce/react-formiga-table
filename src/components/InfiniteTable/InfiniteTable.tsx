@@ -25,10 +25,11 @@ import { TableProps } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import { HeaderCheckbox } from "./HeaderCheckbox";
 import { useRowSelection } from "./useRowSelection";
-import { useColumnState } from "./useColumnState";
+import { areStatesEqual, useColumnState } from "./useColumnState";
 import { CHECKBOX_COLUMN, STATUS_COLUMN } from "./columnStateHelper";
 
 const DEBOUNCE_TIME = 50;
+const DEFAULT_TOTAL_ROWS_VALUE = Number.MAX_SAFE_INTEGER;
 
 export type InfiniteTableProps = Omit<
   TableProps,
@@ -42,14 +43,14 @@ export type InfiniteTableProps = Omit<
     startRow: number;
     endRow: number;
     sortFields?: Record<string, SortDirection>;
-  }) => Promise<any[]>;
+  }) => Promise<any[] | undefined>;
   height?: number;
   onColumnChanged?: (columnsState: ColumnState[]) => void;
   onGetColumnsState?: () => ColumnState[] | undefined;
   onGetFirstVisibleRowIndex?: () => number | undefined;
   onChangeFirstVisibleRowIndex?: (index: number) => void;
   onGetSelectedRowKeys?: () => any[] | undefined;
-  totalRows: number;
+  totalRows?: number;
   allRowSelectedMode?: boolean;
   onAllRowSelectedModeChange?: (allRowSelectedMode: boolean) => void;
   footer?: React.ReactNode;
@@ -78,7 +79,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onChangeFirstVisibleRowIndex,
       onGetFirstVisibleRowIndex,
       onGetSelectedRowKeys,
-      totalRows,
+      totalRows = DEFAULT_TOTAL_ROWS_VALUE,
       onAllRowSelectedModeChange,
       allRowSelectedMode: allRowSelectedModeProps,
       footer,
@@ -92,7 +93,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const firstTimeOnBodyScroll = useRef(true);
     const allRowSelectedModeRef = useRef<boolean>(false);
     const containerRef = useRef<HTMLDivElement>(null);
-    const columnChangeListenerReady = useRef(false);
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
 
@@ -128,7 +128,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const columns = useDeepArrayMemo(columnsProps, "key");
 
     const {
-      applyColumnState,
+      loadPersistedColumnState,
       columnsPersistedStateRef,
       applyAndUpdateNewState,
     } = useColumnState({
@@ -141,16 +141,19 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const onColumnChanged = useCallback(() => {
       const state = gridRef?.current?.api.getColumnState();
-      if (!columnChangeListenerReady.current) {
-        columnChangeListenerReady.current = true;
+      if (!state) {
         return;
       }
-      if (!state) {
+      if (areStatesEqual(state, columnsPersistedStateRef.current)) {
         return;
       }
       applyAndUpdateNewState(state);
       onColumnsChangedProps?.(state);
-    }, [applyAndUpdateNewState, onColumnsChangedProps]);
+    }, [
+      applyAndUpdateNewState,
+      columnsPersistedStateRef,
+      onColumnsChangedProps,
+    ]);
 
     const onColumnMoved = useCallback(() => {
       onColumnChanged();
@@ -165,10 +168,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       },
       [onColumnChanged],
     );
-
-    const onSortChanged = useCallback(() => {
-      gridRef.current?.api?.purgeInfiniteCache();
-    }, []);
 
     const getSortedFields = useCallback(():
       | Record<string, SortDirection>
@@ -217,7 +216,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       const storedState = columnsPersistedStateRef.current;
       const storedStateKeys = storedState?.map((col: any) => col.colId);
 
-      const restOfColumns = columns.map((column) => ({
+      const restOfColumns: ColDef[] = columns.map((column) => ({
         field: column.key,
         sortable: column.isSortable,
         headerName: column.title,
@@ -228,6 +227,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
       // restOfColumns should be sorted by the order of the storedState
       storedState &&
+        storedStateKeys &&
         restOfColumns.sort((a, b) => {
           const aIndex = storedStateKeys.indexOf(a.field);
           const bIndex = storedStateKeys.indexOf(b.field);
@@ -274,6 +274,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           endRow,
           sortFields: getSortedFields(),
         });
+        if (!data) {
+          params.failCallback();
+          return;
+        }
         let lastRow = -1;
         if (data.length < endRow - startRow) {
           lastRow = startRow + data.length;
@@ -317,10 +321,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           }
         }
         gridRef.current?.api.hideOverlay();
-        applyColumnState();
       },
       [
-        applyColumnState,
         getSortedFields,
         hasStatusColumn,
         onGetSelectedRowKeys,
@@ -333,11 +335,12 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
+        loadPersistedColumnState();
         params.api.setGridOption("datasource", {
           getRows,
         });
       },
-      [getRows],
+      [getRows, loadPersistedColumnState],
     );
 
     const onRowDoubleClicked = useCallback(
@@ -397,7 +400,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             onDragStopped={onColumnMoved}
             onColumnResized={onColumnResized}
             rowModelType={"infinite"}
-            cacheBlockSize={20}
+            cacheBlockSize={200}
             onSelectionChanged={onSelectionChangedDebounced}
             cacheOverflowSize={2}
             maxConcurrentDatasourceRequests={1}
@@ -408,7 +411,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             onBodyScroll={onBodyScroll}
             blockLoadDebounceMillis={DEBOUNCE_TIME}
             suppressDragLeaveHidesColumns={true}
-            onSortChanged={onSortChanged}
+            onSortChanged={onColumnChanged}
           />
         </div>
         {footer && <div style={{ height: footerHeight }}>{footer}</div>}
