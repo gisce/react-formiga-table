@@ -411,7 +411,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             onBodyScroll={onBodyScroll}
             blockLoadDebounceMillis={DEBOUNCE_TIME}
             suppressDragLeaveHidesColumns={true}
-            onSortChanged={onColumnChanged}
           />
         </div>
         {footer && <div style={{ height: footerHeight }}>{footer}</div>}
