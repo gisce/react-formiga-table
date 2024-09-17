@@ -87,7 +87,7 @@ export const useRowSelection = ({
       }
       setAllRowSelectedMode(false);
 
-      const allSelectedNodes = event.api.getSelectedNodes();
+      const allSelectedNodes = event.api.getSelectedNodes() || [];
       let selectedKeys = allSelectedNodes.map(
         (node: { data: any }) => node.data.id,
       );

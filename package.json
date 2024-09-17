@@ -1,6 +1,6 @@
 {
   "name": "@gisce/react-formiga-table",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "engines": {
     "node": "20.5.0"
   },
@@ -36,6 +36,7 @@
   "dependencies": {
     "ag-grid-community": "^31.2.1",
     "ag-grid-react": "^31.2.1",
+    "dequal": "^2.0.3",
     "lodash.debounce": "^4.0.8",
     "react": "18.2.0",
     "react-dom": "18.2.0",
