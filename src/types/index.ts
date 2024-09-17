@@ -6,6 +6,7 @@ export type TableColumn = {
   title: string;
   render?: (item: any) => React.ReactNode;
   sorter?: (a: any, b: any, column: string, desc: boolean) => number;
+  isSortable?: boolean;
 };
 
 export type Sorter = {
@@ -64,3 +65,5 @@ export type TableProps = {
 export interface TableRef {
   unselectAll: () => void;
 }
+
+export type SortDirection = "asc" | "desc" | null | undefined;
