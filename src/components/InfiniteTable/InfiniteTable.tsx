@@ -13,7 +13,6 @@ import "@/styles/ag-theme-quartz.css";
 import {
   BodyScrollEvent,
   ColDef,
-  ColumnMovedEvent,
   ColumnResizedEvent,
   ColumnState,
   FirstDataRenderedEvent,
@@ -23,11 +22,10 @@ import {
 } from "ag-grid-community";
 import { TableProps } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
-import debounce from "lodash/debounce";
 import { HeaderCheckbox } from "./HeaderCheckbox";
 import { useRowSelection } from "./useRowSelection";
-import { useAutoFitColumns } from "./useAutoFitColumns";
-import { getPersistedColumnState } from "./columnStateHelper";
+import { useColumnState } from "./useColumnState";
+import { CHECKBOX_COLUMN, STATUS_COLUMN } from "./columnStateHelper";
 
 const DEBOUNCE_TIME = 50;
 
@@ -84,38 +82,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const gridRef = useRef<AgGridReact>(null);
     const firstTimeOnBodyScroll = useRef(true);
     const allRowSelectedModeRef = useRef<boolean>(false);
-    const columnsPersistedStateRef = useRef<any>();
     const containerRef = useRef<HTMLDivElement>(null);
     const columnChangeListenerReady = useRef(false);
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
-
-    const { autoSizeColumnsIfNecessary } = useAutoFitColumns({
-      gridRef,
-      containerRef,
-      columnsPersistedStateRef,
-      hasStatusColumn,
-    });
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const debouncedOnColumnChanged = useCallback(
-      debounce((state) => {
-        if (!columnChangeListenerReady.current) {
-          columnChangeListenerReady.current = true;
-          return;
-        }
-        onColumnsChangedProps?.(state);
-      }, DEBOUNCE_TIME),
-      [onColumnsChangedProps],
-    );
-
-    const onColumnChanged = useCallback(
-      (event: ColumnResizedEvent | ColumnMovedEvent) => {
-        const state = event.api.getColumnState();
-        debouncedOnColumnChanged(state);
-      },
-      [debouncedOnColumnChanged],
-    );
 
     useImperativeHandle(ref, () => ({
       unselectAll: () => {
@@ -148,17 +118,56 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const columns = useDeepArrayMemo(columnsProps, "key");
 
-    const defaultColDef = useMemo<ColDef>(() => ({}), []);
+    const {
+      applyColumnState,
+      columnsPersistedStateRef,
+      applyAndUpdateNewState,
+    } = useColumnState({
+      gridRef,
+      containerRef,
+      hasStatusColumn,
+      columns,
+      onGetColumnsState,
+    });
+
+    const onColumnChanged = useCallback(() => {
+      const state = gridRef?.current?.api.getColumnState();
+      if (!columnChangeListenerReady.current) {
+        columnChangeListenerReady.current = true;
+        return;
+      }
+      if (!state) {
+        return;
+      }
+      applyAndUpdateNewState(state);
+      onColumnsChangedProps?.(state);
+    }, [applyAndUpdateNewState, onColumnsChangedProps]);
+
+    const onColumnMoved = useCallback(() => {
+      onColumnChanged();
+    }, [onColumnChanged]);
+
+    const onColumnResized = useCallback(
+      (event: ColumnResizedEvent) => {
+        if (!event.finished) {
+          return;
+        }
+        onColumnChanged();
+      },
+      [onColumnChanged],
+    );
 
     const colDefs = useMemo((): ColDef[] => {
       const checkboxColumn = {
         checkboxSelection: true,
         suppressMovable: true,
         sortable: false,
-        lockPosition: true,
         pinned: "left",
+        lockPosition: "left",
+        lockPinned: true,
         maxWidth: 50,
         resizable: false,
+        field: CHECKBOX_COLUMN,
         headerComponent: () => (
           <HeaderCheckbox
             totalRows={totalRows}
@@ -172,6 +181,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         ),
       } as ColDef;
 
+      const storedState = columnsPersistedStateRef.current;
+      const storedStateKeys = storedState?.map((col: any) => col.colId);
+
       const restOfColumns = columns.map((column) => ({
         field: column.key,
         sortable: false,
@@ -181,27 +193,38 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           : undefined,
       }));
 
+      // restOfColumns should be sorted by the order of the storedState
+      storedState &&
+        restOfColumns.sort((a, b) => {
+          const aIndex = storedStateKeys.indexOf(a.field);
+          const bIndex = storedStateKeys.indexOf(b.field);
+          return aIndex - bIndex;
+        });
+
       const statusColumn = {
-        field: "$status",
+        field: STATUS_COLUMN,
         suppressMovable: true,
         sortable: false,
-        lockPosition: true,
+        lockPosition: "left",
+        lockPinned: true,
         maxWidth: 30,
-        type: "leftAligned",
         pinned: "left",
         resizable: false,
         headerComponent: () => null,
         cellRenderer: (cell: any) => statusComponent?.(cell.value),
       } as ColDef;
 
-      return [
+      const finalColumns = [
         checkboxColumn,
         ...(hasStatusColumn ? [statusColumn] : []),
         ...restOfColumns,
       ];
+
+      return finalColumns;
     }, [
       allRowSelectedMode,
       columns,
+      columnsPersistedStateRef,
       hasStatusColumn,
       internalSelectedRowKeys.length,
       onHeaderCheckboxChange,
@@ -257,10 +280,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           }
         }
         gridRef.current?.api.hideOverlay();
-        autoSizeColumnsIfNecessary();
+        applyColumnState();
       },
       [
-        autoSizeColumnsIfNecessary,
+        applyColumnState,
         hasStatusColumn,
         onGetSelectedRowKeys,
         onRequestData,
@@ -272,22 +295,11 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
-        columnsPersistedStateRef.current = getPersistedColumnState({
-          actualColumnKeys: columns.map((column) => column.key),
-          persistedColumnState: onGetColumnsState?.(),
-        });
-        if (columnsPersistedStateRef.current) {
-          params.api.applyColumnState({
-            state: columnsPersistedStateRef.current,
-            applyOrder: true,
-          });
-        }
-
         params.api.setGridOption("datasource", {
           getRows,
         });
       },
-      [columns, getRows, onGetColumnsState],
+      [getRows],
     );
 
     const onRowDoubleClicked = useCallback(
@@ -335,7 +347,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           <AgGridReact
             ref={gridRef}
             columnDefs={colDefs}
-            defaultColDef={defaultColDef}
             onRowDoubleClicked={onRowDoubleClicked}
             rowStyle={{
               cursor: onRowDoubleClick ? "pointer" : "auto",
@@ -345,8 +356,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             suppressRowClickSelection={true}
             rowBuffer={0}
             rowSelection={"multiple"}
-            onColumnMoved={onColumnChanged}
-            onColumnResized={onColumnChanged}
+            onDragStopped={onColumnMoved}
+            onColumnResized={onColumnResized}
             rowModelType={"infinite"}
             cacheBlockSize={20}
             onSelectionChanged={onSelectionChangedDebounced}
@@ -358,6 +369,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             onFirstDataRendered={onFirstDataRendered}
             onBodyScroll={onBodyScroll}
             blockLoadDebounceMillis={DEBOUNCE_TIME}
+            suppressDragLeaveHidesColumns={true}
           />
         </div>
         {footer && <div style={{ height: footerHeight }}>{footer}</div>}
