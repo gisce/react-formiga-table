@@ -8,6 +8,7 @@ import {
 } from "./columnStateHelper";
 import { TableColumn } from "@/types";
 import { useDeepCompareCallback } from "use-deep-compare";
+import { dequal } from "dequal";
 
 const DEBOUNCE_DELAY = 50;
 
@@ -25,7 +26,7 @@ export const useColumnState = ({
   onGetColumnsState?: () => ColumnState[] | undefined;
 }) => {
   const firstTimeResized = useRef(false);
-  const columnsPersistedStateRef = useRef<any>();
+  const columnsPersistedStateRef = useRef<ColumnState[]>();
 
   const columnsToIgnore = FIXED_COLUMNS_TO_IGNORE;
   if (hasStatusColumn) {
@@ -92,7 +93,7 @@ export const useColumnState = ({
     });
   }, [columnsToIgnore, gridRef, remainingBlankSpace, runDeferredCallback]);
 
-  const applyColumnState = useDeepCompareCallback(() => {
+  const loadPersistedColumnState = useDeepCompareCallback(() => {
     columnsPersistedStateRef.current = getPersistedColumnState({
       actualColumnKeys: columns.map((column) => column.key),
       persistedColumnState: onGetColumnsState?.(),
@@ -110,8 +111,32 @@ export const useColumnState = ({
   }, [applyAutoFitState, applyPersistedState, columns, onGetColumnsState]);
 
   return {
-    applyColumnState,
+    loadPersistedColumnState,
     columnsPersistedStateRef,
     applyAndUpdateNewState,
   };
+};
+
+const removeNullsFromState = (state: ColumnState): Partial<ColumnState> => {
+  return Object.entries(state).reduce<Partial<ColumnState>>(
+    (acc, [key, value]) => {
+      if (value != null) {
+        acc[key as keyof ColumnState] = value;
+      }
+      return acc;
+    },
+    {},
+  );
+};
+
+export const areStatesEqual = (
+  a?: ColumnState[],
+  b?: ColumnState[],
+): boolean => {
+  if (!a || !b) {
+    return false;
+  }
+  const cleanA = a.map(removeNullsFromState);
+  const cleanB = b.map(removeNullsFromState);
+  return dequal(cleanA, cleanB);
 };
