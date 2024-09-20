@@ -90,6 +90,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
+    const firstTimeDataLoaded = useRef(true);
     const firstTimeOnBodyScroll = useRef(true);
     const allRowSelectedModeRef = useRef<boolean>(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -265,6 +266,13 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       totalRows,
     ]);
 
+    const scrollToSavedPosition = useCallback(() => {
+      const firstVisibleRowIndex = onGetFirstVisibleRowIndex?.();
+      if (firstVisibleRowIndex && gridRef.current?.api) {
+        gridRef.current.api.ensureIndexVisible(firstVisibleRowIndex, "top");
+      }
+    }, [onGetFirstVisibleRowIndex]);
+
     const getRows = useCallback(
       async (params: IGetRowsParams) => {
         gridRef.current?.api.showLoadingOverlay();
@@ -321,6 +329,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           }
         }
         gridRef.current?.api.hideOverlay();
+        if (firstTimeDataLoaded.current) {
+          firstTimeDataLoaded.current = false;
+          scrollToSavedPosition();
+        }
       },
       [
         getSortedFields,
@@ -328,6 +340,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         onGetSelectedRowKeys,
         onRequestData,
         onRowStatus,
+        scrollToSavedPosition,
         selectedRowKeysPendingToRender,
         setSelectedRowKeysPendingToRender,
       ],
@@ -348,16 +361,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         onRowDoubleClick?.(item);
       },
       [onRowDoubleClick],
-    );
-
-    const onFirstDataRendered = useCallback(
-      (params: FirstDataRenderedEvent) => {
-        const firstVisibleRowIndex = onGetFirstVisibleRowIndex?.();
-        if (firstVisibleRowIndex) {
-          params.api.ensureIndexVisible(firstVisibleRowIndex, "top");
-        }
-      },
-      [onGetFirstVisibleRowIndex],
     );
 
     const onBodyScroll = useCallback(
@@ -407,7 +410,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             infiniteInitialRowCount={50}
             maxBlocksInCache={10}
             onGridReady={onGridReady}
-            onFirstDataRendered={onFirstDataRendered}
             onBodyScroll={onBodyScroll}
             blockLoadDebounceMillis={DEBOUNCE_TIME}
             suppressDragLeaveHidesColumns={true}
