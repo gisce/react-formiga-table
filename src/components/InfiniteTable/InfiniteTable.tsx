@@ -15,7 +15,6 @@ import {
   ColDef,
   ColumnResizedEvent,
   ColumnState,
-  FirstDataRenderedEvent,
   GridReadyEvent,
   IGetRowsParams,
   RowDoubleClickedEvent,
@@ -28,7 +27,7 @@ import { useRowSelection } from "./useRowSelection";
 import { areStatesEqual, useColumnState } from "./useColumnState";
 import { CHECKBOX_COLUMN, STATUS_COLUMN } from "./columnStateHelper";
 
-const DEBOUNCE_TIME = 50;
+const DEBOUNCE_TIME = 100;
 const DEFAULT_TOTAL_ROWS_VALUE = Number.MAX_SAFE_INTEGER;
 
 export type InfiniteTableProps = Omit<
@@ -398,17 +397,17 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             getRowStyle={onRowStyle}
             suppressCellFocus={true}
             suppressRowClickSelection={true}
-            rowBuffer={0}
+            rowBuffer={10}
             rowSelection={"multiple"}
             onDragStopped={onColumnMoved}
             onColumnResized={onColumnResized}
             rowModelType={"infinite"}
-            cacheBlockSize={200}
+            cacheBlockSize={500}
             onSelectionChanged={onSelectionChangedDebounced}
             cacheOverflowSize={2}
             maxConcurrentDatasourceRequests={1}
             infiniteInitialRowCount={50}
-            maxBlocksInCache={10}
+            maxBlocksInCache={20}
             onGridReady={onGridReady}
             onBodyScroll={onBodyScroll}
             blockLoadDebounceMillis={DEBOUNCE_TIME}
