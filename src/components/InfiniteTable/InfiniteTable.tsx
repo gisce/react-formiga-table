@@ -3,7 +3,6 @@ import {
   memo,
   ReactNode,
   useCallback,
-  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -24,10 +23,10 @@ import {
 import { TableProps } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import { HeaderCheckbox } from "./HeaderCheckbox";
-import { useRowSelection } from "./useRowSelection";
 import { areStatesEqual, useColumnState } from "./useColumnState";
 import { CHECKBOX_COLUMN, STATUS_COLUMN } from "./columnStateHelper";
 import debounce from "lodash/debounce";
+import { useWhyDidYouRender } from "@/hooks/useWhyDidYouRender";
 
 const DEBOUNCE_TIME = 100;
 const DEFAULT_TOTAL_ROWS_VALUE = Number.MAX_SAFE_INTEGER;
@@ -53,7 +52,7 @@ export type InfiniteTableProps = Omit<
   onGetSelectedRowKeys?: () => any[] | undefined;
   totalRows?: number;
   allRowSelectedMode?: boolean;
-  onAllRowSelectedModeChange?: (allRowSelectedMode: boolean) => void;
+  onSelectionCheckboxClicked?: () => void;
   footer?: ReactNode;
   footerHeight?: number;
   hasStatusColumn?: boolean;
@@ -62,6 +61,7 @@ export type InfiniteTableProps = Omit<
 };
 
 export type InfiniteTableRef = {
+  setSelectedRows: (keys: number[]) => void;
   unselectAll: () => void;
   refresh: () => void;
 };
@@ -81,8 +81,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onGetFirstVisibleRowIndex,
       onGetSelectedRowKeys,
       totalRows = DEFAULT_TOTAL_ROWS_VALUE,
-      onAllRowSelectedModeChange,
-      allRowSelectedMode: allRowSelectedModeProps,
+      onSelectionCheckboxClicked,
       footer,
       footerHeight = 50,
       onRowStatus,
@@ -93,39 +92,27 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const gridRef = useRef<AgGridReact>(null);
     const firstTimeDataLoaded = useRef(true);
     const firstTimeOnBodyScroll = useRef(true);
-    const allRowSelectedModeRef = useRef<boolean>(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
 
     useImperativeHandle(ref, () => ({
+      setSelectedRows: (keys: number[]) => {
+        gridRef.current?.api?.forEachNode((node) => {
+          if (node?.data?.id && keys.includes(node.data.id)) {
+            node.setSelected(true);
+          } else {
+            node.setSelected(false);
+          }
+        });
+      },
       unselectAll: () => {
-        setSelectedRowKeysPendingToRender([]);
         gridRef.current?.api?.deselectAll();
       },
       refresh: () => {
         gridRef.current?.api?.purgeInfiniteCache();
       },
     }));
-
-    const {
-      onHeaderCheckboxChange,
-      onSelectionChangedDebounced,
-      selectedRowKeysPendingToRender,
-      allRowSelectedMode,
-      internalSelectedRowKeys,
-      setSelectedRowKeysPendingToRender,
-    } = useRowSelection({
-      gridRef,
-      onRowSelectionChange,
-      onAllRowSelectedModeChange,
-      totalRows,
-      allRowSelectedModeProps,
-    });
-
-    useEffect(() => {
-      allRowSelectedModeRef.current = allRowSelectedMode;
-    }, [allRowSelectedMode]);
 
     const columns = useDeepArrayMemo(columnsProps, "key");
 
@@ -197,6 +184,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       return memo((props: { status: any }) => statusComponent(props.status));
     }, [statusComponent]);
 
+    const selectedRowKeys = gridRef.current?.api
+      .getSelectedNodes()
+      .map((node) => node.data.id);
+
     const colDefs = useMemo((): ColDef[] => {
       const checkboxColumn = {
         checkboxSelection: true,
@@ -211,12 +202,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         headerComponent: () => (
           <HeaderCheckbox
             totalRows={totalRows}
-            selectedRowKeysLength={internalSelectedRowKeys.length}
-            allRowSelected={
-              totalRows === internalSelectedRowKeys.length && totalRows > 0
-            }
-            allRowSelectedMode={allRowSelectedMode}
-            onHeaderCheckboxChange={onHeaderCheckboxChange}
+            selectedRowKeysLength={selectedRowKeys?.length || 0}
+            onSelectionCheckboxClicked={onSelectionCheckboxClicked}
           />
         ),
       } as ColDef;
@@ -265,14 +252,13 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
       return finalColumns;
     }, [
-      allRowSelectedMode,
-      columns,
       columnsPersistedStateRef,
-      hasStatusColumn,
-      internalSelectedRowKeys.length,
-      onHeaderCheckboxChange,
+      columns,
       MemoizedStatusComponent,
+      hasStatusColumn,
       totalRows,
+      selectedRowKeys?.length,
+      onSelectionCheckboxClicked,
     ]);
 
     const scrollToSavedPosition = useCallback(() => {
@@ -291,6 +277,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       },
       [onRowStatus],
     );
+
     const getRows = useCallback(
       async (params: IGetRowsParams) => {
         gridRef.current?.api.showLoadingOverlay();
@@ -326,27 +313,14 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           : data;
 
         params.successCallback(finalData, lastRow);
-        if (allRowSelectedModeRef.current) {
-          gridRef?.current?.api.forEachNode((node) => {
-            node.setSelected(true);
-          });
-        } else {
-          const selectedRowKeys = onGetSelectedRowKeys?.();
-          setSelectedRowKeysPendingToRender(selectedRowKeys || []);
+        const selectedRowKeys = onGetSelectedRowKeys?.();
 
-          if (selectedRowKeys && selectedRowKeys.length > 0) {
-            gridRef?.current?.api.forEachNode((node) => {
-              if (node?.data?.id && selectedRowKeys.includes(node.data.id)) {
-                // remove from selectedRowKeysPendingToRender
-                node.setSelected(true);
-                setSelectedRowKeysPendingToRender(
-                  selectedRowKeysPendingToRender.filter(
-                    (key) => node.data.id && key !== node.data.id,
-                  ),
-                );
-              }
-            });
-          }
+        if (selectedRowKeys && selectedRowKeys.length > 0) {
+          gridRef?.current?.api.forEachNode((node) => {
+            if (node?.data?.id && selectedRowKeys.includes(node.data.id)) {
+              node.setSelected(true);
+            }
+          });
         }
         gridRef.current?.api.hideOverlay();
         if (firstTimeDataLoaded.current) {
@@ -361,8 +335,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         onGetSelectedRowKeys,
         onRequestData,
         scrollToSavedPosition,
-        selectedRowKeysPendingToRender,
-        setSelectedRowKeysPendingToRender,
       ],
     );
 
@@ -396,6 +368,19 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       [onChangeFirstVisibleRowIndex],
     );
 
+    useWhyDidYouRender("InfiniteTable", props);
+
+    const onSelectionChanged = useCallback(
+      (event: { api: { getSelectedNodes: () => any } }) => {
+        const allSelectedNodes = event.api.getSelectedNodes() || [];
+        const selectedKeys = allSelectedNodes.map(
+          (node: { data: any }) => node.data.id,
+        );
+        onRowSelectionChange?.(selectedKeys);
+      },
+      [onRowSelectionChange],
+    );
+
     return (
       <div
         style={{
@@ -425,7 +410,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             onColumnResized={onColumnResized}
             rowModelType={"infinite"}
             cacheBlockSize={200}
-            onSelectionChanged={onSelectionChangedDebounced}
+            onSelectionChanged={onSelectionChanged}
             cacheOverflowSize={2}
             maxConcurrentDatasourceRequests={1}
             infiniteInitialRowCount={50}
@@ -446,6 +431,8 @@ InfiniteTableComp.displayName = "InfiniteTable";
 
 export const InfiniteTable = memo(InfiniteTableComp, (prevProps, nextProps) => {
   return (
+    prevProps.onSelectionCheckboxClicked ===
+      nextProps.onSelectionCheckboxClicked &&
     prevProps.onRowDoubleClick === nextProps.onRowDoubleClick &&
     prevProps.onGetFirstVisibleRowIndex ===
       nextProps.onGetFirstVisibleRowIndex &&

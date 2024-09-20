@@ -9,13 +9,11 @@ export const useRowSelection = ({
   onRowSelectionChange,
   onAllRowSelectedModeChange,
   totalRows,
-  allRowSelectedModeProps = false,
 }: {
   gridRef: RefObject<AgGridReact>;
   onRowSelectionChange?: (selectedKeys: any[]) => void;
   onAllRowSelectedModeChange?: (allRowSelectedMode: boolean) => void;
   totalRows: number;
-  allRowSelectedModeProps?: boolean;
 }) => {
   const [internalSelectedRowKeys, setInternalSelectedRowKeys] = useState<any[]>(
     [],

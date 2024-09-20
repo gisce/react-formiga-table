@@ -52,27 +52,20 @@ export const HeaderCheckbox = memo(
   ({
     selectedRowKeysLength,
     totalRows,
-    allRowSelected,
-    onHeaderCheckboxChange,
-    allRowSelectedMode,
+    onSelectionCheckboxClicked,
   }: {
     selectedRowKeysLength: number;
     totalRows: number;
-    allRowSelected: boolean;
-    onHeaderCheckboxChange: (value: boolean | null) => void;
-    allRowSelectedMode: boolean;
+    onSelectionCheckboxClicked?: () => void;
   }) => {
     const noRowsSelected = selectedRowKeysLength === 0;
     const someRowsSelected =
       selectedRowKeysLength > 0 && totalRows !== selectedRowKeysLength;
+    const allRowSelected = selectedRowKeysLength === totalRows && totalRows > 0;
 
     let value: boolean | null = false;
 
-    if (allRowSelectedMode) {
-      value = true;
-    } else if (totalRows === selectedRowKeysLength && totalRows > 0) {
-      value = true;
-    } else if (allRowSelected) {
+    if (allRowSelected) {
       value = true;
     } else if (noRowsSelected) {
       value = false;
@@ -81,7 +74,10 @@ export const HeaderCheckbox = memo(
     }
 
     return (
-      <HeaderCheckboxComp value={value} onChange={onHeaderCheckboxChange} />
+      <HeaderCheckboxComp
+        value={value}
+        onChange={onSelectionCheckboxClicked!}
+      />
     );
   },
 );
