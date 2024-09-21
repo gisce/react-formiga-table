@@ -415,6 +415,12 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       [getAllNodeKeys, onRowSelectionChange, selectedRowKeys],
     );
 
+    const rowStyle = useMemo(() => {
+      return {
+        cursor: "pointer",
+      };
+    }, []);
+
     return (
       <div
         style={{
@@ -432,9 +438,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             ref={gridRef}
             columnDefs={colDefs}
             onRowDoubleClicked={memoizedOnRowDoubleClick}
-            rowStyle={{
-              cursor: onRowDoubleClick ? "pointer" : "auto",
-            }}
+            rowStyle={rowStyle}
             getRowStyle={onRowStyle}
             suppressCellFocus={true}
             suppressRowClickSelection={true}
