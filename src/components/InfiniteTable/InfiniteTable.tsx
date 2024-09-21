@@ -3,6 +3,7 @@ import {
   memo,
   ReactNode,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -96,6 +97,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
+    const datasourceRef = useRef<{
+      getRows: (params: IGetRowsParams) => void;
+    }>();
 
     useDeepCompareEffect(() => {
       gridRef.current?.api?.forEachNode((node) => {
@@ -335,23 +339,29 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         }
       },
       [
+        onRequestData,
         getSortedFields,
         hasStatusColumn,
         memoizedOnRowStatus,
-        onRequestData,
-        scrollToSavedPosition,
         selectedRowKeys,
+        scrollToSavedPosition,
       ],
     );
+
+    useEffect(() => {
+      datasourceRef.current = { getRows };
+    }, [getRows]);
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
         loadPersistedColumnState();
         params.api.setGridOption("datasource", {
-          getRows,
+          getRows: (params: IGetRowsParams) => {
+            datasourceRef.current?.getRows(params);
+          },
         });
       },
-      [getRows, loadPersistedColumnState],
+      [datasourceRef, loadPersistedColumnState],
     );
 
     const memoizedOnRowDoubleClick = useCallback(
