@@ -27,6 +27,7 @@ import { areStatesEqual, useColumnState } from "./useColumnState";
 import { CHECKBOX_COLUMN, STATUS_COLUMN } from "./columnStateHelper";
 import debounce from "lodash/debounce";
 import { useWhyDidYouRender } from "@/hooks/useWhyDidYouRender";
+import { useDeepCompareEffect } from "use-deep-compare";
 
 const DEBOUNCE_TIME = 100;
 const DEFAULT_TOTAL_ROWS_VALUE = Number.MAX_SAFE_INTEGER;
@@ -49,7 +50,7 @@ export type InfiniteTableProps = Omit<
   onGetColumnsState?: () => ColumnState[] | undefined;
   onGetFirstVisibleRowIndex?: () => number | undefined;
   onChangeFirstVisibleRowIndex?: (index: number) => void;
-  onGetSelectedRowKeys?: () => any[] | undefined;
+  selectedRowKeys?: number[];
   totalRows?: number;
   allRowSelectedMode?: boolean;
   onSelectionCheckboxClicked?: () => void;
@@ -79,7 +80,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onGetColumnsState,
       onChangeFirstVisibleRowIndex,
       onGetFirstVisibleRowIndex,
-      onGetSelectedRowKeys,
+      selectedRowKeys = [],
       totalRows = DEFAULT_TOTAL_ROWS_VALUE,
       onSelectionCheckboxClicked,
       footer,
@@ -95,6 +96,16 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
+
+    useDeepCompareEffect(() => {
+      gridRef.current?.api?.forEachNode((node) => {
+        if (node?.data?.id && selectedRowKeys.includes(node.data.id)) {
+          node.setSelected(true);
+        } else {
+          node.setSelected(false);
+        }
+      });
+    }, [selectedRowKeys]);
 
     useImperativeHandle(ref, () => ({
       setSelectedRows: (keys: number[]) => {
@@ -183,10 +194,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       // eslint-disable-next-line react/display-name
       return memo((props: { status: any }) => statusComponent(props.status));
     }, [statusComponent]);
-
-    const selectedRowKeys = gridRef.current?.api
-      .getSelectedNodes()
-      .map((node) => node.data.id);
 
     const colDefs = useMemo((): ColDef[] => {
       const checkboxColumn = {
@@ -313,7 +320,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           : data;
 
         params.successCallback(finalData, lastRow);
-        const selectedRowKeys = onGetSelectedRowKeys?.();
 
         if (selectedRowKeys && selectedRowKeys.length > 0) {
           gridRef?.current?.api.forEachNode((node) => {
@@ -332,9 +338,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         getSortedFields,
         hasStatusColumn,
         memoizedOnRowStatus,
-        onGetSelectedRowKeys,
         onRequestData,
         scrollToSavedPosition,
+        selectedRowKeys,
       ],
     );
 
@@ -370,15 +376,33 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     useWhyDidYouRender("InfiniteTable", props);
 
+    const getAllNodeKeys = useCallback(() => {
+      const allNodes: number[] = [];
+      gridRef.current?.api?.forEachNode((node) => {
+        allNodes.push(node.data.id);
+      });
+      return allNodes;
+    }, []);
+
     const onSelectionChanged = useCallback(
       (event: { api: { getSelectedNodes: () => any } }) => {
+        const allNodesInTable = getAllNodeKeys();
         const allSelectedNodes = event.api.getSelectedNodes() || [];
+
+        // get the records that are not in allNodesInTable but they exist in selectedRowKeys
+        const rowKeysInSelectedRowKeysButNotInAllNodes = selectedRowKeys.filter(
+          (key) => !allNodesInTable.includes(key),
+        );
+
         const selectedKeys = allSelectedNodes.map(
           (node: { data: any }) => node.data.id,
         );
-        onRowSelectionChange?.(selectedKeys);
+        onRowSelectionChange?.([
+          ...selectedKeys,
+          ...rowKeysInSelectedRowKeysButNotInAllNodes,
+        ]);
       },
-      [onRowSelectionChange],
+      [getAllNodeKeys, onRowSelectionChange, selectedRowKeys],
     );
 
     return (
@@ -429,18 +453,20 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
 InfiniteTableComp.displayName = "InfiniteTable";
 
-export const InfiniteTable = memo(InfiniteTableComp, (prevProps, nextProps) => {
-  return (
-    prevProps.onSelectionCheckboxClicked ===
-      nextProps.onSelectionCheckboxClicked &&
-    prevProps.onRowDoubleClick === nextProps.onRowDoubleClick &&
-    prevProps.onGetFirstVisibleRowIndex ===
-      nextProps.onGetFirstVisibleRowIndex &&
-    prevProps.onGetSelectedRowKeys === nextProps.onGetSelectedRowKeys &&
-    prevProps.onRowStatus === nextProps.onRowStatus &&
-    prevProps.statusComponent === nextProps.statusComponent &&
-    prevProps.columns === nextProps.columns &&
-    prevProps.totalRows === nextProps.totalRows &&
-    prevProps.allRowSelectedMode === nextProps.allRowSelectedMode
-  );
-});
+export const InfiniteTable = memo(InfiniteTableComp);
+
+// export const InfiniteTable = memo(InfiniteTableComp, (prevProps, nextProps) => {
+//   return (
+//     prevProps.onSelectionCheckboxClicked ===
+//       nextProps.onSelectionCheckboxClicked &&
+//     prevProps.onRowDoubleClick === nextProps.onRowDoubleClick &&
+//     prevProps.onGetFirstVisibleRowIndex ===
+//       nextProps.onGetFirstVisibleRowIndex &&
+//     // prevProps.onGetSelectedRowKeys === nextProps.onGetSelectedRowKeys &&
+//     prevProps.onRowStatus === nextProps.onRowStatus &&
+//     prevProps.statusComponent === nextProps.statusComponent &&
+//     prevProps.columns === nextProps.columns &&
+//     prevProps.totalRows === nextProps.totalRows &&
+//     prevProps.allRowSelectedMode === nextProps.allRowSelectedMode
+//   );
+// });
