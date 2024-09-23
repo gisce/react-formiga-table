@@ -384,12 +384,14 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       [onChangeFirstVisibleRowIndex],
     );
 
-    useWhyDidYouRender("InfiniteTable", props);
+    // useWhyDidYouRender("InfiniteTable", props);
 
     const getAllNodeKeys = useCallback(() => {
       const allNodes: number[] = [];
       gridRef.current?.api?.forEachNode((node) => {
-        allNodes.push(node.data.id);
+        if (node?.data?.id) {
+          allNodes.push(node.data.id);
+        }
       });
       return allNodes;
     }, []);
