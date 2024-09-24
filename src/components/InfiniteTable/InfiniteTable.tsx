@@ -27,7 +27,6 @@ import { HeaderCheckbox } from "./HeaderCheckbox";
 import { areStatesEqual, useColumnState } from "./useColumnState";
 import { CHECKBOX_COLUMN, STATUS_COLUMN } from "./columnStateHelper";
 import debounce from "lodash/debounce";
-import { useWhyDidYouRender } from "@/hooks/useWhyDidYouRender";
 import { useDeepCompareEffect } from "use-deep-compare";
 
 const DEBOUNCE_TIME = 100;
@@ -85,7 +84,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       totalRows = DEFAULT_TOTAL_ROWS_VALUE,
       onSelectionCheckboxClicked,
       footer,
-      footerHeight = 50,
+      footerHeight = 30,
       onRowStatus,
       statusComponent,
       hasStatusColumn = false,
@@ -94,6 +93,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const gridRef = useRef<AgGridReact>(null);
     const firstTimeDataLoaded = useRef(true);
     const firstTimeOnBodyScroll = useRef(true);
+    const dataIsLoading = useRef(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
@@ -291,51 +291,66 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const getRows = useCallback(
       async (params: IGetRowsParams) => {
-        gridRef.current?.api.showLoadingOverlay();
-        const { startRow, endRow } = params;
-        const data = await onRequestData({
-          startRow,
-          endRow,
-          sortFields: getSortedFields(),
-        });
-        if (!data) {
-          params.failCallback();
-          return;
-        }
-        let lastRow = -1;
-        if (data.length < endRow - startRow) {
-          lastRow = startRow + data.length;
-        }
-
-        // We must call onRowStatus for each item of the data array and merge the result
-        // with the data array
-        const finalData = hasStatusColumn
-          ? await Promise.all(
-              data.map(async (item) => {
-                const status = memoizedOnRowStatus
-                  ? await memoizedOnRowStatus(item)
-                  : undefined;
-                return {
-                  ...item,
-                  $status: status,
-                };
-              }),
-            )
-          : data;
-
-        params.successCallback(finalData, lastRow);
-
-        if (selectedRowKeys && selectedRowKeys.length > 0) {
-          gridRef?.current?.api.forEachNode((node) => {
-            if (node?.data?.id && selectedRowKeys.includes(node.data.id)) {
-              node.setSelected(true);
-            }
+        try {
+          if (dataIsLoading.current) {
+            return;
+          }
+          dataIsLoading.current = true;
+          const { startRow, endRow } = params;
+          if (startRow === 0) {
+            gridRef.current?.api.showLoadingOverlay();
+          }
+          const data = await onRequestData({
+            startRow,
+            endRow,
+            sortFields: getSortedFields(),
           });
-        }
-        gridRef.current?.api.hideOverlay();
-        if (firstTimeDataLoaded.current) {
-          firstTimeDataLoaded.current = false;
-          scrollToSavedPosition();
+
+          if (!data) {
+            throw new Error("Data is undefined");
+          }
+
+          let lastRow = -1;
+          if (data.length < endRow - startRow) {
+            lastRow = startRow + data.length;
+          }
+
+          // We must call onRowStatus for each item of the data array and merge the result
+          // with the data array
+          const finalData = hasStatusColumn
+            ? await Promise.all(
+                data.map(async (item) => {
+                  const status = memoizedOnRowStatus
+                    ? await memoizedOnRowStatus(item)
+                    : undefined;
+                  return {
+                    ...item,
+                    $status: status,
+                  };
+                }),
+              )
+            : data;
+
+          params.successCallback(finalData, lastRow);
+
+          if (selectedRowKeys && selectedRowKeys.length > 0) {
+            gridRef?.current?.api.forEachNode((node) => {
+              if (node?.data?.id && selectedRowKeys.includes(node.data.id)) {
+                node.setSelected(true);
+              }
+            });
+          }
+
+          dataIsLoading.current = false;
+          gridRef.current?.api.hideOverlay();
+          if (firstTimeDataLoaded.current) {
+            firstTimeDataLoaded.current = false;
+            scrollToSavedPosition();
+          }
+        } catch (error) {
+          dataIsLoading.current = false;
+          params.failCallback();
+          gridRef.current?.api.hideOverlay();
         }
       },
       [
@@ -454,14 +469,21 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             cacheOverflowSize={2}
             maxConcurrentDatasourceRequests={1}
             infiniteInitialRowCount={20}
-            // maxBlocksInCache={10}
             onGridReady={onGridReady}
             onBodyScroll={debouncedOnBodyScroll}
             blockLoadDebounceMillis={DEBOUNCE_TIME}
             suppressDragLeaveHidesColumns={true}
           />
         </div>
-        {footer && <div style={{ height: footerHeight }}>{footer}</div>}
+        {footer && (
+          <div
+            style={{
+              height: footerHeight,
+            }}
+          >
+            {footer}
+          </div>
+        )}
       </div>
     );
   },
@@ -470,19 +492,3 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 InfiniteTableComp.displayName = "InfiniteTable";
 
 export const InfiniteTable = memo(InfiniteTableComp);
-
-// export const InfiniteTable = memo(InfiniteTableComp, (prevProps, nextProps) => {
-//   return (
-//     prevProps.onSelectionCheckboxClicked ===
-//       nextProps.onSelectionCheckboxClicked &&
-//     prevProps.onRowDoubleClick === nextProps.onRowDoubleClick &&
-//     prevProps.onGetFirstVisibleRowIndex ===
-//       nextProps.onGetFirstVisibleRowIndex &&
-//     // prevProps.onGetSelectedRowKeys === nextProps.onGetSelectedRowKeys &&
-//     prevProps.onRowStatus === nextProps.onRowStatus &&
-//     prevProps.statusComponent === nextProps.statusComponent &&
-//     prevProps.columns === nextProps.columns &&
-//     prevProps.totalRows === nextProps.totalRows &&
-//     prevProps.allRowSelectedMode === nextProps.allRowSelectedMode
-//   );
-// });
