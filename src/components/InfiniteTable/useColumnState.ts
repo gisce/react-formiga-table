@@ -4,7 +4,6 @@ import { RefObject, useCallback, useRef } from "react";
 import {
   FIXED_COLUMNS_TO_IGNORE,
   getPersistedColumnState,
-  STATUS_COLUMN,
 } from "./columnStateHelper";
 import { TableColumn } from "@/types";
 import { useDeepCompareCallback } from "use-deep-compare";
@@ -15,13 +14,11 @@ const DEBOUNCE_DELAY = 50;
 export const useColumnState = ({
   gridRef,
   containerRef,
-  hasStatusColumn,
   columns,
   onGetColumnsState,
 }: {
   gridRef: RefObject<AgGridReact>;
   containerRef: RefObject<HTMLDivElement>;
-  hasStatusColumn: boolean;
   columns: TableColumn[];
   onGetColumnsState?: () => ColumnState[] | undefined;
 }) => {
@@ -29,9 +26,6 @@ export const useColumnState = ({
   const columnsPersistedStateRef = useRef<ColumnState[]>();
 
   const columnsToIgnore = FIXED_COLUMNS_TO_IGNORE;
-  if (hasStatusColumn) {
-    columnsToIgnore.push(STATUS_COLUMN);
-  }
 
   const remainingBlankSpace = useCallback(
     (allColumns: Array<Column<any>>) => {
@@ -114,6 +108,7 @@ export const useColumnState = ({
     loadPersistedColumnState,
     columnsPersistedStateRef,
     applyAndUpdateNewState,
+    applyAutoFitState,
   };
 };
 
