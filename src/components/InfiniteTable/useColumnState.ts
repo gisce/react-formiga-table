@@ -22,7 +22,6 @@ export const useColumnState = ({
   columns: TableColumn[];
   onGetColumnsState?: () => ColumnState[] | undefined;
 }) => {
-  const firstTimeResized = useRef(false);
   const columnsPersistedStateRef = useRef<ColumnState[]>();
 
   const columnsToIgnore = FIXED_COLUMNS_TO_IGNORE;
@@ -95,14 +94,8 @@ export const useColumnState = ({
 
     if (columnsPersistedStateRef.current) {
       applyPersistedState();
-      return;
     }
-
-    if (!columnsPersistedStateRef.current && !firstTimeResized.current) {
-      firstTimeResized.current = true;
-      applyAutoFitState();
-    }
-  }, [applyAutoFitState, applyPersistedState, columns, onGetColumnsState]);
+  }, [applyPersistedState, columns, onGetColumnsState]);
 
   return {
     loadPersistedColumnState,

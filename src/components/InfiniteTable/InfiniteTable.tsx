@@ -103,6 +103,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const datasourceRef = useRef<{
       getRows: (params: IGetRowsParams) => void;
     }>();
+    const notifyColumnChanges = useRef(false);
+    const firstTimeResized = useRef(false);
 
     useDeepCompareEffect(() => {
       gridRef.current?.api?.forEachNode((node) => {
@@ -146,34 +148,35 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onGetColumnsState,
     });
 
-    const onColumnChanged = useCallback(() => {
-      const state = gridRef?.current?.api.getColumnState();
-      if (!state) {
-        return;
-      }
-      if (areStatesEqual(state, columnsPersistedStateRef.current)) {
-        return;
-      }
-      applyAndUpdateNewState(state);
-      onColumnsChangedProps?.(state);
-    }, [
-      applyAndUpdateNewState,
-      columnsPersistedStateRef,
-      onColumnsChangedProps,
-    ]);
+    const debouncedOnColumnChanged = useMemo(
+      () =>
+        debounce(() => {
+          const state = gridRef?.current?.api.getColumnState();
+          if (!state) {
+            return;
+          }
+          if (areStatesEqual(state, columnsPersistedStateRef.current)) {
+            return;
+          }
+          if (!notifyColumnChanges.current) {
+            notifyColumnChanges.current = true;
+            return;
+          }
+          applyAndUpdateNewState(state);
+          onColumnsChangedProps?.(state);
+        }, 300),
+      [applyAndUpdateNewState, columnsPersistedStateRef, onColumnsChangedProps],
+    );
 
-    const onColumnMoved = useCallback(() => {
-      onColumnChanged();
-    }, [onColumnChanged]);
-
-    const onColumnResized = useCallback(
-      (event: ColumnResizedEvent) => {
-        if (!event.finished) {
-          return;
-        }
-        onColumnChanged();
-      },
-      [onColumnChanged],
+    const debouncedOnColumnResized = useMemo(
+      () =>
+        debounce((event: ColumnResizedEvent) => {
+          if (!event.finished) {
+            return;
+          }
+          debouncedOnColumnChanged();
+        }, 300),
+      [debouncedOnColumnChanged],
     );
 
     const getSortedFields = useCallback(():
@@ -258,9 +261,11 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
               strings?.["resetTableViewLabel"] || "resetTableViewLabel"
             }
             onResetTableView={async () => {
+              notifyColumnChanges.current = false;
               applyAndUpdateNewState([]);
               gridRef.current?.api.resetColumnState();
               applyAutoFitState();
+              onColumnsChangedProps?.([]);
             }}
           />
         ),
@@ -282,6 +287,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       strings,
       applyAndUpdateNewState,
       applyAutoFitState,
+      onColumnsChangedProps,
     ]);
 
     const scrollToSavedPosition = useCallback(() => {
@@ -353,6 +359,11 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             });
           }
 
+          if (!columnsPersistedStateRef.current && !firstTimeResized.current) {
+            firstTimeResized.current = true;
+            applyAutoFitState();
+          }
+
           dataIsLoading.current = false;
           gridRef.current?.api.hideOverlay();
           if (firstTimeDataLoaded.current) {
@@ -369,8 +380,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         onRequestData,
         getSortedFields,
         hasStatusColumn,
-        memoizedOnRowStatus,
         selectedRowKeys,
+        columnsPersistedStateRef,
+        memoizedOnRowStatus,
+        applyAutoFitState,
         scrollToSavedPosition,
       ],
     );
@@ -473,8 +486,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             suppressRowClickSelection={true}
             rowBuffer={5}
             rowSelection={"multiple"}
-            onDragStopped={onColumnMoved}
-            onColumnResized={onColumnResized}
+            onDragStopped={debouncedOnColumnChanged}
+            onColumnResized={debouncedOnColumnResized}
             rowModelType={"infinite"}
             cacheBlockSize={30}
             onSelectionChanged={onSelectionChanged}
