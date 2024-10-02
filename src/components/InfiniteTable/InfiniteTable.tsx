@@ -28,6 +28,7 @@ import { areStatesEqual, useColumnState } from "./useColumnState";
 import { CHECKBOX_COLUMN, STATUS_COLUMN } from "./columnStateHelper";
 import debounce from "lodash/debounce";
 import { useDeepCompareEffect } from "use-deep-compare";
+import { ITOptsButton } from "./ITOptsButton";
 
 const DEBOUNCE_TIME = 100;
 const DEFAULT_TOTAL_ROWS_VALUE = Number.MAX_SAFE_INTEGER;
@@ -59,6 +60,7 @@ export type InfiniteTableProps = Omit<
   hasStatusColumn?: boolean;
   onRowStatus?: (item: any) => any;
   statusComponent?: (status: any) => ReactNode;
+  strings?: Record<string, string>;
 };
 
 export type InfiniteTableRef = {
@@ -88,6 +90,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onRowStatus,
       statusComponent,
       hasStatusColumn = false,
+      strings = {},
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -135,10 +138,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       loadPersistedColumnState,
       columnsPersistedStateRef,
       applyAndUpdateNewState,
+      applyAutoFitState,
     } = useColumnState({
       gridRef,
       containerRef,
-      hasStatusColumn,
       columns,
       onGetColumnsState,
     });
@@ -249,27 +252,36 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         maxWidth: 30,
         pinned: "left",
         resizable: false,
-        headerComponent: () => null,
+        headerComponent: () => (
+          <ITOptsButton
+            resetTableViewLabel={
+              strings?.["resetTableViewLabel"] || "resetTableViewLabel"
+            }
+            onResetTableView={async () => {
+              applyAndUpdateNewState([]);
+              gridRef.current?.api.resetColumnState();
+              applyAutoFitState();
+            }}
+          />
+        ),
         cellRenderer: MemoizedStatusComponent
           ? (cell: any) => <MemoizedStatusComponent status={cell.value} />
           : undefined,
       } as ColDef;
 
-      const finalColumns = [
-        checkboxColumn,
-        ...(hasStatusColumn ? [statusColumn] : []),
-        ...restOfColumns,
-      ];
+      const finalColumns = [statusColumn, checkboxColumn, ...restOfColumns];
 
       return finalColumns;
     }, [
       columnsPersistedStateRef,
       columns,
       MemoizedStatusComponent,
-      hasStatusColumn,
       totalRows,
       selectedRowKeys?.length,
       onSelectionCheckboxClicked,
+      strings,
+      applyAndUpdateNewState,
+      applyAutoFitState,
     ]);
 
     const scrollToSavedPosition = useCallback(() => {
