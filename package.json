@@ -38,7 +38,7 @@
     "ag-grid-react": "^31.2.1",
     "dequal": "^2.0.3",
     "lodash.debounce": "^4.0.8",
-    "rc-dropdown": "^4.2.0",
+    "rc-dropdown": "^4.1.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "style-object-to-css-string": "^1.1.3",
