@@ -1,10 +1,7 @@
 export const STATUS_COLUMN = "$status";
 export const CHECKBOX_COLUMN = "$checkbox";
-export const FIXED_COLUMNS_TO_IGNORE = [CHECKBOX_COLUMN];
-export const ALL_COLUMNS_TO_IGNORE = [
-  ...FIXED_COLUMNS_TO_IGNORE,
-  STATUS_COLUMN,
-];
+export const FIXED_COLUMNS_TO_IGNORE = [CHECKBOX_COLUMN, STATUS_COLUMN];
+export const ALL_COLUMNS_TO_IGNORE = [...FIXED_COLUMNS_TO_IGNORE];
 
 export const getPersistedColumnState = ({
   actualColumnKeys,

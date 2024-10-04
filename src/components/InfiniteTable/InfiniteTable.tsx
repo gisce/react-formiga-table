@@ -28,6 +28,7 @@ import { areStatesEqual, useColumnState } from "./useColumnState";
 import { CHECKBOX_COLUMN, STATUS_COLUMN } from "./columnStateHelper";
 import debounce from "lodash/debounce";
 import { useDeepCompareEffect } from "use-deep-compare";
+import { ITOptsButton } from "./ITOptsButton";
 
 const DEBOUNCE_TIME = 100;
 const DEFAULT_TOTAL_ROWS_VALUE = Number.MAX_SAFE_INTEGER;
@@ -59,6 +60,7 @@ export type InfiniteTableProps = Omit<
   hasStatusColumn?: boolean;
   onRowStatus?: (item: any) => any;
   statusComponent?: (status: any) => ReactNode;
+  strings?: Record<string, string>;
 };
 
 export type InfiniteTableRef = {
@@ -88,6 +90,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onRowStatus,
       statusComponent,
       hasStatusColumn = false,
+      strings = {},
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -100,6 +103,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const datasourceRef = useRef<{
       getRows: (params: IGetRowsParams) => void;
     }>();
+    const notifyColumnChanges = useRef(false);
+    const firstTimeResized = useRef(false);
 
     useDeepCompareEffect(() => {
       gridRef.current?.api?.forEachNode((node) => {
@@ -135,42 +140,43 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       loadPersistedColumnState,
       columnsPersistedStateRef,
       applyAndUpdateNewState,
+      applyAutoFitState,
     } = useColumnState({
       gridRef,
       containerRef,
-      hasStatusColumn,
       columns,
       onGetColumnsState,
     });
 
-    const onColumnChanged = useCallback(() => {
-      const state = gridRef?.current?.api.getColumnState();
-      if (!state) {
-        return;
-      }
-      if (areStatesEqual(state, columnsPersistedStateRef.current)) {
-        return;
-      }
-      applyAndUpdateNewState(state);
-      onColumnsChangedProps?.(state);
-    }, [
-      applyAndUpdateNewState,
-      columnsPersistedStateRef,
-      onColumnsChangedProps,
-    ]);
+    const debouncedOnColumnChanged = useMemo(
+      () =>
+        debounce(() => {
+          const state = gridRef?.current?.api.getColumnState();
+          if (!state) {
+            return;
+          }
+          if (areStatesEqual(state, columnsPersistedStateRef.current)) {
+            return;
+          }
+          if (!notifyColumnChanges.current) {
+            notifyColumnChanges.current = true;
+            return;
+          }
+          applyAndUpdateNewState(state);
+          onColumnsChangedProps?.(state);
+        }, 300),
+      [applyAndUpdateNewState, columnsPersistedStateRef, onColumnsChangedProps],
+    );
 
-    const onColumnMoved = useCallback(() => {
-      onColumnChanged();
-    }, [onColumnChanged]);
-
-    const onColumnResized = useCallback(
-      (event: ColumnResizedEvent) => {
-        if (!event.finished) {
-          return;
-        }
-        onColumnChanged();
-      },
-      [onColumnChanged],
+    const debouncedOnColumnResized = useMemo(
+      () =>
+        debounce((event: ColumnResizedEvent) => {
+          if (!event.finished) {
+            return;
+          }
+          debouncedOnColumnChanged();
+        }, 300),
+      [debouncedOnColumnChanged],
     );
 
     const getSortedFields = useCallback(():
@@ -249,27 +255,39 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         maxWidth: 30,
         pinned: "left",
         resizable: false,
-        headerComponent: () => null,
+        headerComponent: () => (
+          <ITOptsButton
+            resetTableViewLabel={
+              strings?.["resetTableViewLabel"] || "resetTableViewLabel"
+            }
+            onResetTableView={async () => {
+              notifyColumnChanges.current = false;
+              applyAndUpdateNewState([]);
+              gridRef.current?.api.resetColumnState();
+              applyAutoFitState();
+              onColumnsChangedProps?.([]);
+            }}
+          />
+        ),
         cellRenderer: MemoizedStatusComponent
           ? (cell: any) => <MemoizedStatusComponent status={cell.value} />
           : undefined,
       } as ColDef;
 
-      const finalColumns = [
-        checkboxColumn,
-        ...(hasStatusColumn ? [statusColumn] : []),
-        ...restOfColumns,
-      ];
+      const finalColumns = [statusColumn, checkboxColumn, ...restOfColumns];
 
       return finalColumns;
     }, [
       columnsPersistedStateRef,
       columns,
       MemoizedStatusComponent,
-      hasStatusColumn,
       totalRows,
       selectedRowKeys?.length,
       onSelectionCheckboxClicked,
+      strings,
+      applyAndUpdateNewState,
+      applyAutoFitState,
+      onColumnsChangedProps,
     ]);
 
     const scrollToSavedPosition = useCallback(() => {
@@ -341,6 +359,11 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             });
           }
 
+          if (!columnsPersistedStateRef.current && !firstTimeResized.current) {
+            firstTimeResized.current = true;
+            applyAutoFitState();
+          }
+
           dataIsLoading.current = false;
           gridRef.current?.api.hideOverlay();
           if (firstTimeDataLoaded.current) {
@@ -357,8 +380,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         onRequestData,
         getSortedFields,
         hasStatusColumn,
-        memoizedOnRowStatus,
         selectedRowKeys,
+        columnsPersistedStateRef,
+        memoizedOnRowStatus,
+        applyAutoFitState,
         scrollToSavedPosition,
       ],
     );
@@ -461,8 +486,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             suppressRowClickSelection={true}
             rowBuffer={5}
             rowSelection={"multiple"}
-            onDragStopped={onColumnMoved}
-            onColumnResized={onColumnResized}
+            onDragStopped={debouncedOnColumnChanged}
+            onColumnResized={debouncedOnColumnResized}
             rowModelType={"infinite"}
             cacheBlockSize={30}
             onSelectionChanged={onSelectionChanged}
