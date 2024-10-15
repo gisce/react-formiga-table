@@ -106,7 +106,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const notifyColumnChanges = useRef(false);
     const firstTimeResized = useRef(false);
 
-    useDeepCompareEffect(() => {
+    const updateSelectedRowKeys = useCallback(() => {
       gridRef.current?.api?.forEachNode((node) => {
         if (node?.data?.id && selectedRowKeys.includes(node.data.id)) {
           node.setSelected(true);
@@ -114,6 +114,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           node.setSelected(false);
         }
       });
+    }, [selectedRowKeys]);
+
+    useDeepCompareEffect(() => {
+      updateSelectedRowKeys();
     }, [selectedRowKeys]);
 
     useImperativeHandle(ref, () => ({
@@ -130,6 +134,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         gridRef.current?.api?.deselectAll();
       },
       refresh: () => {
+        gridRef.current?.api?.deselectAll();
         gridRef.current?.api?.purgeInfiniteCache();
       },
     }));
@@ -383,6 +388,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         selectedRowKeys,
         columnsPersistedStateRef,
         memoizedOnRowStatus,
+        updateSelectedRowKeys,
         applyAutoFitState,
         scrollToSavedPosition,
       ],
