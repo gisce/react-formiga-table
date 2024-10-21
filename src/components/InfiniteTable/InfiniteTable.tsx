@@ -388,7 +388,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         selectedRowKeys,
         columnsPersistedStateRef,
         memoizedOnRowStatus,
-        updateSelectedRowKeys,
         applyAutoFitState,
         scrollToSavedPosition,
       ],
