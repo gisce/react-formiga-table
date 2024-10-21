@@ -388,7 +388,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         selectedRowKeys,
         columnsPersistedStateRef,
         memoizedOnRowStatus,
-        updateSelectedRowKeys,
         applyAutoFitState,
         scrollToSavedPosition,
       ],
@@ -455,10 +454,21 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         const selectedKeys = allSelectedNodes.map(
           (node: { data: any }) => node.data.id,
         );
-        onRowSelectionChange?.([
-          ...selectedKeys,
-          ...rowKeysInSelectedRowKeysButNotInAllNodes,
-        ]);
+
+        const finalSelectedKeys = Array.from(
+          new Set([
+            ...selectedKeys,
+            ...rowKeysInSelectedRowKeysButNotInAllNodes,
+          ]),
+        );
+
+        const hasSelectionChanged =
+          finalSelectedKeys.length !== selectedRowKeys.length ||
+          finalSelectedKeys.some((key) => !selectedRowKeys.includes(key));
+
+        if (hasSelectionChanged) {
+          onRowSelectionChange?.(finalSelectedKeys);
+        }
       },
       [getAllNodeKeys, onRowSelectionChange, selectedRowKeys],
     );
