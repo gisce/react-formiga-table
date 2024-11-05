@@ -189,7 +189,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       | undefined => {
       const state = gridRef?.current?.api.getColumnState()!;
 
-      const columnsWithSort = state.filter((col) => col.sort);
+      const columnsWithSort = state
+        .filter((col) => col.sort)
+        .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0));
+
       if (columnsWithSort.length === 0) {
         return undefined;
       }
