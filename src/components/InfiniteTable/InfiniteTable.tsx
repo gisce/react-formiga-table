@@ -478,9 +478,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const rowStyle = useMemo(() => {
       return {
-        cursor: "pointer",
+        cursor: onRowDoubleClick ? "pointer" : "default",
       };
-    }, []);
+    }, [onRowDoubleClick]);
 
     return (
       <div
