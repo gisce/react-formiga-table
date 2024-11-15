@@ -19,6 +19,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    if: '!contains(github.event.head_commit.message, ''[skip ci]'')'
     outputs:
       release_type: ${{ steps.get_release_type.outputs.release_type }}
       tag_name: ${{ steps.get_tag_name.outputs.tag_name }}
@@ -89,5 +90,23 @@ jobs:
           tagName: ${{ needs.release.outputs.tag_name }}
           dependentProjectBranch: ${{ matrix.branch }}
           libraryName: ${{ env.LIBRARY_NAME }}
+          githubToken: ${{ secrets.GH_PAT }}
+          releaseType: ${{ needs.release.outputs.release_type }}
+
+  create-sync-prs:
+    name: Create sync PRs
+    needs: release
+    if: github.ref == 'refs/heads/v2'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: ['alpha', 'v2-develop']
+    steps:
+      - name: Call create sync pr
+        uses: gisce/create-sync-pr@v0.0.6
+        with:
+          repository: ${{ env.LIBRARY_NAME }}
+          targetBranch: ${{ matrix.target }}
+          baseBranch: v2
           githubToken: ${{ secrets.GH_PAT }}
           releaseType: ${{ needs.release.outputs.release_type }}
