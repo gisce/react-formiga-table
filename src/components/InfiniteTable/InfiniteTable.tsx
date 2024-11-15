@@ -61,6 +61,7 @@ export type InfiniteTableProps = Omit<
   onRowStatus?: (item: any) => any;
   statusComponent?: (status: any) => ReactNode;
   strings?: Record<string, string>;
+  showPointerCursorInRows?: boolean;
 };
 
 export type InfiniteTableRef = {
@@ -91,6 +92,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       statusComponent,
       hasStatusColumn = false,
       strings = {},
+      showPointerCursorInRows = true,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -478,9 +480,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const rowStyle = useMemo(() => {
       return {
-        cursor: "pointer",
+        cursor: showPointerCursorInRows ? "pointer" : "default",
       };
-    }, []);
+    }, [showPointerCursorInRows]);
 
     return (
       <div
