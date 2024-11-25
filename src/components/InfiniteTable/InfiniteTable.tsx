@@ -32,6 +32,10 @@ import { ITOptsButton } from "./ITOptsButton";
 
 const DEBOUNCE_TIME = 100;
 const DEFAULT_TOTAL_ROWS_VALUE = Number.MAX_SAFE_INTEGER;
+const DEFAULT_ROW_BUFFER = 5;
+const DEFAULT_CACHE_BLOCK_SIZE = 30;
+const DEFAULT_CACHE_OVERFLOW_SIZE = 2;
+const DEFAULT_MAX_CONCURRENT_DATASOURCE_REQUESTS = 1;
 
 export type InfiniteTableProps = Omit<
   TableProps,
@@ -62,6 +66,7 @@ export type InfiniteTableProps = Omit<
   statusComponent?: (status: any) => ReactNode;
   strings?: Record<string, string>;
   showPointerCursorInRows?: boolean;
+  cacheBlockSize?: number;
 };
 
 export type InfiniteTableRef = {
@@ -93,6 +98,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       hasStatusColumn = false,
       strings = {},
       showPointerCursorInRows = true,
+      cacheBlockSize,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -505,15 +511,17 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             getRowStyle={onRowStyle}
             suppressCellFocus={true}
             suppressRowClickSelection={true}
-            rowBuffer={5}
+            rowBuffer={DEFAULT_ROW_BUFFER}
             rowSelection={"multiple"}
             onDragStopped={debouncedOnColumnChanged}
             onColumnResized={debouncedOnColumnResized}
             rowModelType={"infinite"}
-            cacheBlockSize={30}
+            cacheBlockSize={cacheBlockSize || DEFAULT_CACHE_BLOCK_SIZE}
             onSelectionChanged={onSelectionChanged}
-            cacheOverflowSize={2}
-            maxConcurrentDatasourceRequests={1}
+            cacheOverflowSize={DEFAULT_CACHE_OVERFLOW_SIZE}
+            maxConcurrentDatasourceRequests={
+              DEFAULT_MAX_CONCURRENT_DATASOURCE_REQUESTS
+            }
             infiniteInitialRowCount={totalRows}
             onGridReady={onGridReady}
             onBodyScroll={debouncedOnBodyScroll}
