@@ -62,6 +62,7 @@ export type InfiniteTableProps = Omit<
   statusComponent?: (status: any) => ReactNode;
   strings?: Record<string, string>;
   showPointerCursorInRows?: boolean;
+  enableRowSelection?: boolean;
 };
 
 export type InfiniteTableRef = {
@@ -93,6 +94,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       hasStatusColumn = false,
       strings = {},
       showPointerCursorInRows = true,
+      enableRowSelection = true,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -262,7 +264,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         sortable: false,
         lockPosition: "left",
         lockPinned: true,
-        maxWidth: 30,
+        maxWidth: enableRowSelection ? 30 : 45,
         pinned: "left",
         resizable: false,
         headerComponent: () => (
@@ -284,7 +286,11 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           : undefined,
       } as ColDef;
 
-      const finalColumns = [statusColumn, checkboxColumn, ...restOfColumns];
+      const finalColumns = [
+        statusColumn,
+        ...(enableRowSelection ? [checkboxColumn] : []),
+        ...restOfColumns,
+      ];
 
       return finalColumns;
     }, [
@@ -298,6 +304,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       applyAndUpdateNewState,
       applyAutoFitState,
       onColumnsChangedProps,
+      enableRowSelection,
     ]);
 
     const scrollToSavedPosition = useCallback(() => {
@@ -506,7 +513,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             suppressCellFocus={true}
             suppressRowClickSelection={true}
             rowBuffer={5}
-            rowSelection={"multiple"}
+            rowSelection={enableRowSelection ? "multiple" : undefined}
             onDragStopped={debouncedOnColumnChanged}
             onColumnResized={debouncedOnColumnResized}
             rowModelType={"infinite"}
