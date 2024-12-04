@@ -68,6 +68,8 @@ export type InfiniteTableRef = {
   setSelectedRows: (keys: number[]) => void;
   unselectAll: () => void;
   refresh: () => void;
+  updateRows: (updates: Array<Record<string, any>>) => void;
+  getVisibleRowIds: () => string[];
 };
 
 const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
@@ -138,6 +140,24 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       refresh: () => {
         gridRef.current?.api?.deselectAll();
         gridRef.current?.api?.purgeInfiniteCache();
+      },
+      updateRows: (updates: Array<Record<string, any>>) => {
+        if (!gridRef.current?.api) return;
+
+        updates.forEach((update) => {
+          const node = gridRef.current?.api
+            .getRenderedNodes()
+            .find((node) => node.data.id === update.id);
+          if (node) {
+            // Update specific fields without refreshing entire row
+            node.setData({ ...node.data, ...update });
+          }
+        });
+      },
+      getVisibleRowIds: () => {
+        if (!gridRef.current?.api) return [];
+        const visibleNodes = gridRef.current.api.getRenderedNodes();
+        return visibleNodes.map((node) => node?.data?.id);
       },
     }));
 
