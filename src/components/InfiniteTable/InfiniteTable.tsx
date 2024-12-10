@@ -32,10 +32,6 @@ import { ITOptsButton } from "./ITOptsButton";
 
 const DEBOUNCE_TIME = 100;
 const DEFAULT_TOTAL_ROWS_VALUE = Number.MAX_SAFE_INTEGER;
-const DEFAULT_ROW_BUFFER = 5;
-const DEFAULT_CACHE_BLOCK_SIZE = 30;
-const DEFAULT_CACHE_OVERFLOW_SIZE = 2;
-const DEFAULT_MAX_CONCURRENT_DATASOURCE_REQUESTS = 1;
 
 export type InfiniteTableProps = Omit<
   TableProps,
@@ -66,8 +62,6 @@ export type InfiniteTableProps = Omit<
   statusComponent?: (status: any) => ReactNode;
   strings?: Record<string, string>;
   showPointerCursorInRows?: boolean;
-  enableRowSelection?: boolean;
-  cacheBlockSize?: number;
 };
 
 export type InfiniteTableRef = {
@@ -101,8 +95,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       hasStatusColumn = false,
       strings = {},
       showPointerCursorInRows = true,
-      enableRowSelection = true,
-      cacheBlockSize,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -290,7 +282,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         sortable: false,
         lockPosition: "left",
         lockPinned: true,
-        maxWidth: enableRowSelection ? 30 : 45,
+        maxWidth: 30,
         pinned: "left",
         resizable: false,
         headerComponent: () => (
@@ -312,11 +304,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           : undefined,
       } as ColDef;
 
-      const finalColumns = [
-        statusColumn,
-        ...(enableRowSelection ? [checkboxColumn] : []),
-        ...restOfColumns,
-      ];
+      const finalColumns = [statusColumn, checkboxColumn, ...restOfColumns];
 
       return finalColumns;
     }, [
@@ -330,7 +318,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       applyAndUpdateNewState,
       applyAutoFitState,
       onColumnsChangedProps,
-      enableRowSelection,
     ]);
 
     const scrollToSavedPosition = useCallback(() => {
@@ -538,17 +525,15 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             getRowStyle={onRowStyle}
             suppressCellFocus={true}
             suppressRowClickSelection={true}
-            rowBuffer={DEFAULT_ROW_BUFFER}
-            rowSelection={enableRowSelection ? "multiple" : undefined}
+            rowBuffer={5}
+            rowSelection={"multiple"}
             onDragStopped={debouncedOnColumnChanged}
             onColumnResized={debouncedOnColumnResized}
             rowModelType={"infinite"}
-            cacheBlockSize={cacheBlockSize || DEFAULT_CACHE_BLOCK_SIZE}
+            cacheBlockSize={30}
             onSelectionChanged={onSelectionChanged}
-            cacheOverflowSize={DEFAULT_CACHE_OVERFLOW_SIZE}
-            maxConcurrentDatasourceRequests={
-              DEFAULT_MAX_CONCURRENT_DATASOURCE_REQUESTS
-            }
+            cacheOverflowSize={2}
+            maxConcurrentDatasourceRequests={1}
             infiniteInitialRowCount={totalRows}
             onGridReady={onGridReady}
             onBodyScroll={debouncedOnBodyScroll}
