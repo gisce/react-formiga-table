@@ -19,7 +19,6 @@ import {
   GridReadyEvent,
   IGetRowsParams,
   RowDoubleClickedEvent,
-  SortDirection,
 } from "ag-grid-community";
 import { TableProps } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
@@ -62,6 +61,7 @@ export type InfiniteTableProps = Omit<
   statusComponent?: (status: any) => ReactNode;
   strings?: Record<string, string>;
   showPointerCursorInRows?: boolean;
+  initialSortState?: ColumnState[];
 };
 
 export type InfiniteTableRef = {
@@ -95,6 +95,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       hasStatusColumn = false,
       strings = {},
       showPointerCursorInRows = true,
+      initialSortState,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -235,14 +236,22 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       const storedState = columnsPersistedStateRef.current;
       const storedStateKeys = storedState?.map((col: any) => col.colId);
 
-      const restOfColumns: ColDef[] = columns.map((column) => ({
-        field: column.key,
-        sortable: column.isSortable,
-        headerName: column.title,
-        cellRenderer: column.render
-          ? (cell: any) => column.render(cell.value)
-          : undefined,
-      }));
+      const restOfColumns: ColDef[] = columns.map((column) => {
+        const initialSort = initialSortState?.find(
+          (state) => state.colId === column.key,
+        );
+
+        return {
+          field: column.key,
+          sortable: column.isSortable,
+          headerName: column.title,
+          sort: initialSort?.sort,
+          sortIndex: initialSort?.sortIndex,
+          cellRenderer: column.render
+            ? (cell: any) => column.render(cell.value)
+            : undefined,
+        };
+      });
 
       // restOfColumns should be sorted by the order of the storedState
       storedState &&
@@ -291,6 +300,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       totalRows,
       selectedRowKeys?.length,
       onSelectionCheckboxClicked,
+      initialSortState,
       strings,
       applyAndUpdateNewState,
       applyAutoFitState,
