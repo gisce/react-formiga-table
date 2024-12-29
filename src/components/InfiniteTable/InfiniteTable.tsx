@@ -40,11 +40,11 @@ export type InfiniteTableProps = Omit<
   onRequestData: ({
     startRow,
     endRow,
-    sortFields,
+    state,
   }: {
     startRow: number;
     endRow: number;
-    sortFields?: Record<string, SortDirection>;
+    state?: ColumnState[];
   }) => Promise<any[] | undefined>;
   height?: number;
   onColumnChanged?: (columnsState: ColumnState[]) => void;
@@ -206,29 +206,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       [debouncedOnColumnChanged],
     );
 
-    const getSortedFields = useCallback(():
-      | Record<string, SortDirection>
-      | undefined => {
-      const state = gridRef?.current?.api.getColumnState()!;
-
-      const columnsWithSort = state
-        .filter((col) => col.sort)
-        .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0));
-
-      if (columnsWithSort.length === 0) {
-        return undefined;
-      }
-      const sortFields = columnsWithSort.reduce(
-        (acc, col) => ({
-          ...acc,
-          [col.colId]: col.sort,
-        }),
-        {},
-      );
-
-      return sortFields;
-    }, []);
-
     const MemoizedStatusComponent = useMemo(() => {
       if (!statusComponent) return undefined;
       // eslint-disable-next-line react/display-name
@@ -351,7 +328,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           const data = await onRequestData({
             startRow,
             endRow,
-            sortFields: getSortedFields(),
+            state: gridRef.current?.api.getColumnState(),
           });
 
           if (!data) {
@@ -408,7 +385,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       },
       [
         onRequestData,
-        getSortedFields,
         hasStatusColumn,
         selectedRowKeys,
         columnsPersistedStateRef,
