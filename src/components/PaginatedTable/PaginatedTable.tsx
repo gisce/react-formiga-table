@@ -34,6 +34,17 @@ import {
 import { ITOptsButton } from "../InfiniteTable/ITOptsButton";
 import { HeaderCheckbox } from "../InfiniteTable/HeaderCheckbox";
 import { useSortable } from "@/hooks/useSortable";
+import { useWhyDidYouRender } from "@/hooks/useWhyDidYouRender";
+
+const DEFAULT_COL_DEF = {
+  autoHeight: true,
+  wrapText: true,
+  sortable: false,
+  comparator: () => 0,
+  resizable: true,
+  maxWidth: 400, // Maximum column width
+  minWidth: 100, // Minimum column width to ensure readability
+};
 
 export type PaginatedTableProps = Omit<TableProps, "height"> & {
   height?: number;
@@ -84,11 +95,12 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       initialSortState,
       loading,
       loadingComponent,
-      sortEnabled = true,
       onChangeSort,
       sorter,
       readonly,
     } = props;
+
+    useWhyDidYouRender("PaginatedTable", props);
 
     const { localSorter, getColumnSorter, handleColumnClick } =
       useSortable(sorter);
@@ -192,36 +204,36 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onGetColumnsState,
     });
 
-    const debouncedOnColumnChanged = useMemo(
-      () =>
-        debounce(() => {
-          const state = gridRef?.current?.api.getColumnState();
-          if (!state) {
-            return;
-          }
-          if (areStatesEqual(state, columnsPersistedStateRef.current)) {
-            return;
-          }
-          if (!notifyColumnChanges.current) {
-            notifyColumnChanges.current = true;
-            return;
-          }
-          applyAndUpdateNewState(state);
-          onColumnsChangedProps?.(state);
-        }, 300),
-      [applyAndUpdateNewState, columnsPersistedStateRef, onColumnsChangedProps],
-    );
+    // const debouncedOnColumnChanged = useMemo(
+    //   () =>
+    //     debounce(() => {
+    //       const state = gridRef?.current?.api.getColumnState();
+    //       if (!state) {
+    //         return;
+    //       }
+    //       if (areStatesEqual(state, columnsPersistedStateRef.current)) {
+    //         return;
+    //       }
+    //       if (!notifyColumnChanges.current) {
+    //         notifyColumnChanges.current = true;
+    //         return;
+    //       }
+    //       applyAndUpdateNewState(state);
+    //       onColumnsChangedProps?.(state);
+    //     }, 300),
+    //   [applyAndUpdateNewState, columnsPersistedStateRef, onColumnsChangedProps],
+    // );
 
-    const debouncedOnColumnResized = useMemo(
-      () =>
-        debounce((event: ColumnResizedEvent) => {
-          if (!event.finished) {
-            return;
-          }
-          debouncedOnColumnChanged();
-        }, 300),
-      [debouncedOnColumnChanged],
-    );
+    // const debouncedOnColumnResized = useMemo(
+    //   () =>
+    //     debounce((event: ColumnResizedEvent) => {
+    //       if (!event.finished) {
+    //         return;
+    //       }
+    //       debouncedOnColumnChanged();
+    //     }, 300),
+    //   [debouncedOnColumnChanged],
+    // );
 
     const MemoizedStatusComponent = useMemo(() => {
       if (!statusComponent) return undefined;
@@ -246,6 +258,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     const colDefs = useMemo((): ColDef[] => {
       const checkboxColumn = {
+        ...DEFAULT_COL_DEF,
         checkboxSelection: true,
         suppressMovable: true,
         sortable: false,
@@ -264,8 +277,8 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         ),
       } as ColDef;
 
-      const storedState = columnsPersistedStateRef.current;
-      const storedStateKeys = storedState?.map((col: any) => col.colId);
+      // const storedState = columnsPersistedStateRef.current;
+      // const storedStateKeys = storedState?.map((col: any) => col.colId);
 
       const restOfColumns: ColDef[] = columns.map((column) => {
         const initialSort = initialSortState?.find(
@@ -274,8 +287,9 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         const columnSorter = getColumnSorter(column.key);
 
         return {
+          ...DEFAULT_COL_DEF,
           field: column.key,
-          sortable: column.isSortable && sortEnabled,
+          sortable: column.isSortable,
           headerName: column.title,
           sort: columnSorter ? (columnSorter.desc ? "desc" : "asc") : undefined,
           sortIndex: initialSort?.sortIndex,
@@ -285,15 +299,16 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         };
       });
 
-      storedState &&
-        storedStateKeys &&
-        restOfColumns.sort((a, b) => {
-          const aIndex = storedStateKeys.indexOf(a.field);
-          const bIndex = storedStateKeys.indexOf(b.field);
-          return aIndex - bIndex;
-        });
+      // storedState &&
+      //   storedStateKeys &&
+      //   restOfColumns.sort((a, b) => {
+      //     const aIndex = storedStateKeys.indexOf(a.field);
+      //     const bIndex = storedStateKeys.indexOf(b.field);
+      //     return aIndex - bIndex;
+      //   });
 
       const statusColumn = {
+        ...DEFAULT_COL_DEF,
         field: STATUS_COLUMN,
         suppressMovable: true,
         sortable: false,
@@ -309,9 +324,9 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             }
             onResetTableView={async () => {
               notifyColumnChanges.current = false;
-              applyAndUpdateNewState([]);
+              // applyAndUpdateNewState([]);
               gridRef.current?.api.resetColumnState();
-              applyAutoFitState();
+              // applyAutoFitState();
               onColumnsChangedProps?.([]);
             }}
           />
@@ -325,7 +340,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
       return finalColumns;
     }, [
-      columnsPersistedStateRef,
       columns,
       MemoizedStatusComponent,
       dataSource.length,
@@ -333,32 +347,28 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       handleHeaderCheckboxClick,
       initialSortState,
       strings,
-      applyAndUpdateNewState,
-      applyAutoFitState,
       onColumnsChangedProps,
       getColumnSorter,
-      sortEnabled,
     ]);
+
+    // TODO: Implement this, do not remove commment.
+    // const onGridReady = useCallback(
+    //   (params: GridReadyEvent) => {
+    //     loadPersistedColumnState();
+    //   },
+    //   [loadPersistedColumnState],
+    // );
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
-        loadPersistedColumnState();
         if (loading) {
           params.api.showLoadingOverlay();
         } else {
           params.api.hideOverlay();
         }
       },
-      [loadPersistedColumnState, loading],
+      [loading],
     );
-
-    useEffect(() => {
-      if (loading) {
-        gridRef.current?.api?.showLoadingOverlay();
-      } else {
-        gridRef.current?.api?.hideOverlay();
-      }
-    }, [loading]);
 
     const memoizedOnRowDoubleClick = useCallback(
       ({ data: item }: RowDoubleClickedEvent) => {
@@ -409,16 +419,34 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     }, [showPointerCursorInRows]);
 
     const memoizedDataSource = useMemo(() => {
-      return dataSource.map((item) => {
-        if (hasStatusColumn && onRowStatus) {
-          return {
-            ...item,
-            $status: onRowStatus(item),
-          };
-        }
-        return item;
-      });
+      if (!hasStatusColumn || !onRowStatus) {
+        return dataSource;
+      }
+      return dataSource.map((item) => ({
+        ...item,
+        $status: onRowStatus(item),
+      }));
     }, [dataSource, hasStatusColumn, onRowStatus]);
+
+    // useEffect(() => {
+    //   if (!gridRef.current?.api) return;
+
+    //   const api = gridRef.current.api;
+
+    //   // Get current data to remove
+    //   const currentRows: any[] = [];
+    //   api.forEachNode((node) => {
+    //     if (node.data) {
+    //       currentRows.push(node.data);
+    //     }
+    //   });
+
+    //   // Remove existing rows and add new ones in a single transaction
+    //   api.applyTransaction({
+    //     remove: currentRows,
+    //     add: memoizedDataSource,
+    //   });
+    // }, [memoizedDataSource]);
 
     if (loading && loadingComponent) {
       return loadingComponent;
@@ -440,27 +468,32 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           <AgGridReact
             ref={gridRef}
             columnDefs={colDefs}
+            rowData={memoizedDataSource}
             onRowDoubleClicked={memoizedOnRowDoubleClick}
-            rowStyle={rowStyle}
-            getRowStyle={onRowStyle}
+            // getRowStyle={onRowStyle}
             suppressCellFocus={true}
             suppressRowClickSelection={true}
             rowBuffer={5}
             rowSelection={"multiple"}
-            onDragStopped={debouncedOnColumnChanged}
-            onColumnResized={debouncedOnColumnResized}
-            rowData={memoizedDataSource}
+            // onDragStopped={debouncedOnColumnChanged}
+            // onColumnResized={debouncedOnColumnResized}
             onSelectionChanged={onSelectionChanged}
             suppressDragLeaveHidesColumns={true}
             onGridReady={onGridReady}
-            onSortChanged={onSortChanged}
-            sortingOrder={sortEnabled ? ["asc", "desc", null] : undefined}
+            // onSortChanged={onSortChanged}
+            sortingOrder={["asc", "desc", null]}
             suppressMultiSort={true}
-            domLayout="autoHeight"
-            defaultColDef={{
-              autoHeight: true,
-              wrapText: true,
-              sortable: false, // Default to false, enable per column
+            domLayout="normal"
+            getRowHeight={undefined}
+            suppressRowVirtualisation={false}
+            getRowId={(params) => String(params.data.id)}
+            defaultColDef={DEFAULT_COL_DEF}
+            onModelUpdated={() => {
+              console.log("onModelUpdated");
+            }}
+            onFirstDataRendered={() => {
+              console.log("onFirstDataRendered");
+              applyAutoFitState();
             }}
           />
         </div>
