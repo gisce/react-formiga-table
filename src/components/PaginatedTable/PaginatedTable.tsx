@@ -7,6 +7,7 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
@@ -48,8 +49,6 @@ const DEFAULT_COL_DEF = {
 
 export type PaginatedTableProps = Omit<TableProps, "height"> & {
   height?: number;
-  onColumnChanged?: (columnsState: ColumnState[]) => void;
-  onGetColumnsState?: () => ColumnState[] | undefined;
   footer?: ReactNode;
   footerHeight?: number;
   hasStatusColumn?: boolean;
@@ -59,10 +58,12 @@ export type PaginatedTableProps = Omit<TableProps, "height"> & {
   showPointerCursorInRows?: boolean;
   initialSortState?: ColumnState[];
   sortEnabled?: boolean;
-  onChangeSort?: (sorter: Sorter | undefined) => void;
-  sorter?: Sorter | undefined;
   readonly?: boolean;
+  sorter?: Sorter | undefined;
+  onChangeSort?: (sorter: Sorter | undefined) => void;
   selectionRowKeys?: number[];
+  onColumnChanged?: (columnsState: ColumnState[]) => void;
+  onGetColumnsState?: () => ColumnState[] | undefined;
 };
 
 export type PaginatedTableRef = {
@@ -84,7 +85,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onRowStyle,
       onColumnChanged: onColumnsChangedProps,
       onGetColumnsState,
-      selectionRowKeys = [],
+      selectionRowKeys: initialSelectionRowKeys = [],
       footer,
       footerHeight = 30,
       onRowStatus,
@@ -100,39 +101,15 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       readonly,
     } = props;
 
-    useWhyDidYouRender("PaginatedTable", props);
-
-    const { localSorter, getColumnSorter, handleColumnClick } =
-      useSortable(sorter);
+    const [internalSelectionRowKeys, setInternalSelectionRowKeys] = useState<
+      number[]
+    >(initialSelectionRowKeys);
 
     useEffect(() => {
-      onChangeSort?.(localSorter);
-    }, [localSorter, onChangeSort]);
+      setInternalSelectionRowKeys(initialSelectionRowKeys);
+    }, [initialSelectionRowKeys]);
 
-    const onSortChanged = useCallback(
-      (event: SortChangedEvent) => {
-        const columnState = event.api.getColumnState();
-        const sortedColumns = columnState.filter((col) => col.sort);
-
-        if (sortedColumns.length === 0) {
-          if (localSorter) {
-            handleColumnClick(localSorter.id);
-          }
-          return;
-        }
-
-        const { colId, sort } = sortedColumns[0];
-        // Only trigger if the sort state actually changed
-        if (
-          localSorter?.id !== colId ||
-          (localSorter?.desc && sort === "asc") ||
-          (!localSorter?.desc && sort === "desc")
-        ) {
-          handleColumnClick(colId);
-        }
-      },
-      [handleColumnClick, localSorter],
-    );
+    useWhyDidYouRender("PaginatedTable", props);
 
     const gridRef = useRef<AgGridReact>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -142,17 +119,17 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     const updateSelectedRowKeys = useCallback(() => {
       gridRef.current?.api?.forEachNode((node) => {
-        if (node?.data?.id && selectionRowKeys.includes(node.data.id)) {
+        if (node?.data?.id && internalSelectionRowKeys.includes(node.data.id)) {
           node.setSelected(true);
         } else {
           node.setSelected(false);
         }
       });
-    }, [selectionRowKeys]);
+    }, [internalSelectionRowKeys]);
 
     useDeepCompareEffect(() => {
       updateSelectedRowKeys();
-    }, [selectionRowKeys]);
+    }, [internalSelectionRowKeys]);
 
     useImperativeHandle(ref, () => ({
       setSelectedRows: (keys: number[]) => {
@@ -204,37 +181,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onGetColumnsState,
     });
 
-    // const debouncedOnColumnChanged = useMemo(
-    //   () =>
-    //     debounce(() => {
-    //       const state = gridRef?.current?.api.getColumnState();
-    //       if (!state) {
-    //         return;
-    //       }
-    //       if (areStatesEqual(state, columnsPersistedStateRef.current)) {
-    //         return;
-    //       }
-    //       if (!notifyColumnChanges.current) {
-    //         notifyColumnChanges.current = true;
-    //         return;
-    //       }
-    //       applyAndUpdateNewState(state);
-    //       onColumnsChangedProps?.(state);
-    //     }, 300),
-    //   [applyAndUpdateNewState, columnsPersistedStateRef, onColumnsChangedProps],
-    // );
-
-    // const debouncedOnColumnResized = useMemo(
-    //   () =>
-    //     debounce((event: ColumnResizedEvent) => {
-    //       if (!event.finished) {
-    //         return;
-    //       }
-    //       debouncedOnColumnChanged();
-    //     }, 300),
-    //   [debouncedOnColumnChanged],
-    // );
-
     const MemoizedStatusComponent = useMemo(() => {
       if (!statusComponent) return undefined;
       // eslint-disable-next-line react/display-name
@@ -247,9 +193,11 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         if (isChecked) {
           // Select all rows
           const allIds = dataSource.map((item) => item.id);
+          setInternalSelectionRowKeys(allIds);
           onRowSelectionChange?.(allIds);
         } else {
           // Deselect all rows
+          setInternalSelectionRowKeys([]);
           onRowSelectionChange?.([]);
         }
       },
@@ -271,41 +219,25 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         headerComponent: () => (
           <HeaderCheckbox
             totalRows={dataSource.length}
-            selectedRowKeysLength={selectionRowKeys?.length || 0}
+            selectedRowKeysLength={internalSelectionRowKeys?.length || 0}
             onSelectionCheckboxClicked={handleHeaderCheckboxClick}
           />
         ),
       } as ColDef;
 
-      // const storedState = columnsPersistedStateRef.current;
-      // const storedStateKeys = storedState?.map((col: any) => col.colId);
-
       const restOfColumns: ColDef[] = columns.map((column) => {
-        const initialSort = initialSortState?.find(
-          (state) => state.colId === column.key,
-        );
-        const columnSorter = getColumnSorter(column.key);
-
         return {
           ...DEFAULT_COL_DEF,
           field: column.key,
           sortable: column.isSortable,
           headerName: column.title,
-          sort: columnSorter ? (columnSorter.desc ? "desc" : "asc") : undefined,
-          sortIndex: initialSort?.sortIndex,
+          sort: sorter ? (sorter.desc ? "desc" : "asc") : undefined,
           cellRenderer: column.render
             ? (cell: any) => column.render(cell.value)
             : undefined,
+          comparator: column.comparator,
         };
       });
-
-      // storedState &&
-      //   storedStateKeys &&
-      //   restOfColumns.sort((a, b) => {
-      //     const aIndex = storedStateKeys.indexOf(a.field);
-      //     const bIndex = storedStateKeys.indexOf(b.field);
-      //     return aIndex - bIndex;
-      //   });
 
       const statusColumn = {
         ...DEFAULT_COL_DEF,
@@ -324,9 +256,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             }
             onResetTableView={async () => {
               notifyColumnChanges.current = false;
-              // applyAndUpdateNewState([]);
               gridRef.current?.api.resetColumnState();
-              // applyAutoFitState();
               onColumnsChangedProps?.([]);
             }}
           />
@@ -343,21 +273,12 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       columns,
       MemoizedStatusComponent,
       dataSource.length,
-      selectionRowKeys?.length,
+      internalSelectionRowKeys?.length,
       handleHeaderCheckboxClick,
-      initialSortState,
+      sorter,
       strings,
       onColumnsChangedProps,
-      getColumnSorter,
     ]);
-
-    // TODO: Implement this, do not remove commment.
-    // const onGridReady = useCallback(
-    //   (params: GridReadyEvent) => {
-    //     loadPersistedColumnState();
-    //   },
-    //   [loadPersistedColumnState],
-    // );
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
@@ -366,8 +287,17 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         } else {
           params.api.hideOverlay();
         }
+
+        gridRef.current?.api?.forEachNode((node) => {
+          if (
+            node?.data?.id &&
+            internalSelectionRowKeys.includes(node.data.id)
+          ) {
+            node.setSelected(true);
+          }
+        });
       },
-      [loading],
+      [loading, internalSelectionRowKeys],
     );
 
     const memoizedOnRowDoubleClick = useCallback(
@@ -391,9 +321,10 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       const allNodesInTable = getAllNodeKeys();
       const selectedNodes = gridRef.current?.api?.getSelectedNodes() || [];
 
-      const rowKeysInSelectedRowKeysButNotInAllNodes = selectionRowKeys.filter(
-        (key: number) => !allNodesInTable.includes(key),
-      );
+      const rowKeysInSelectedRowKeysButNotInAllNodes =
+        internalSelectionRowKeys.filter(
+          (key: number) => !allNodesInTable.includes(key),
+        );
 
       const selectedKeys = selectedNodes.map((node) => node.data.id);
 
@@ -402,15 +333,16 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       );
 
       const hasSelectionChanged =
-        finalSelectedKeys.length !== selectionRowKeys.length ||
+        finalSelectedKeys.length !== internalSelectionRowKeys.length ||
         finalSelectedKeys.some(
-          (key: number) => !selectionRowKeys.includes(key),
+          (key: number) => !internalSelectionRowKeys.includes(key),
         );
 
       if (hasSelectionChanged) {
+        setInternalSelectionRowKeys(finalSelectedKeys);
         onRowSelectionChange?.(finalSelectedKeys);
       }
-    }, [getAllNodeKeys, onRowSelectionChange, selectionRowKeys]);
+    }, [getAllNodeKeys, onRowSelectionChange, internalSelectionRowKeys]);
 
     const rowStyle = useMemo(() => {
       return {
@@ -427,26 +359,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         $status: onRowStatus(item),
       }));
     }, [dataSource, hasStatusColumn, onRowStatus]);
-
-    // useEffect(() => {
-    //   if (!gridRef.current?.api) return;
-
-    //   const api = gridRef.current.api;
-
-    //   // Get current data to remove
-    //   const currentRows: any[] = [];
-    //   api.forEachNode((node) => {
-    //     if (node.data) {
-    //       currentRows.push(node.data);
-    //     }
-    //   });
-
-    //   // Remove existing rows and add new ones in a single transaction
-    //   api.applyTransaction({
-    //     remove: currentRows,
-    //     add: memoizedDataSource,
-    //   });
-    // }, [memoizedDataSource]);
 
     if (loading && loadingComponent) {
       return loadingComponent;
@@ -470,27 +382,32 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             columnDefs={colDefs}
             rowData={memoizedDataSource}
             onRowDoubleClicked={memoizedOnRowDoubleClick}
-            // getRowStyle={onRowStyle}
             suppressCellFocus={true}
             suppressRowClickSelection={true}
             rowBuffer={5}
             rowSelection={"multiple"}
-            // onDragStopped={debouncedOnColumnChanged}
-            // onColumnResized={debouncedOnColumnResized}
             onSelectionChanged={onSelectionChanged}
             suppressDragLeaveHidesColumns={true}
             onGridReady={onGridReady}
-            // onSortChanged={onSortChanged}
-            sortingOrder={["asc", "desc", null]}
-            suppressMultiSort={true}
-            domLayout="normal"
-            getRowHeight={undefined}
-            suppressRowVirtualisation={false}
-            getRowId={(params) => String(params.data.id)}
-            defaultColDef={DEFAULT_COL_DEF}
-            onModelUpdated={() => {
-              console.log("onModelUpdated");
+            onSortChanged={(event) => {
+              const columnState = event.api.getColumnState();
+              const sortedColumns = columnState.filter((col) => col.sort);
+              if (sortedColumns.length > 0) {
+                const { colId, sort } = sortedColumns[0];
+                const newSorter = {
+                  id: colId,
+                  desc: sort === "desc",
+                };
+                console.log("Sorted column:", colId, "Direction:", sort);
+                onChangeSort?.(newSorter);
+              } else {
+                console.log("No column is currently sorted");
+                onChangeSort?.(undefined);
+              }
             }}
+            suppressMultiSort={true}
+            getRowHeight={undefined}
+            getRowId={(params) => String(params.data.id)}
             onFirstDataRendered={() => {
               console.log("onFirstDataRendered");
               applyAutoFitState();
