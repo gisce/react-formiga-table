@@ -7,35 +7,31 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
-  useState,
+  CSSProperties,
 } from "react";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "../../styles/ag-theme-quartz.css";
 import {
   ColDef,
-  ColumnResizedEvent,
   ColumnState,
   GridReadyEvent,
   RowDoubleClickedEvent,
-  SortChangedEvent,
+  RowSelectedEvent,
 } from "ag-grid-community";
-import type { TableProps, Sorter } from "@/types";
+import type { TableColumn } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
-import debounce from "lodash/debounce";
-import { useDeepCompareEffect } from "use-deep-compare";
-import {
-  useColumnState,
-  areStatesEqual,
-} from "../InfiniteTable/useColumnState";
+import { useColumnState } from "../InfiniteTable/useColumnState";
 import {
   CHECKBOX_COLUMN,
   STATUS_COLUMN,
 } from "../InfiniteTable/columnStateHelper";
 import { ITOptsButton } from "../InfiniteTable/ITOptsButton";
-import { HeaderCheckbox } from "../InfiniteTable/HeaderCheckbox";
-import { useSortable } from "@/hooks/useSortable";
 import { useWhyDidYouRender } from "@/hooks/useWhyDidYouRender";
+import {
+  CheckboxState,
+  PaginatedHeaderCheckbox,
+} from "./PaginatedHeaderCheckbox";
 
 const DEFAULT_COL_DEF = {
   autoHeight: true,
@@ -47,27 +43,45 @@ const DEFAULT_COL_DEF = {
   minWidth: 100, // Minimum column width to ensure readability
 };
 
-export type PaginatedTableProps = Omit<TableProps, "height"> & {
+export type PaginatedTableProps = {
+  dataSource: Array<Record<string, any>>;
+  columns: TableColumn[];
+  loading: boolean;
+  showPointerCursorInRows?: boolean;
+
+  // selectedRowKeys: number[];
+  onRowSelectionChange?: (changedRow: {
+    id: number;
+    selected: boolean;
+  }) => void;
+
+  strings?: Record<string, string>;
   height?: number;
   footer?: ReactNode;
   footerHeight?: number;
+
   hasStatusColumn?: boolean;
   onRowStatus?: (item: any) => any;
   statusComponent?: (status: any) => ReactNode;
-  strings?: Record<string, string>;
-  showPointerCursorInRows?: boolean;
-  initialSortState?: ColumnState[];
-  sortEnabled?: boolean;
-  readonly?: boolean;
-  sorter?: Sorter | undefined;
-  onChangeSort?: (sorter: Sorter | undefined) => void;
-  selectionRowKeys?: number[];
+
+  initialColumnState?: ColumnState[];
   onColumnChanged?: (columnsState: ColumnState[]) => void;
   onGetColumnsState?: () => ColumnState[] | undefined;
+
+  onGetFirstVisibleRowIndex?: () => number | undefined;
+  onChangeFirstVisibleRowIndex?: (index: number) => void;
+
+  onRowStyle?: (item: Record<string, any>) => CSSProperties;
+  onRowDoubleClick?: (item: any) => void;
+
+  headerCheckboxState: CheckboxState;
+  onHeaderCheckboxClick: () => void;
+  isRowSelected: (id: number) => boolean;
 };
 
 export type PaginatedTableRef = {
   setSelectedRows: (keys: number[]) => void;
+  selectAll: () => void;
   unselectAll: () => void;
   refresh: () => void;
   updateRows: (updates: Array<Record<string, any>>) => void;
@@ -80,12 +94,13 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       dataSource,
       columns: columnsProps,
       onRowDoubleClick,
-      onRowSelectionChange,
+      onRowSelectionChange: onRowSelectionChangeProps,
       height: heightProps = 600,
       onRowStyle,
       onColumnChanged: onColumnsChangedProps,
       onGetColumnsState,
-      selectionRowKeys: initialSelectionRowKeys = [],
+      initialColumnState,
+      // selectedRowKeys,
       footer,
       footerHeight = 30,
       onRowStatus,
@@ -93,21 +108,11 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       hasStatusColumn = false,
       strings = {},
       showPointerCursorInRows = true,
-      initialSortState,
       loading,
-      loadingComponent,
-      onChangeSort,
-      sorter,
-      readonly,
+      onHeaderCheckboxClick,
+      headerCheckboxState,
+      isRowSelected,
     } = props;
-
-    const [internalSelectionRowKeys, setInternalSelectionRowKeys] = useState<
-      number[]
-    >(initialSelectionRowKeys);
-
-    useEffect(() => {
-      setInternalSelectionRowKeys(initialSelectionRowKeys);
-    }, [initialSelectionRowKeys]);
 
     useWhyDidYouRender("PaginatedTable", props);
 
@@ -116,20 +121,19 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
     const notifyColumnChanges = useRef(false);
+    const previousLoadingRef = useRef(loading);
 
-    const updateSelectedRowKeys = useCallback(() => {
-      gridRef.current?.api?.forEachNode((node) => {
-        if (node?.data?.id && internalSelectionRowKeys.includes(node.data.id)) {
-          node.setSelected(true);
-        } else {
-          node.setSelected(false);
-        }
-      });
-    }, [internalSelectionRowKeys]);
+    // const updateSelectedRowKeys = useCallback(() => {
+    //   gridRef.current?.api?.forEachNode((node) => {
+    //     if (node?.data?.id && selectedRowKeys.includes(node.data.id)) {
+    //       node.setSelected(true);
+    //     }
+    //   });
+    // }, [selectedRowKeys]);
 
-    useDeepCompareEffect(() => {
-      updateSelectedRowKeys();
-    }, [internalSelectionRowKeys]);
+    // useDeepCompareEffect(() => {
+    //   updateSelectedRowKeys();
+    // }, [selectedRowKeys]);
 
     useImperativeHandle(ref, () => ({
       setSelectedRows: (keys: number[]) => {
@@ -140,6 +144,9 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             node.setSelected(false);
           }
         });
+      },
+      selectAll: () => {
+        gridRef.current?.api?.selectAll();
       },
       unselectAll: () => {
         gridRef.current?.api?.deselectAll();
@@ -187,23 +194,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       return memo((props: { status: any }) => statusComponent(props.status));
     }, [statusComponent]);
 
-    const handleHeaderCheckboxClick = useCallback(
-      (event: React.ChangeEvent<HTMLInputElement>) => {
-        const isChecked = event.target.checked;
-        if (isChecked) {
-          // Select all rows
-          const allIds = dataSource.map((item) => item.id);
-          setInternalSelectionRowKeys(allIds);
-          onRowSelectionChange?.(allIds);
-        } else {
-          // Deselect all rows
-          setInternalSelectionRowKeys([]);
-          onRowSelectionChange?.([]);
-        }
-      },
-      [dataSource, onRowSelectionChange],
-    );
-
     const colDefs = useMemo((): ColDef[] => {
       const checkboxColumn = {
         ...DEFAULT_COL_DEF,
@@ -217,10 +207,9 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         resizable: false,
         field: CHECKBOX_COLUMN,
         headerComponent: () => (
-          <HeaderCheckbox
-            totalRows={dataSource.length}
-            selectedRowKeysLength={internalSelectionRowKeys?.length || 0}
-            onSelectionCheckboxClicked={handleHeaderCheckboxClick}
+          <PaginatedHeaderCheckbox
+            state={headerCheckboxState}
+            onClick={onHeaderCheckboxClick}
           />
         ),
       } as ColDef;
@@ -231,11 +220,10 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           field: column.key,
           sortable: column.isSortable,
           headerName: column.title,
-          sort: sorter ? (sorter.desc ? "desc" : "asc") : undefined,
+          comparator: column.comparator,
           cellRenderer: column.render
             ? (cell: any) => column.render(cell.value)
             : undefined,
-          comparator: column.comparator,
         };
       });
 
@@ -272,32 +260,48 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     }, [
       columns,
       MemoizedStatusComponent,
-      dataSource.length,
-      internalSelectionRowKeys?.length,
-      handleHeaderCheckboxClick,
-      sorter,
+      headerCheckboxState,
+      onHeaderCheckboxClick,
       strings,
       onColumnsChangedProps,
     ]);
+
+    useEffect(() => {
+      if (loading) {
+        gridRef.current?.api?.showLoadingOverlay();
+      }
+
+      if (previousLoadingRef.current === true && loading === false) {
+        console.log("Loading state changed from true to false");
+        gridRef.current?.api?.forEachNode((node) => {
+          if (node.data.id) {
+            node.setSelected(isRowSelected(node.data.id));
+          }
+        });
+      }
+
+      previousLoadingRef.current = loading;
+    }, [loading]);
 
     const onGridReady = useCallback(
       (params: GridReadyEvent) => {
         if (loading) {
           params.api.showLoadingOverlay();
-        } else {
-          params.api.hideOverlay();
         }
+        // } else {
+        //   params.api.hideOverlay();
+        // }
 
-        gridRef.current?.api?.forEachNode((node) => {
-          if (
-            node?.data?.id &&
-            internalSelectionRowKeys.includes(node.data.id)
-          ) {
-            node.setSelected(true);
-          }
-        });
+        // gridRef.current?.api?.forEachNode((node) => {
+        //   if (
+        //     node?.data?.id &&
+        //     internalSelectionRowKeys.includes(node.data.id)
+        //   ) {
+        //     node.setSelected(true);
+        //   }
+        // });
       },
-      [loading, internalSelectionRowKeys],
+      [loading],
     );
 
     const memoizedOnRowDoubleClick = useCallback(
@@ -317,32 +321,19 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       return allNodes;
     }, []);
 
-    const onSelectionChanged = useCallback(() => {
-      const allNodesInTable = getAllNodeKeys();
-      const selectedNodes = gridRef.current?.api?.getSelectedNodes() || [];
-
-      const rowKeysInSelectedRowKeysButNotInAllNodes =
-        internalSelectionRowKeys.filter(
-          (key: number) => !allNodesInTable.includes(key),
-        );
-
-      const selectedKeys = selectedNodes.map((node) => node.data.id);
-
-      const finalSelectedKeys = Array.from(
-        new Set([...selectedKeys, ...rowKeysInSelectedRowKeysButNotInAllNodes]),
-      );
-
-      const hasSelectionChanged =
-        finalSelectedKeys.length !== internalSelectionRowKeys.length ||
-        finalSelectedKeys.some(
-          (key: number) => !internalSelectionRowKeys.includes(key),
-        );
-
-      if (hasSelectionChanged) {
-        setInternalSelectionRowKeys(finalSelectedKeys);
-        onRowSelectionChange?.(finalSelectedKeys);
-      }
-    }, [getAllNodeKeys, onRowSelectionChange, internalSelectionRowKeys]);
+    const onRowSelectionChange = useCallback(
+      (event: RowSelectedEvent) => {
+        if (event.source === "checkboxSelected" && event.node.data.id) {
+          const changedRow = {
+            id: event.node.data.id,
+            selected: event.node.isSelected() || false,
+          };
+          console.log("Row selection changed:", changedRow);
+          onRowSelectionChangeProps?.(changedRow);
+        }
+      },
+      [onRowSelectionChangeProps],
+    );
 
     const rowStyle = useMemo(() => {
       return {
@@ -359,10 +350,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         $status: onRowStatus(item),
       }));
     }, [dataSource, hasStatusColumn, onRowStatus]);
-
-    if (loading && loadingComponent) {
-      return loadingComponent;
-    }
 
     return (
       <div
@@ -386,30 +373,38 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             suppressRowClickSelection={true}
             rowBuffer={5}
             rowSelection={"multiple"}
-            onSelectionChanged={onSelectionChanged}
+            onRowSelected={onRowSelectionChange}
             suppressDragLeaveHidesColumns={true}
             onGridReady={onGridReady}
-            onSortChanged={(event) => {
-              const columnState = event.api.getColumnState();
-              const sortedColumns = columnState.filter((col) => col.sort);
-              if (sortedColumns.length > 0) {
-                const { colId, sort } = sortedColumns[0];
-                const newSorter = {
-                  id: colId,
-                  desc: sort === "desc",
-                };
-                console.log("Sorted column:", colId, "Direction:", sort);
-                onChangeSort?.(newSorter);
-              } else {
-                console.log("No column is currently sorted");
-                onChangeSort?.(undefined);
-              }
-            }}
+            // onSortChanged={(event) => {
+            //   const columnState = event.api.getColumnState();
+            //   const sortedColumns = columnState.filter((col) => col.sort);
+            //   if (sortedColumns.length > 0) {
+            //     const { colId, sort } = sortedColumns[0];
+            //     const newSorter = {
+            //       id: colId,
+            //       desc: sort === "desc",
+            //     };
+            //     console.log("Sorted column:", colId, "Direction:", sort);
+            //     onChangeSort?.(newSorter);
+            //   } else {
+            //     console.log("No column is currently sorted");
+            //     onChangeSort?.(undefined);
+            //   }
+            // }}
             suppressMultiSort={true}
             getRowHeight={undefined}
             getRowId={(params) => String(params.data.id)}
-            onFirstDataRendered={() => {
+            onFirstDataRendered={(event) => {
+              gridRef.current?.api?.hideOverlay();
               console.log("onFirstDataRendered");
+
+              // event.api.forEachNode((node) => {
+              //   if (node.data.id) {
+              //     node.setSelected(isRowSelected(node.data.id));
+              //   }
+              // });
+
               applyAutoFitState();
             }}
           />
@@ -430,4 +425,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
 PaginatedTableComp.displayName = "PaginatedTable";
 
-export const PaginatedTable = memo(PaginatedTableComp);
+export const PaginatedTable: React.FC<
+  PaginatedTableProps & { ref?: React.Ref<PaginatedTableRef> }
+> = memo(PaginatedTableComp);
