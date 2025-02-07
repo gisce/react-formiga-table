@@ -71,7 +71,7 @@ export type PaginatedTableProps = {
   onGetFirstVisibleRowIndex?: () => number | undefined;
   onChangeFirstVisibleRowIndex?: (index: number) => void;
 
-  onRowStyle?: (item: Record<string, any>) => CSSProperties;
+  onRowStyle?: (item: any) => any;
   onRowDoubleClick?: (item: any) => void;
 
   headerCheckboxState: CheckboxState;
@@ -100,7 +100,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onColumnChanged: onColumnsChangedProps,
       onGetColumnsState,
       initialColumnState,
-      // selectedRowKeys,
       footer,
       footerHeight = 30,
       onRowStatus,
@@ -281,6 +280,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       }
 
       previousLoadingRef.current = loading;
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loading]);
 
     const onGridReady = useCallback(
@@ -288,18 +288,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         if (loading) {
           params.api.showLoadingOverlay();
         }
-        // } else {
-        //   params.api.hideOverlay();
-        // }
-
-        // gridRef.current?.api?.forEachNode((node) => {
-        //   if (
-        //     node?.data?.id &&
-        //     internalSelectionRowKeys.includes(node.data.id)
-        //   ) {
-        //     node.setSelected(true);
-        //   }
-        // });
       },
       [loading],
     );
@@ -310,16 +298,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       },
       [onRowDoubleClick],
     );
-
-    const getAllNodeKeys = useCallback(() => {
-      const allNodes: number[] = [];
-      gridRef.current?.api?.forEachNode((node) => {
-        if (node?.data?.id) {
-          allNodes.push(node.data.id);
-        }
-      });
-      return allNodes;
-    }, []);
 
     const onRowSelectionChange = useCallback(
       (event: RowSelectedEvent) => {
@@ -376,27 +354,13 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             onRowSelected={onRowSelectionChange}
             suppressDragLeaveHidesColumns={true}
             onGridReady={onGridReady}
-            // onSortChanged={(event) => {
-            //   const columnState = event.api.getColumnState();
-            //   const sortedColumns = columnState.filter((col) => col.sort);
-            //   if (sortedColumns.length > 0) {
-            //     const { colId, sort } = sortedColumns[0];
-            //     const newSorter = {
-            //       id: colId,
-            //       desc: sort === "desc",
-            //     };
-            //     console.log("Sorted column:", colId, "Direction:", sort);
-            //     onChangeSort?.(newSorter);
-            //   } else {
-            //     console.log("No column is currently sorted");
-            //     onChangeSort?.(undefined);
-            //   }
-            // }}
             suppressMultiSort={true}
             getRowHeight={undefined}
             getRowId={(params) => String(params.data.id)}
+            rowStyle={rowStyle}
+            getRowStyle={onRowStyle}
             onFirstDataRendered={(event) => {
-              gridRef.current?.api?.hideOverlay();
+              // gridRef.current?.api?.hideOverlay();
               console.log("onFirstDataRendered");
 
               // event.api.forEachNode((node) => {
