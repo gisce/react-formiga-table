@@ -296,6 +296,10 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         maxWidth: 30,
         pinned: "left",
         resizable: false,
+        cellStyle: {
+          padding: 0,
+          margin: 0,
+        },
         headerComponent: () => (
           <ITOptsButton
             resetTableViewLabel={
@@ -311,7 +315,18 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           />
         ),
         cellRenderer: MemoizedStatusComponent
-          ? (cell: any) => <MemoizedStatusComponent status={cell.value} />
+          ? (cell: any) => (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  height: "100%",
+                }}
+              >
+                <MemoizedStatusComponent status={cell.value} />
+              </div>
+            )
           : undefined,
       } as ColDef;
 
