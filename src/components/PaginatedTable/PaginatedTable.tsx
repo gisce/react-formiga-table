@@ -7,21 +7,26 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
-  CSSProperties,
 } from "react";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "../../styles/ag-theme-quartz.css";
 import {
+  BodyScrollEvent,
   ColDef,
+  ColumnResizedEvent,
   ColumnState,
   GridReadyEvent,
   RowDoubleClickedEvent,
   RowSelectedEvent,
 } from "ag-grid-community";
+import debounce from "lodash/debounce";
 import type { TableColumn } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
-import { useColumnState } from "../InfiniteTable/useColumnState";
+import {
+  useColumnState,
+  areStatesEqual,
+} from "../InfiniteTable/useColumnState";
 import {
   CHECKBOX_COLUMN,
   STATUS_COLUMN,
@@ -64,7 +69,6 @@ export type PaginatedTableProps = {
   onRowStatus?: (item: any) => any;
   statusComponent?: (status: any) => ReactNode;
 
-  initialColumnState?: ColumnState[];
   onColumnChanged?: (columnsState: ColumnState[]) => void;
   onGetColumnsState?: () => ColumnState[] | undefined;
 
@@ -88,6 +92,8 @@ export type PaginatedTableRef = {
   getVisibleRowIds: () => string[];
 };
 
+const DEBOUNCE_TIME = 100;
+
 const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
   (props, ref) => {
     const {
@@ -99,7 +105,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onRowStyle,
       onColumnChanged: onColumnsChangedProps,
       onGetColumnsState,
-      initialColumnState,
       footer,
       footerHeight = 30,
       onRowStatus,
@@ -111,9 +116,10 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onHeaderCheckboxClick,
       headerCheckboxState,
       isRowSelected,
+      onChangeFirstVisibleRowIndex,
     } = props;
 
-    useWhyDidYouRender("PaginatedTable", props);
+    // useWhyDidYouRender("PaginatedTable", props);
 
     const gridRef = useRef<AgGridReact>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -121,18 +127,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
     const notifyColumnChanges = useRef(false);
     const previousLoadingRef = useRef(loading);
-
-    // const updateSelectedRowKeys = useCallback(() => {
-    //   gridRef.current?.api?.forEachNode((node) => {
-    //     if (node?.data?.id && selectedRowKeys.includes(node.data.id)) {
-    //       node.setSelected(true);
-    //     }
-    //   });
-    // }, [selectedRowKeys]);
-
-    // useDeepCompareEffect(() => {
-    //   updateSelectedRowKeys();
-    // }, [selectedRowKeys]);
+    const firstTimeOnBodyScroll = useRef(true);
 
     useImperativeHandle(ref, () => ({
       setSelectedRows: (keys: number[]) => {
@@ -187,10 +182,56 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onGetColumnsState,
     });
 
+    const debouncedOnColumnChanged = useMemo(
+      () =>
+        debounce(() => {
+          const state = gridRef?.current?.api.getColumnState();
+          if (!state) {
+            return;
+          }
+          if (areStatesEqual(state, columnsPersistedStateRef.current)) {
+            return;
+          }
+          if (!notifyColumnChanges.current) {
+            notifyColumnChanges.current = true;
+            return;
+          }
+          applyAndUpdateNewState(state);
+          onColumnsChangedProps?.(state);
+        }, 300),
+      [applyAndUpdateNewState, columnsPersistedStateRef, onColumnsChangedProps],
+    );
+
+    const debouncedOnColumnResized = useMemo(
+      () =>
+        debounce((event: ColumnResizedEvent) => {
+          if (!event.finished) {
+            return;
+          }
+          debouncedOnColumnChanged();
+        }, 300),
+      [debouncedOnColumnChanged],
+    );
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const debouncedOnBodyScroll = useCallback(
+      debounce((params: BodyScrollEvent) => {
+        if (!firstTimeOnBodyScroll.current) {
+          onChangeFirstVisibleRowIndex?.(
+            params.api.getFirstDisplayedRowIndex(),
+          );
+        }
+        firstTimeOnBodyScroll.current = false;
+      }, DEBOUNCE_TIME),
+      [onChangeFirstVisibleRowIndex],
+    );
+
     const MemoizedStatusComponent = useMemo(() => {
       if (!statusComponent) return undefined;
       // eslint-disable-next-line react/display-name
-      return memo((props: { status: any }) => statusComponent(props.status));
+      return memo((propsComp: { status: any }) =>
+        statusComponent(propsComp.status),
+      );
     }, [statusComponent]);
 
     const colDefs = useMemo((): ColDef[] => {
@@ -243,6 +284,8 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             }
             onResetTableView={async () => {
               notifyColumnChanges.current = false;
+              applyAndUpdateNewState([]);
+              applyAutoFitState();
               gridRef.current?.api.resetColumnState();
               onColumnsChangedProps?.([]);
             }}
@@ -262,21 +305,23 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       headerCheckboxState,
       onHeaderCheckboxClick,
       strings,
+      applyAndUpdateNewState,
+      applyAutoFitState,
       onColumnsChangedProps,
     ]);
 
     useEffect(() => {
       if (loading) {
-        gridRef.current?.api?.showLoadingOverlay();
+        // gridRef.current?.api?.showLoadingOverlay();
       }
 
       if (previousLoadingRef.current === true && loading === false) {
-        console.log("Loading state changed from true to false");
         gridRef.current?.api?.forEachNode((node) => {
           if (node.data.id) {
             node.setSelected(isRowSelected(node.data.id));
           }
         });
+        // loadPersistedColumnState();
       }
 
       previousLoadingRef.current = loading;
@@ -359,18 +404,9 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             getRowId={(params) => String(params.data.id)}
             rowStyle={rowStyle}
             getRowStyle={onRowStyle}
-            onFirstDataRendered={(event) => {
-              // gridRef.current?.api?.hideOverlay();
-              console.log("onFirstDataRendered");
-
-              // event.api.forEachNode((node) => {
-              //   if (node.data.id) {
-              //     node.setSelected(isRowSelected(node.data.id));
-              //   }
-              // });
-
-              applyAutoFitState();
-            }}
+            onDragStopped={debouncedOnColumnChanged}
+            onColumnResized={debouncedOnColumnResized}
+            onBodyScroll={debouncedOnBodyScroll}
           />
         </div>
         {footer && (
