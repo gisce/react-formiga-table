@@ -92,8 +92,13 @@ export const useColumnState = ({
       persistedColumnState: onGetColumnsState?.(),
     });
 
-    if (columnsPersistedStateRef.current) {
+    if (
+      columnsPersistedStateRef.current &&
+      columnsPersistedStateRef.current.length > 0
+    ) {
       applyPersistedState();
+    } else {
+      applyAutoFitState();
     }
   }, [applyPersistedState, columns, onGetColumnsState]);
 

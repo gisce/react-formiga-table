@@ -17,7 +17,6 @@ import {
   ColDef,
   ColumnResizedEvent,
   ColumnState,
-  GridReadyEvent,
   RowDoubleClickedEvent,
   RowSelectedEvent,
 } from "ag-grid-community";
@@ -33,7 +32,6 @@ import {
   STATUS_COLUMN,
 } from "../InfiniteTable/columnStateHelper";
 import { ITOptsButton } from "../InfiniteTable/ITOptsButton";
-import { useWhyDidYouRender } from "@/hooks/useWhyDidYouRender";
 import {
   CheckboxState,
   PaginatedHeaderCheckbox,
@@ -188,9 +186,8 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       // Only trigger once per data update
       if (!dataRendered) {
         setDataRendered(true);
-        loadPersistedColumnState();
       }
-    }, [dataRendered, loadPersistedColumnState]);
+    }, [dataRendered]);
 
     const debouncedOnColumnChanged = useMemo(
       () =>
@@ -264,6 +261,9 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         ),
       } as ColDef;
 
+      const storedState = columnsPersistedStateRef.current;
+      const storedStateKeys = storedState?.map((col: any) => col.colId);
+
       const restOfColumns: ColDef[] = columns.map((column) => {
         return {
           ...DEFAULT_COL_DEF,
@@ -276,6 +276,15 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             : undefined,
         };
       });
+
+      // restOfColumns should be sorted by the order of the storedState
+      storedState &&
+        storedStateKeys &&
+        restOfColumns.sort((a, b) => {
+          const aIndex = storedStateKeys.indexOf(a.field);
+          const bIndex = storedStateKeys.indexOf(b.field);
+          return aIndex - bIndex;
+        });
 
       const statusColumn = {
         ...DEFAULT_COL_DEF,
@@ -310,6 +319,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
       return finalColumns;
     }, [
+      columnsPersistedStateRef,
       columns,
       MemoizedStatusComponent,
       headerCheckboxState,
@@ -323,15 +333,22 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     useEffect(() => {
       if (loading) {
         setDataRendered(false);
-        // gridRef.current?.api?.showLoadingOverlay();
       }
 
       if (previousLoadingRef.current === true && loading === false) {
+        loadPersistedColumnState();
         gridRef.current?.api?.forEachNode((node) => {
           if (node.data.id) {
             node.setSelected(isRowSelected(node.data.id));
           }
         });
+
+        // Reset all column sorts to neutral
+        if (gridRef.current?.columnApi) {
+          gridRef.current.columnApi.applyColumnState({
+            defaultState: { sort: null },
+          });
+        }
       }
 
       previousLoadingRef.current = loading;
@@ -401,8 +418,43 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         <div
           ref={containerRef}
           className={`ag-grid-default-table ag-theme-quartz`}
-          style={{ height: tableHeight, width: "100%" }}
+          style={{ height: tableHeight, width: "100%", position: "relative" }}
         >
+          {!dataRendered && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 999,
+              }}
+            >
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  border: "4px solid #f3f3f3",
+                  borderTop: "4px solid #3498db",
+                  borderRadius: "50%",
+                  animation: "spin 1s linear infinite",
+                }}
+              />
+            </div>
+          )}
+          <style>
+            {`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+          </style>
           <AgGridReact
             ref={gridRef}
             suppressLoadingOverlay={true}
