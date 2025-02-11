@@ -7,6 +7,7 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
@@ -128,6 +129,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     const notifyColumnChanges = useRef(false);
     const previousLoadingRef = useRef(loading);
     const firstTimeOnBodyScroll = useRef(true);
+    const [dataRendered, setDataRendered] = useState(false);
 
     useImperativeHandle(ref, () => ({
       setSelectedRows: (keys: number[]) => {
@@ -181,6 +183,14 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       columns,
       onGetColumnsState,
     });
+
+    const onDataRendered = useCallback(() => {
+      // Only trigger once per data update
+      if (!dataRendered) {
+        setDataRendered(true);
+        loadPersistedColumnState();
+      }
+    }, [dataRendered, loadPersistedColumnState]);
 
     const debouncedOnColumnChanged = useMemo(
       () =>
@@ -312,6 +322,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     useEffect(() => {
       if (loading) {
+        setDataRendered(false);
         // gridRef.current?.api?.showLoadingOverlay();
       }
 
@@ -321,21 +332,11 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             node.setSelected(isRowSelected(node.data.id));
           }
         });
-        // loadPersistedColumnState();
       }
 
       previousLoadingRef.current = loading;
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loading]);
-
-    const onGridReady = useCallback(
-      (params: GridReadyEvent) => {
-        if (loading) {
-          params.api.showLoadingOverlay();
-        }
-      },
-      [loading],
-    );
 
     const memoizedOnRowDoubleClick = useCallback(
       ({ data: item }: RowDoubleClickedEvent) => {
@@ -374,6 +375,21 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       }));
     }, [dataSource, hasStatusColumn, onRowStatus]);
 
+    const onModelUpdated = useCallback(() => {
+      const api = gridRef.current?.api;
+      if (!loading && api && api.getDisplayedRowCount() > 0) {
+        // Small delay to ensure DOM is actually updated
+        setTimeout(() => {
+          onDataRendered();
+        }, 0);
+      }
+    }, [loading, onDataRendered]);
+
+    const NoRowsOverlayComponent = useMemo(() => {
+      // eslint-disable-next-line react/display-name
+      return () => (dataRendered ? <span>No rows to show</span> : null);
+    }, [dataRendered]);
+
     return (
       <div
         style={{
@@ -389,6 +405,8 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         >
           <AgGridReact
             ref={gridRef}
+            suppressLoadingOverlay={true}
+            noRowsOverlayComponent={NoRowsOverlayComponent}
             columnDefs={colDefs}
             rowData={memoizedDataSource}
             onRowDoubleClicked={memoizedOnRowDoubleClick}
@@ -398,7 +416,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             rowSelection={"multiple"}
             onRowSelected={onRowSelectionChange}
             suppressDragLeaveHidesColumns={true}
-            onGridReady={onGridReady}
             suppressMultiSort={true}
             getRowHeight={undefined}
             getRowId={(params) => String(params.data.id)}
@@ -407,6 +424,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             onDragStopped={debouncedOnColumnChanged}
             onColumnResized={debouncedOnColumnResized}
             onBodyScroll={debouncedOnBodyScroll}
+            onModelUpdated={onModelUpdated}
           />
         </div>
         {footer && (
