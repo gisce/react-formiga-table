@@ -119,6 +119,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       loading,
       onHeaderCheckboxClick,
       headerCheckboxState,
+      onGetFirstVisibleRowIndex,
       onChangeFirstVisibleRowIndex,
       onForceReload,
     } = props;
@@ -130,7 +131,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
     const notifyColumnChanges = useRef(false);
-    const firstTimeOnBodyScroll = useRef(true);
+    const onBodyScrollEnabled = useRef(false);
     const [dataRendered, setDataRendered] = useState(false);
 
     useImperativeHandle(ref, () => ({
@@ -180,6 +181,16 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       columns,
     });
 
+    // Function to restore scroll position
+    const scrollToPosition = useCallback((position: number) => {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          gridRef.current?.api?.ensureIndexVisible(position, "top");
+          onBodyScrollEnabled.current = true;
+        }, 500);
+      });
+    }, []);
+
     const onDataRendered = useCallback(() => {
       // Only trigger once per data update
       if (!dataRendered) {
@@ -196,9 +207,27 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           } else {
             applyAutoFitState();
           }
+
+          if (onGetFirstVisibleRowIndex) {
+            const firstVisibleRowIndex = onGetFirstVisibleRowIndex();
+            if (firstVisibleRowIndex !== undefined) {
+              scrollToPosition?.(firstVisibleRowIndex);
+            } else {
+              onBodyScrollEnabled.current = true;
+            }
+          } else {
+            onBodyScrollEnabled.current = true;
+          }
         }
       }
-    }, [dataRendered, loading, onGetColumnsState, applyAutoFitState]);
+    }, [
+      dataRendered,
+      loading,
+      onGetColumnsState,
+      onGetFirstVisibleRowIndex,
+      applyAutoFitState,
+      scrollToPosition,
+    ]);
 
     const onColumnChanged = useCallback(() => {
       const state = gridRef?.current?.api.getColumnState();
@@ -230,12 +259,12 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedOnBodyScroll = useCallback(
       debounce((params: BodyScrollEvent) => {
-        if (!firstTimeOnBodyScroll.current) {
-          onChangeFirstVisibleRowIndex?.(
-            params.api.getFirstDisplayedRowIndex(),
-          );
+        if (params.direction === "horizontal" || !onBodyScrollEnabled.current) {
+          return;
         }
-        firstTimeOnBodyScroll.current = false;
+
+        const index = gridRef.current?.api?.getFirstDisplayedRowIndex();
+        index !== undefined && onChangeFirstVisibleRowIndex?.(index);
       }, DEBOUNCE_TIME),
       [onChangeFirstVisibleRowIndex],
     );
@@ -464,8 +493,8 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           {!loading && (
             <AgGridReact
               ref={gridRef}
+              rowBuffer={0}
               suppressLoadingOverlay={true}
-              suppressRowVirtualisation={true}
               suppressColumnVirtualisation={true}
               noRowsOverlayComponent={NoRowsOverlayComponent}
               columnDefs={memoizedColDefs}
@@ -486,6 +515,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
               onBodyScroll={debouncedOnBodyScroll}
               onModelUpdated={onModelUpdated}
               reactiveCustomComponents={true}
+              debounceVerticalScrollbar={true}
               debug={true}
             />
           )}
