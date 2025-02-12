@@ -359,8 +359,8 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         });
 
         // Reset all column sorts to neutral
-        if (gridRef.current?.columnApi) {
-          gridRef.current.columnApi.applyColumnState({
+        if (gridRef.current?.api) {
+          gridRef.current.api.applyColumnState({
             defaultState: { sort: null },
           });
         }
@@ -473,6 +473,8 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           <AgGridReact
             ref={gridRef}
             suppressLoadingOverlay={true}
+            suppressRowVirtualisation={true}
+            suppressColumnVirtualisation={true}
             noRowsOverlayComponent={NoRowsOverlayComponent}
             columnDefs={colDefs}
             rowData={memoizedDataSource}
