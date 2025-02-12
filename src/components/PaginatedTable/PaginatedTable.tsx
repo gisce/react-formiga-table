@@ -46,7 +46,6 @@ const DEFAULT_COL_DEF: ColDef = {
   resizable: true,
   maxWidth: 400, // Maximum column width
   minWidth: 100, // Minimum column width to ensure readability
-  lockPinned: true, // Prevent column from being pinned
   valueFormatter: () => {
     // To skip warnings, return an empty string, we'll handle ourself the value in the cellRenderer
     return "";
@@ -495,7 +494,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
               ref={gridRef}
               rowBuffer={0}
               suppressLoadingOverlay={true}
-              suppressColumnVirtualisation={true}
               noRowsOverlayComponent={NoRowsOverlayComponent}
               columnDefs={memoizedColDefs}
               rowData={memoizedDataSource}
