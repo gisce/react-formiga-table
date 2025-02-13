@@ -503,7 +503,14 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     const handleSortChanged = useCallback(
       (event: SortChangedEvent) => {
-        const sortState = event.api.getColumnState().filter((col) => col.sort);
+        const sortState = event.api
+          .getColumnState()
+          .filter((col) => col.sort)
+          .map((col) => ({
+            colId: col.colId,
+            sort: col.sort,
+            sortIndex: col.sortIndex,
+          }));
         onSortChange?.(sortState);
       },
       [onSortChange],
@@ -571,7 +578,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
               rowSelection={"multiple"}
               onRowSelected={onRowSelectionChange}
               suppressDragLeaveHidesColumns={true}
-              suppressMultiSort={true}
               getRowHeight={undefined}
               getRowId={getRowId}
               rowStyle={rowStyle}
