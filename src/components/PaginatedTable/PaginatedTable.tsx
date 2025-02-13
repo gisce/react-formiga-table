@@ -191,21 +191,17 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     // Function to restore scroll position (vertical)
     const scrollToRowIndex = useCallback((position: number) => {
       requestAnimationFrame(() => {
-        setTimeout(() => {
-          if (gridRef.current?.api) {
-            gridRef.current.api.ensureIndexVisible(position, "top");
-          }
-        }, 500);
+        if (gridRef.current?.api) {
+          gridRef.current.api.ensureIndexVisible(position, "top");
+        }
       });
     }, []);
 
     const scrollToColumn = useCallback((columnId: string) => {
       requestAnimationFrame(() => {
-        setTimeout(() => {
-          if (gridRef.current?.api) {
-            gridRef.current.api.ensureColumnVisible(columnId, "start");
-          }
-        }, 500);
+        if (gridRef.current?.api) {
+          gridRef.current.api.ensureColumnVisible(columnId, "start");
+        }
       });
     }, []);
 
@@ -213,6 +209,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       // Only trigger once per data update
       if (!dataRendered) {
         setDataRendered(true);
+
         const api = gridRef.current?.api;
 
         if (!loading && api && api.getDisplayedRowCount() > 0) {
@@ -283,7 +280,12 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     const onBodyScrollEnd = useCallback(
       (params: BodyScrollEvent) => {
-        if (params.top === -1) {
+        // Ignore first event which is automatically triggered
+        if (
+          params.top === -1 &&
+          params.direction === "horizontal" &&
+          params.left === 0
+        ) {
           return;
         }
         if (params.direction === "vertical") {
@@ -341,10 +343,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     }, [onColumnsChangedProps, onForceReload]);
 
     const colDefs = useMemo((): ColDef[] => {
-      if (loading) {
-        return [];
-      }
-
       const checkboxColumn = {
         ...DEFAULT_COL_DEF,
         checkboxSelection: true,
@@ -430,7 +428,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
       return finalColumns;
     }, [
-      loading,
       HeaderComponent,
       columns,
       onGetColumnsState,
@@ -477,10 +474,11 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     }, [showPointerCursorInRows]);
 
     const onModelUpdated = useCallback(() => {
-      requestAnimationFrame(() => {
-        onDataRendered();
-      });
-    }, [onDataRendered]);
+      loading === false &&
+        requestAnimationFrame(() => {
+          onDataRendered();
+        });
+    }, [loading, onDataRendered]);
 
     const memoizedDataSource = useMemo(() => {
       if (!hasStatusColumn || !onRowStatus) {
@@ -564,34 +562,32 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
               }
             `}
           </style>
-          {!loading && (
-            <AgGridReact
-              ref={gridRef}
-              rowBuffer={0}
-              suppressLoadingOverlay={true}
-              noRowsOverlayComponent={NoRowsOverlayComponent}
-              columnDefs={memoizedColDefs}
-              rowData={memoizedDataSource}
-              onRowDoubleClicked={memoizedOnRowDoubleClick}
-              suppressCellFocus={true}
-              suppressRowClickSelection={true}
-              rowSelection={"multiple"}
-              onRowSelected={onRowSelectionChange}
-              suppressDragLeaveHidesColumns={true}
-              getRowHeight={undefined}
-              getRowId={getRowId}
-              rowStyle={rowStyle}
-              getRowStyle={onRowStyle}
-              onDragStopped={onColumnChanged}
-              onColumnResized={onColumnResized}
-              onBodyScrollEnd={onBodyScrollEnd}
-              onModelUpdated={onModelUpdated}
-              onSortChanged={handleSortChanged}
-              reactiveCustomComponents={true}
-              debounceVerticalScrollbar={true}
-              debug={true}
-            />
-          )}
+          <AgGridReact
+            ref={gridRef}
+            rowBuffer={0}
+            suppressLoadingOverlay={true}
+            noRowsOverlayComponent={NoRowsOverlayComponent}
+            columnDefs={memoizedColDefs}
+            rowData={memoizedDataSource}
+            onRowDoubleClicked={memoizedOnRowDoubleClick}
+            suppressCellFocus={true}
+            suppressRowClickSelection={true}
+            rowSelection={"multiple"}
+            onRowSelected={onRowSelectionChange}
+            suppressDragLeaveHidesColumns={true}
+            getRowHeight={undefined}
+            getRowId={getRowId}
+            rowStyle={rowStyle}
+            getRowStyle={onRowStyle}
+            onDragStopped={onColumnChanged}
+            onColumnResized={onColumnResized}
+            onBodyScrollEnd={onBodyScrollEnd}
+            onModelUpdated={onModelUpdated}
+            onSortChanged={handleSortChanged}
+            reactiveCustomComponents={true}
+            debounceVerticalScrollbar={true}
+            // debug={true}
+          />
         </div>
         {footer && (
           <div
