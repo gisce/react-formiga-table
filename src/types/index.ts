@@ -6,13 +6,6 @@ export type TableColumn = {
   title: string;
   render?: (item: any) => React.ReactNode;
   sorter?: (a: any, b: any, column: string, desc: boolean) => number;
-  comparator?: (
-    valueA: any,
-    valueB: any,
-    nodeA: any,
-    nodeB: any,
-    isDescending: boolean,
-  ) => number;
   isSortable?: boolean;
 };
 

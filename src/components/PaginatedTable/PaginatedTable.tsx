@@ -19,8 +19,8 @@ import {
   ColumnState,
   RowDoubleClickedEvent,
   RowSelectedEvent,
+  SortChangedEvent,
 } from "ag-grid-community";
-import debounce from "lodash/debounce";
 import type { TableColumn } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import {
@@ -57,6 +57,8 @@ export type PaginatedTableProps = {
   columns: TableColumn[];
   loading: boolean;
   showPointerCursorInRows?: boolean;
+  initialSortState?: ColumnState[];
+  onSortChange?: (state: ColumnState[]) => void;
 
   onRowSelectionChange?: (changedRow: {
     id: number;
@@ -77,6 +79,9 @@ export type PaginatedTableProps = {
 
   onGetFirstVisibleRowIndex?: () => number | undefined;
   onChangeFirstVisibleRowIndex?: (index: number) => void;
+
+  onGetFirstVisibleColumn?: () => string | undefined;
+  onChangeFirstVisibleColumn?: (columnId: string) => void;
 
   onRowStyle?: (item: any) => any;
   onRowDoubleClick?: (item: any) => void;
@@ -120,7 +125,11 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       headerCheckboxState,
       onGetFirstVisibleRowIndex,
       onChangeFirstVisibleRowIndex,
+      onGetFirstVisibleColumn,
+      onChangeFirstVisibleColumn,
       onForceReload,
+      initialSortState,
+      onSortChange,
     } = props;
 
     // useWhyDidYouRender("PaginatedTable", props);
@@ -130,7 +139,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
     const notifyColumnChanges = useRef(false);
-    const onBodyScrollEnabled = useRef(false);
     const [dataRendered, setDataRendered] = useState(false);
 
     useImperativeHandle(ref, () => ({
@@ -180,12 +188,23 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       columns,
     });
 
-    // Function to restore scroll position
-    const scrollToPosition = useCallback((position: number) => {
+    // Function to restore scroll position (vertical)
+    const scrollToRowIndex = useCallback((position: number) => {
       requestAnimationFrame(() => {
         setTimeout(() => {
-          gridRef.current?.api?.ensureIndexVisible(position, "top");
-          onBodyScrollEnabled.current = true;
+          if (gridRef.current?.api) {
+            gridRef.current.api.ensureIndexVisible(position, "top");
+          }
+        }, 500);
+      });
+    }, []);
+
+    const scrollToColumn = useCallback((columnId: string) => {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          if (gridRef.current?.api) {
+            gridRef.current.api.ensureColumnVisible(columnId, "start");
+          }
         }, 500);
       });
     }, []);
@@ -207,15 +226,20 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             applyAutoFitState();
           }
 
+          // Restore vertical scroll
           if (onGetFirstVisibleRowIndex) {
             const firstVisibleRowIndex = onGetFirstVisibleRowIndex();
             if (firstVisibleRowIndex !== undefined) {
-              scrollToPosition?.(firstVisibleRowIndex);
-            } else {
-              onBodyScrollEnabled.current = true;
+              scrollToRowIndex(firstVisibleRowIndex);
             }
-          } else {
-            onBodyScrollEnabled.current = true;
+          }
+
+          // Restore horizontal scroll
+          if (onGetFirstVisibleColumn) {
+            const firstVisibleColumn = onGetFirstVisibleColumn();
+            if (firstVisibleColumn !== undefined) {
+              scrollToColumn(firstVisibleColumn);
+            }
           }
         }
       }
@@ -224,8 +248,10 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       loading,
       onGetColumnsState,
       onGetFirstVisibleRowIndex,
+      onGetFirstVisibleColumn,
       applyAutoFitState,
-      scrollToPosition,
+      scrollToRowIndex,
+      scrollToColumn,
     ]);
 
     const onColumnChanged = useCallback(() => {
@@ -255,17 +281,45 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       [onColumnChanged],
     );
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const debouncedOnBodyScroll = useCallback(
-      debounce((params: BodyScrollEvent) => {
-        if (params.direction === "horizontal" || !onBodyScrollEnabled.current) {
+    const onBodyScrollEnd = useCallback(
+      (params: BodyScrollEvent) => {
+        if (params.top === -1) {
           return;
         }
+        if (params.direction === "vertical") {
+          const index = gridRef.current?.api?.getFirstDisplayedRowIndex();
+          index !== undefined && onChangeFirstVisibleRowIndex?.(index);
+        } else if (params.direction === "horizontal") {
+          // Get all column states which include width information
+          const columnStates = gridRef.current?.api?.getColumnState() || [];
+          let accumulatedWidth = 0;
+          let firstVisibleColumn: string | undefined;
 
-        const index = gridRef.current?.api?.getFirstDisplayedRowIndex();
-        index !== undefined && onChangeFirstVisibleRowIndex?.(index);
-      }, DEBOUNCE_TIME),
-      [onChangeFirstVisibleRowIndex],
+          // Find the first visible column based on scroll position, skipping pinned columns
+          for (const column of columnStates) {
+            // Skip pinned columns
+            if (column.pinned) {
+              continue;
+            }
+            const columnWidth = column.width || 0;
+            if (accumulatedWidth + columnWidth > params.left) {
+              firstVisibleColumn = column.colId;
+              break;
+            }
+            accumulatedWidth += columnWidth;
+          }
+
+          console.log(
+            "First visible column (excluding pinned):",
+            firstVisibleColumn,
+          );
+
+          if (firstVisibleColumn) {
+            onChangeFirstVisibleColumn?.(firstVisibleColumn);
+          }
+        }
+      },
+      [onChangeFirstVisibleRowIndex, onChangeFirstVisibleColumn],
     );
 
     const MemoizedStatusComponent = useMemo(() => {
@@ -306,12 +360,17 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       } as ColDef;
 
       const restOfColumns: ColDef[] = columns.map((column) => {
+        const initialSort = initialSortState?.find(
+          (state) => state.colId === column.key,
+        );
+
         return {
           ...DEFAULT_COL_DEF,
           field: column.key,
           sortable: column.isSortable,
           headerName: column.title,
-          comparator: column.comparator,
+          sort: initialSort?.sort,
+          sortIndex: initialSort?.sortIndex,
           cellRenderer: column.render
             ? (cell: any) => column.render(cell.value)
             : undefined,
@@ -378,6 +437,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       MemoizedStatusComponent,
       strings,
       onResetTableView,
+      initialSortState,
     ]);
 
     const memoizedColDefs = useDeepCompareMemo(() => colDefs, [colDefs]);
@@ -440,6 +500,14 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     const getRowId = useCallback((params: any) => {
       return String(params.data.id);
     }, []);
+
+    const handleSortChanged = useCallback(
+      (event: SortChangedEvent) => {
+        const sortState = event.api.getColumnState().filter((col) => col.sort);
+        onSortChange?.(sortState);
+      },
+      [onSortChange],
+    );
 
     return (
       <div
@@ -510,8 +578,9 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
               getRowStyle={onRowStyle}
               onDragStopped={onColumnChanged}
               onColumnResized={onColumnResized}
-              onBodyScroll={debouncedOnBodyScroll}
+              onBodyScrollEnd={onBodyScrollEnd}
               onModelUpdated={onModelUpdated}
+              onSortChanged={handleSortChanged}
               reactiveCustomComponents={true}
               debounceVerticalScrollbar={true}
               debug={true}
