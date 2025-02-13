@@ -27,21 +27,9 @@ const HeaderCheckboxComp = memo(
 
     const handleChange = useCallback(
       (event: React.ChangeEvent<HTMLInputElement>) => {
-        // Prevent the default checkbox behavior
-        event.preventDefault();
-
-        // Create a new synthetic event with the correct checked value
-        const newEvent = {
-          ...event,
-          target: {
-            ...event.target,
-            checked: value === null ? false : !value,
-          },
-        } as React.ChangeEvent<HTMLInputElement>;
-
-        onChange(newEvent);
+        onChange(event);
       },
-      [onChange, value],
+      [onChange],
     );
 
     return (
