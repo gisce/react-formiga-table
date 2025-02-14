@@ -56,7 +56,7 @@ const DEFAULT_COL_DEF: ColDef = {
 export type PaginatedTableProps = {
   dataSource: Array<Record<string, any>>;
   columns: TableColumn[];
-  loading: boolean;
+  isLoading: boolean;
   showPointerCursorInRows?: boolean;
   initialSortState?: ColumnState[];
   onSortChange?: (state: ColumnState[]) => void;
@@ -119,7 +119,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       hasStatusColumn = false,
       strings = {},
       showPointerCursorInRows = true,
-      loading,
+      isLoading,
       onHeaderCheckboxClick,
       headerCheckboxState,
       onGetFirstVisibleRowIndex,
@@ -137,7 +137,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
     const notifyColumnChanges = useRef(false);
     const [dataRendered, setDataRendered] = useState(false);
-    const ignoreSortRef = useRef(false);
 
     useImperativeHandle(ref, () => ({
       setSelectedRows: (keys: number[]) => {
@@ -210,7 +209,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
         const api = gridRef.current?.api;
 
-        if (!loading && api && api.getDisplayedRowCount() > 0) {
+        if (!isLoading && api && api.getDisplayedRowCount() > 0) {
           const persistedState = onGetColumnsState?.();
           if (persistedState && persistedState.length > 0) {
             gridRef?.current?.api?.applyColumnState({
@@ -240,7 +239,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       }
     }, [
       dataRendered,
-      loading,
+      isLoading,
       onGetColumnsState,
       onGetFirstVisibleRowIndex,
       onGetFirstVisibleColumn,
@@ -337,8 +336,9 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     const onResetTableView = useCallback(() => {
       onColumnsChangedProps?.([]);
+      onSortChange?.([]);
       onForceReload?.();
-    }, [onColumnsChangedProps, onForceReload]);
+    }, [onColumnsChangedProps, onForceReload, onSortChange]);
 
     const colDefs = useMemo((): ColDef[] => {
       const checkboxColumn = {
@@ -438,10 +438,10 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     const memoizedColDefs = useDeepCompareMemo(() => colDefs, [colDefs]);
 
     useEffect(() => {
-      if (loading) {
+      if (isLoading) {
         setDataRendered(false);
       }
-    }, [loading]);
+    }, [isLoading]);
 
     const memoizedOnRowDoubleClick = useCallback(
       ({ data: item }: RowDoubleClickedEvent) => {
@@ -472,11 +472,11 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     }, [showPointerCursorInRows]);
 
     const onModelUpdated = useCallback(() => {
-      loading === false &&
+      isLoading === false &&
         requestAnimationFrame(() => {
           onDataRendered();
         });
-    }, [loading, onDataRendered]);
+    }, [isLoading, onDataRendered]);
 
     const memoizedDataSource = useMemo(() => {
       if (!hasStatusColumn || !onRowStatus) {
@@ -499,11 +499,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     const handleSortChanged = useCallback(
       (event: SortChangedEvent) => {
-        if (ignoreSortRef.current) {
-          ignoreSortRef.current = false;
-          return;
-        }
-
         const sortState = event.api
           .getColumnState()
           .filter((col) => col.sort)
@@ -515,8 +510,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
         if (!deepEqual(sortState, initialSortState)) {
           onSortChange?.(sortState);
-          // Set the flag to ignore the next automatic event which has sortIndexes to null
-          ignoreSortRef.current = true;
         }
       },
       [initialSortState, onSortChange],
