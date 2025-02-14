@@ -499,6 +499,10 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     const handleSortChanged = useCallback(
       (event: SortChangedEvent) => {
+        if (event.source !== "uiColumnSorted") {
+          return;
+        }
+
         const sortState = event.api
           .getColumnState()
           .filter((col) => col.sort)
