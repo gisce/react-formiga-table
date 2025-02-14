@@ -37,6 +37,7 @@ import {
   usePaginatedHeaderCheckbox,
 } from "./PaginatedHeaderCheckbox";
 import { useDeepCompareMemo } from "use-deep-compare";
+import deepEqual from "deep-equal";
 
 const DEFAULT_COL_DEF: ColDef = {
   autoHeight: true,
@@ -55,7 +56,7 @@ const DEFAULT_COL_DEF: ColDef = {
 export type PaginatedTableProps = {
   dataSource: Array<Record<string, any>>;
   columns: TableColumn[];
-  loading: boolean;
+  isLoading: boolean;
   showPointerCursorInRows?: boolean;
   initialSortState?: ColumnState[];
   onSortChange?: (state: ColumnState[]) => void;
@@ -100,8 +101,6 @@ export type PaginatedTableRef = {
   getVisibleRowIds: () => string[];
 };
 
-const DEBOUNCE_TIME = 100;
-
 const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
   (props, ref) => {
     const {
@@ -120,7 +119,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       hasStatusColumn = false,
       strings = {},
       showPointerCursorInRows = true,
-      loading,
+      isLoading,
       onHeaderCheckboxClick,
       headerCheckboxState,
       onGetFirstVisibleRowIndex,
@@ -131,8 +130,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       initialSortState,
       onSortChange,
     } = props;
-
-    // useWhyDidYouRender("PaginatedTable", props);
 
     const gridRef = useRef<AgGridReact>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -212,7 +209,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
         const api = gridRef.current?.api;
 
-        if (!loading && api && api.getDisplayedRowCount() > 0) {
+        if (!isLoading && api && api.getDisplayedRowCount() > 0) {
           const persistedState = onGetColumnsState?.();
           if (persistedState && persistedState.length > 0) {
             gridRef?.current?.api?.applyColumnState({
@@ -242,7 +239,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       }
     }, [
       dataRendered,
-      loading,
+      isLoading,
       onGetColumnsState,
       onGetFirstVisibleRowIndex,
       onGetFirstVisibleColumn,
@@ -339,8 +336,9 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     const onResetTableView = useCallback(() => {
       onColumnsChangedProps?.([]);
+      onSortChange?.([]);
       onForceReload?.();
-    }, [onColumnsChangedProps, onForceReload]);
+    }, [onColumnsChangedProps, onForceReload, onSortChange]);
 
     const colDefs = useMemo((): ColDef[] => {
       const checkboxColumn = {
@@ -440,10 +438,10 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     const memoizedColDefs = useDeepCompareMemo(() => colDefs, [colDefs]);
 
     useEffect(() => {
-      if (loading) {
+      if (isLoading) {
         setDataRendered(false);
       }
-    }, [loading]);
+    }, [isLoading]);
 
     const memoizedOnRowDoubleClick = useCallback(
       ({ data: item }: RowDoubleClickedEvent) => {
@@ -474,11 +472,11 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     }, [showPointerCursorInRows]);
 
     const onModelUpdated = useCallback(() => {
-      loading === false &&
+      isLoading === false &&
         requestAnimationFrame(() => {
           onDataRendered();
         });
-    }, [loading, onDataRendered]);
+    }, [isLoading, onDataRendered]);
 
     const memoizedDataSource = useMemo(() => {
       if (!hasStatusColumn || !onRowStatus) {
@@ -509,9 +507,12 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             sort: col.sort,
             sortIndex: col.sortIndex,
           }));
-        onSortChange?.(sortState);
+
+        if (!deepEqual(sortState, initialSortState)) {
+          onSortChange?.(sortState);
+        }
       },
-      [onSortChange],
+      [initialSortState, onSortChange],
     );
 
     return (
