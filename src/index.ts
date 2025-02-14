@@ -10,6 +10,7 @@ export type {
   PaginatedTableProps,
   PaginatedTableRef,
 } from "./components/PaginatedTable/PaginatedTable";
+export type { CheckboxState } from "./components/PaginatedTable/PaginatedHeaderCheckbox";
 
 export type { ColumnState } from "ag-grid-community";
 export type { BodyScrollEvent } from "ag-grid-community";
