@@ -100,8 +100,6 @@ export type PaginatedTableRef = {
   getVisibleRowIds: () => string[];
 };
 
-const DEBOUNCE_TIME = 100;
-
 const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
   (props, ref) => {
     const {
@@ -131,8 +129,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       initialSortState,
       onSortChange,
     } = props;
-
-    // useWhyDidYouRender("PaginatedTable", props);
 
     const gridRef = useRef<AgGridReact>(null);
     const containerRef = useRef<HTMLDivElement>(null);
