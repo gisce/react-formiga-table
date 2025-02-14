@@ -37,6 +37,7 @@ import {
   usePaginatedHeaderCheckbox,
 } from "./PaginatedHeaderCheckbox";
 import { useDeepCompareMemo } from "use-deep-compare";
+import deepEqual from "deep-equal";
 
 const DEFAULT_COL_DEF: ColDef = {
   autoHeight: true,
@@ -136,6 +137,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
     const notifyColumnChanges = useRef(false);
     const [dataRendered, setDataRendered] = useState(false);
+    const ignoreSortRef = useRef(false);
 
     useImperativeHandle(ref, () => ({
       setSelectedRows: (keys: number[]) => {
@@ -497,6 +499,11 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     const handleSortChanged = useCallback(
       (event: SortChangedEvent) => {
+        if (ignoreSortRef.current) {
+          ignoreSortRef.current = false;
+          return;
+        }
+
         const sortState = event.api
           .getColumnState()
           .filter((col) => col.sort)
@@ -505,9 +512,14 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             sort: col.sort,
             sortIndex: col.sortIndex,
           }));
-        onSortChange?.(sortState);
+
+        if (!deepEqual(sortState, initialSortState)) {
+          onSortChange?.(sortState);
+          // Set the flag to ignore the next automatic event which has sortIndexes to null
+          ignoreSortRef.current = true;
+        }
       },
-      [onSortChange],
+      [initialSortState, onSortChange],
     );
 
     return (
