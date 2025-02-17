@@ -308,11 +308,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             accumulatedWidth += columnWidth;
           }
 
-          console.log(
-            "First visible column (excluding pinned):",
-            firstVisibleColumn,
-          );
-
           if (firstVisibleColumn) {
             onChangeFirstVisibleColumn?.(firstVisibleColumn);
           }
