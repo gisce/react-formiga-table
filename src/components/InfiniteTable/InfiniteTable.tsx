@@ -247,7 +247,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           headerName: column.title,
           sort: initialSort?.sort,
           sortIndex: initialSort?.sortIndex,
-          cellRenderer: (cell: any) => column.render(cell.value),
+          cellRenderer: (cell: { value: any; data: any }) =>
+            column.render(cell.value, cell.data),
         };
       });
 
