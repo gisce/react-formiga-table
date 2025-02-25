@@ -70,6 +70,7 @@ export type InfiniteTableRef = {
   refresh: () => void;
   updateRows: (updates: Array<Record<string, any>>) => void;
   getVisibleRowIds: () => string[];
+  getVisibleRows: () => any[];
 };
 
 const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
@@ -160,6 +161,11 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         const visibleNodes = gridRef.current.api.getRenderedNodes();
         return visibleNodes.map((node) => node?.data?.id);
       },
+      getVisibleRows: () => {
+        if (!gridRef.current?.api) return [];
+        const visibleNodes = gridRef.current.api.getRenderedNodes();
+        return visibleNodes.map((node) => node?.data);
+      },
     }));
 
     const columns = useDeepArrayMemo(columnsProps, "key");
@@ -247,9 +253,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           headerName: column.title,
           sort: initialSort?.sort,
           sortIndex: initialSort?.sortIndex,
-          cellRenderer: column.render
-            ? (cell: any) => column.render(cell.value)
-            : undefined,
+          cellRenderer: (cell: { value: any; data: any }) =>
+            column.render(cell.value, cell.data),
         };
       });
 

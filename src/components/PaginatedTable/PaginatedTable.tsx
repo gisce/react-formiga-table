@@ -99,6 +99,7 @@ export type PaginatedTableRef = {
   refresh: () => void;
   updateRows: (updates: Array<Record<string, any>>) => void;
   getVisibleRowIds: () => string[];
+  getVisibleRows: () => any[];
 };
 
 const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
@@ -174,6 +175,11 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         if (!gridRef.current?.api) return [];
         const visibleNodes = gridRef.current.api.getRenderedNodes();
         return visibleNodes.map((node) => node?.data?.id);
+      },
+      getVisibleRows: () => {
+        if (!gridRef.current?.api) return [];
+        const visibleNodes = gridRef.current.api.getRenderedNodes();
+        return visibleNodes.map((node) => node?.data);
       },
     }));
 
@@ -308,11 +314,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             accumulatedWidth += columnWidth;
           }
 
-          console.log(
-            "First visible column (excluding pinned):",
-            firstVisibleColumn,
-          );
-
           if (firstVisibleColumn) {
             onChangeFirstVisibleColumn?.(firstVisibleColumn);
           }
@@ -368,7 +369,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           sort: initialSort?.sort,
           sortIndex: initialSort?.sortIndex,
           cellRenderer: column.render
-            ? (cell: any) => column.render(cell.value)
+            ? (cell: any) => column.render(cell.value, cell.data)
             : undefined,
         };
       });
