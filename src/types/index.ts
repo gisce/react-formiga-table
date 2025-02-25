@@ -4,7 +4,7 @@ export type TableColumn = {
   key: string;
   dataIndex?: string;
   title: string;
-  render?: (item: any) => React.ReactNode;
+  render?: (value: any, rowData: any) => React.ReactNode;
   sorter?: (a: any, b: any, column: string, desc: boolean) => number;
   isSortable?: boolean;
 };
