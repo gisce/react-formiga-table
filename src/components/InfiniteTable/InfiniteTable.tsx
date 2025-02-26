@@ -146,15 +146,17 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       updateRows: (updates: Array<Record<string, any>>) => {
         if (!gridRef.current?.api) return;
 
-        updates.forEach((update) => {
-          const node = gridRef.current?.api
-            .getRenderedNodes()
-            .find((node) => node.data.id === update.id);
-          if (node) {
-            // Update specific fields without refreshing entire row
-            node.setData({ ...node.data, ...update });
-          }
-        });
+        updates
+          .filter((update) => update?.id)
+          .forEach((update) => {
+            const node = gridRef.current?.api
+              .getRenderedNodes()
+              .find((node) => node.data?.id === update?.id);
+            if (node) {
+              // Update specific fields without refreshing entire row
+              node.setData({ ...node.data, ...update });
+            }
+          });
       },
       getVisibleRowIds: () => {
         if (!gridRef.current?.api) return [];
