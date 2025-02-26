@@ -162,14 +162,16 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       updateRows: (updates: Array<Record<string, any>>) => {
         if (!gridRef.current?.api) return;
 
-        updates.forEach((update) => {
-          const node = gridRef.current?.api
-            .getRenderedNodes()
-            .find((node) => node.data.id === update.id);
-          if (node) {
-            node.setData({ ...node.data, ...update });
-          }
-        });
+        updates
+          .filter((update) => update?.id)
+          .forEach((update) => {
+            const node = gridRef.current?.api
+              .getRenderedNodes()
+              .find((node) => node.data?.id === update?.id);
+            if (node) {
+              node.setData({ ...node.data, ...update });
+            }
+          });
       },
       getVisibleRowIds: () => {
         if (!gridRef.current?.api) return [];
