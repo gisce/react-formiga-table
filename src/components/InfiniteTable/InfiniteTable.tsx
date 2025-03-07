@@ -71,6 +71,7 @@ export type InfiniteTableRef = {
   updateRows: (updates: Array<Record<string, any>>) => void;
   getVisibleRowIds: () => string[];
   getVisibleRows: () => any[];
+  refreshRowStyles: () => void;
 };
 
 const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
@@ -167,6 +168,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         if (!gridRef.current?.api) return [];
         const visibleNodes = gridRef.current.api.getRenderedNodes();
         return visibleNodes.map((node) => node?.data);
+      },
+      refreshRowStyles: () => {
+        if (!gridRef.current?.api) return;
+        gridRef.current.api.redrawRows();
       },
     }));
 
