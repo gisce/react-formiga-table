@@ -23,7 +23,7 @@ export const useColumnState = ({
   containerRef: RefObject<HTMLDivElement>;
   columns: TableColumn[];
   onGetColumnsState?: () => ColumnState[] | undefined;
-  type: "infinite" | "paginated";
+  type?: "infinite" | "paginated";
 }) => {
   const columnsPersistedStateRef = useRef<ColumnState[]>();
 
