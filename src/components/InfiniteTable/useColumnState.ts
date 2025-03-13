@@ -10,17 +10,20 @@ import { useDeepCompareCallback } from "use-deep-compare";
 import { dequal } from "dequal";
 
 const DEBOUNCE_DELAY = 50;
+const INITIAL_MAX_COLUMN_WIDTH = 400;
 
 export const useColumnState = ({
   gridRef,
   containerRef,
   columns,
   onGetColumnsState,
+  type = "infinite",
 }: {
   gridRef: RefObject<AgGridReact>;
   containerRef: RefObject<HTMLDivElement>;
   columns: TableColumn[];
   onGetColumnsState?: () => ColumnState[] | undefined;
+  type?: "infinite" | "paginated";
 }) => {
   const columnsPersistedStateRef = useRef<ColumnState[]>();
 
@@ -70,6 +73,18 @@ export const useColumnState = ({
       gridRef?.current?.api.autoSizeAllColumns();
       const allColumns = gridRef?.current?.api.getAllGridColumns();
       if (!allColumns) return;
+
+      // Cap column widths to INITIAL_MAX_COLUMN_WIDTH
+      if (type === "paginated") {
+        const state = gridRef?.current?.api.getColumnState()!;
+        const cappedState = state.map((col: any) => ({
+          ...col,
+          width: Math.min(col.width || 0, INITIAL_MAX_COLUMN_WIDTH),
+        }));
+        gridRef?.current?.api.applyColumnState({ state: cappedState });
+      }
+
+      // Calculate remaining blank space after capping
       const blankSpace = remainingBlankSpace(allColumns);
       if (blankSpace > 0) {
         const spacePerColumn =
