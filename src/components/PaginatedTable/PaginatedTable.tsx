@@ -45,7 +45,6 @@ const DEFAULT_COL_DEF: ColDef = {
   sortable: false,
   comparator: () => 0,
   resizable: true,
-  maxWidth: 400, // Maximum column width
   minWidth: 100, // Minimum column width to ensure readability
   valueFormatter: () => {
     // To skip warnings, return an empty string, we'll handle ourself the value in the cellRenderer
@@ -196,6 +195,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       gridRef,
       containerRef,
       columns,
+      type: "paginated",
     });
 
     // Function to restore scroll position (vertical)
