@@ -136,7 +136,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
-    const notifyColumnChanges = useRef(false);
     const [dataRendered, setDataRendered] = useState(false);
 
     useImperativeHandle(ref, () => ({
@@ -263,15 +262,11 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     const onColumnChanged = useCallback(() => {
       const state = gridRef?.current?.api.getColumnState();
-      const persistedState = onGetColumnsState?.();
       if (!state) {
         return;
       }
+      const persistedState = onGetColumnsState?.();
       if (areStatesEqual(state, persistedState)) {
-        return;
-      }
-      if (!notifyColumnChanges.current) {
-        notifyColumnChanges.current = true;
         return;
       }
       applyAndUpdateNewState(state);
