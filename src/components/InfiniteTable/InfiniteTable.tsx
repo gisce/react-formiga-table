@@ -110,7 +110,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const datasourceRef = useRef<{
       getRows: (params: IGetRowsParams) => void;
     }>();
-    const notifyColumnChanges = useRef(false);
     const firstTimeResized = useRef(false);
 
     const updateSelectedRowKeys = useCallback(() => {
@@ -189,35 +188,27 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       onGetColumnsState,
     });
 
-    const debouncedOnColumnChanged = useMemo(
-      () =>
-        debounce(() => {
-          const state = gridRef?.current?.api.getColumnState();
-          if (!state) {
-            return;
-          }
-          if (areStatesEqual(state, columnsPersistedStateRef.current)) {
-            return;
-          }
-          if (!notifyColumnChanges.current) {
-            notifyColumnChanges.current = true;
-            return;
-          }
-          applyAndUpdateNewState(state);
-          onColumnsChangedProps?.(state);
-        }, 300),
-      [applyAndUpdateNewState, columnsPersistedStateRef, onColumnsChangedProps],
-    );
+    const onColumnChanged = useCallback(() => {
+      const state = gridRef?.current?.api.getColumnState();
+      if (!state) {
+        return;
+      }
+      const persistedState = onGetColumnsState?.();
+      if (areStatesEqual(state, persistedState)) {
+        return;
+      }
+      applyAndUpdateNewState(state);
+      onColumnsChangedProps?.(state);
+    }, [applyAndUpdateNewState, onColumnsChangedProps, onGetColumnsState]);
 
-    const debouncedOnColumnResized = useMemo(
-      () =>
-        debounce((event: ColumnResizedEvent) => {
-          if (!event.finished) {
-            return;
-          }
-          debouncedOnColumnChanged();
-        }, 300),
-      [debouncedOnColumnChanged],
+    const onColumnResized = useCallback(
+      (event: ColumnResizedEvent) => {
+        if (!event.finished || event.source !== "uiColumnResized") {
+          return;
+        }
+        onColumnChanged();
+      },
+      [onColumnChanged],
     );
 
     const MemoizedStatusComponent = useMemo(() => {
@@ -289,7 +280,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
               strings?.["resetTableViewLabel"] || "resetTableViewLabel"
             }
             onResetTableView={async () => {
-              notifyColumnChanges.current = false;
               applyAndUpdateNewState([]);
               gridRef.current?.api.resetColumnState();
               applyAutoFitState();
@@ -525,8 +515,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             suppressRowClickSelection={true}
             rowBuffer={5}
             rowSelection={"multiple"}
-            onDragStopped={debouncedOnColumnChanged}
-            onColumnResized={debouncedOnColumnResized}
+            onDragStopped={onColumnChanged}
+            onColumnResized={onColumnResized}
             rowModelType={"infinite"}
             cacheBlockSize={30}
             onSelectionChanged={onSelectionChanged}
