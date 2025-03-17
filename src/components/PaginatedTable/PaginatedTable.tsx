@@ -21,7 +21,7 @@ import {
   RowSelectedEvent,
   SortChangedEvent,
 } from "ag-grid-community";
-import type { TableColumn } from "@/types";
+import type { TableColumn, TableType } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import {
   useColumnState,
@@ -65,7 +65,11 @@ export type PaginatedTableProps = {
     selected: boolean;
   }) => void;
 
-  strings?: Record<string, string>;
+  strings?: {
+    resetTableViewLabel?: string;
+    changeToInfiniteLabel?: string;
+    changeToPaginatedLabel?: string;
+  };
   height?: number;
   footer?: ReactNode;
   footerHeight?: number;
@@ -89,6 +93,7 @@ export type PaginatedTableProps = {
   headerCheckboxState: CheckboxState;
   onHeaderCheckboxClick: () => void;
   onForceReload?: () => void;
+  onChangeTableType?: (targetType: TableType) => void;
 };
 
 export type PaginatedTableRef = {
@@ -130,6 +135,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onForceReload,
       initialSortState,
       onSortChange,
+      onChangeTableType,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -406,6 +412,14 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             resetTableViewLabel={
               strings?.["resetTableViewLabel"] || "resetTableViewLabel"
             }
+            currentTableType="paginated"
+            onChangeTableType={onChangeTableType}
+            changeToInfiniteLabel={
+              strings?.["changeToInfiniteLabel"] || "Canviar a llistat infinit"
+            }
+            changeToPaginatedLabel={
+              strings?.["changeToPaginatedLabel"] || "Canviar a llistat paginat"
+            }
             onResetTableView={onResetTableView}
           />
         ),
@@ -436,6 +450,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       strings,
       onResetTableView,
       initialSortState,
+      onChangeTableType,
     ]);
 
     const memoizedColDefs = useDeepCompareMemo(() => colDefs, [colDefs]);

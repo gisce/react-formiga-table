@@ -20,7 +20,7 @@ import {
   IGetRowsParams,
   RowDoubleClickedEvent,
 } from "ag-grid-community";
-import { TableProps } from "@/types";
+import { TableProps, TableType } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import { HeaderCheckbox } from "./HeaderCheckbox";
 import { areStatesEqual, useColumnState } from "./useColumnState";
@@ -59,9 +59,14 @@ export type InfiniteTableProps = Omit<
   hasStatusColumn?: boolean;
   onRowStatus?: (item: any) => any;
   statusComponent?: (status: any) => ReactNode;
-  strings?: Record<string, string>;
+  strings?: {
+    resetTableViewLabel?: string;
+    changeToInfiniteLabel?: string;
+    changeToPaginatedLabel?: string;
+  };
   showPointerCursorInRows?: boolean;
   initialSortState?: ColumnState[];
+  onChangeTableType?: (targetType: TableType) => void;
 };
 
 export type InfiniteTableRef = {
@@ -98,6 +103,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       strings = {},
       showPointerCursorInRows = true,
       initialSortState,
+      onChangeTableType,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -279,6 +285,14 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             resetTableViewLabel={
               strings?.["resetTableViewLabel"] || "resetTableViewLabel"
             }
+            currentTableType="infinite"
+            onChangeTableType={onChangeTableType}
+            changeToInfiniteLabel={
+              strings?.["changeToInfiniteLabel"] || "Canviar a llistat infinit"
+            }
+            changeToPaginatedLabel={
+              strings?.["changeToPaginatedLabel"] || "Canviar a llistat paginat"
+            }
             onResetTableView={async () => {
               applyAndUpdateNewState([]);
               gridRef.current?.api.resetColumnState();
@@ -307,6 +321,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       applyAndUpdateNewState,
       applyAutoFitState,
       onColumnsChangedProps,
+      onChangeTableType,
     ]);
 
     const scrollToSavedPosition = useCallback(() => {
