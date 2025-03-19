@@ -67,3 +67,5 @@ export interface TableRef {
 }
 
 export type SortDirection = "asc" | "desc" | null | undefined;
+
+export type TableType = "paginated" | "infinite";

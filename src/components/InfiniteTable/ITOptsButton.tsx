@@ -4,6 +4,8 @@ import "rc-dropdown/assets/index.css";
 import styled from "styled-components";
 import { MoreIcon } from "./icons/MoreIcon";
 import { RedoIcon } from "./icons/RedoIcon";
+import { TableType } from "@/types";
+import { SwapIcon } from "./icons/SwapIcon";
 
 const StyledMenuItem = styled(MenuItem)`
   padding: 7px 10px !important;
@@ -30,18 +32,35 @@ const StyledRedoIcon = styled(RedoIcon)`
   flex-shrink: 0;
 `;
 
+const StyledSwapIcon = styled(SwapIcon)`
+  font-size: 12px;
+  flex-shrink: 0;
+`;
+
 export type ITOptsButtonProps = {
   onResetTableView: () => void;
   resetTableViewLabel: string;
+  currentTableType: TableType;
+  onChangeTableType?: (targetType: TableType) => void;
+  changeToInfiniteLabel: string;
+  changeToPaginatedLabel: string;
 };
 
 export const ITOptsButton = ({
   onResetTableView,
   resetTableViewLabel,
+  currentTableType,
+  onChangeTableType,
+  changeToInfiniteLabel,
+  changeToPaginatedLabel,
 }: ITOptsButtonProps) => {
   const handleMenuClick = ({ key }: { key: string }) => {
     if (key === "1") {
       onResetTableView();
+    } else if (key === "2") {
+      const targetType: TableType =
+        currentTableType === "paginated" ? "infinite" : "paginated";
+      onChangeTableType?.(targetType);
     }
   };
 
@@ -51,6 +70,16 @@ export const ITOptsButton = ({
         <StyledRedoIcon />
         <span>{resetTableViewLabel}</span>
       </StyledMenuItem>
+      {onChangeTableType && (
+        <StyledMenuItem key="2">
+          <StyledSwapIcon />
+          <span>
+            {currentTableType === "paginated"
+              ? changeToInfiniteLabel
+              : changeToPaginatedLabel}
+          </span>
+        </StyledMenuItem>
+      )}
     </Menu>
   );
 
