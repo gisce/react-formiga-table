@@ -248,6 +248,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         return {
           field: column.key,
           sortable: column.isSortable,
+          minWidth: 100,
           headerName: column.title,
           sort: initialSort?.sort,
           sortIndex: initialSort?.sortIndex,
