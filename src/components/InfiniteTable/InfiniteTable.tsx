@@ -80,6 +80,8 @@ export type InfiniteTableRef = {
   refreshRowStyles: () => void;
 };
 
+const DEFAULT_CACHE_BLOCK_SIZE = 30;
+
 const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
   (props, ref) => {
     const {
@@ -373,9 +375,16 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           if (data.length < endRow - startRow) {
             lastRow = startRow + data.length;
           }
-          // if (lastRow === -1 && totalRows >= cacheBlockSize) {
-          //   lastRow = cacheBlockSize;
-          // }
+          // The following code is for setting a fixed number of rows table when the cacheBlockSize is not the default, maybe because we are
+          // showing results for a name_Search and it's fixed on 80
+          // related: https://github.com/gisce/webclient/issues/1959
+          if (
+            lastRow === -1 &&
+            totalRows >= cacheBlockSize &&
+            cacheBlockSize !== DEFAULT_CACHE_BLOCK_SIZE
+          ) {
+            lastRow = cacheBlockSize;
+          }
 
           // We must call onRowStatus for each item of the data array and merge the result
           // with the data array
