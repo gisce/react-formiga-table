@@ -62,6 +62,7 @@ export type InfiniteTableProps = Omit<
   strings?: Record<string, string>;
   showPointerCursorInRows?: boolean;
   initialSortState?: ColumnState[];
+  cacheBlockSize?: number;
 };
 
 export type InfiniteTableRef = {
@@ -98,6 +99,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       strings = {},
       showPointerCursorInRows = true,
       initialSortState,
+      cacheBlockSize = 30,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -519,7 +521,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             onDragStopped={onColumnChanged}
             onColumnResized={onColumnResized}
             rowModelType={"infinite"}
-            cacheBlockSize={30}
+            cacheBlockSize={cacheBlockSize}
             onSelectionChanged={onSelectionChanged}
             cacheOverflowSize={2}
             maxConcurrentDatasourceRequests={1}
