@@ -358,9 +358,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           if (data.length < endRow - startRow) {
             lastRow = startRow + data.length;
           }
-          if (lastRow === -1 && totalRows >= cacheBlockSize) {
-            lastRow = cacheBlockSize;
-          }
+          // if (lastRow === -1 && totalRows >= cacheBlockSize) {
+          //   lastRow = cacheBlockSize;
+          // }
 
           // We must call onRowStatus for each item of the data array and merge the result
           // with the data array
