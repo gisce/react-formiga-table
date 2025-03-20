@@ -66,6 +66,7 @@ export type InfiniteTableProps = Omit<
   };
   showPointerCursorInRows?: boolean;
   initialSortState?: ColumnState[];
+  cacheBlockSize?: number;
   onChangeTableType?: (targetType: TableType) => void;
 };
 
@@ -103,6 +104,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       strings = {},
       showPointerCursorInRows = true,
       initialSortState,
+      cacheBlockSize = 30,
       onChangeTableType,
     } = props;
 
@@ -348,8 +350,12 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           if (dataIsLoading.current) {
             return;
           }
-          dataIsLoading.current = true;
           const { startRow, endRow } = params;
+          if (cacheBlockSize === totalRows && params.startRow !== 0) {
+            params.successCallback([], totalRows);
+            return;
+          }
+          dataIsLoading.current = true;
           if (startRow === 0) {
             gridRef.current?.api.showLoadingOverlay();
           }
@@ -366,6 +372,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           let lastRow = -1;
           if (data.length < endRow - startRow) {
             lastRow = startRow + data.length;
+          }
+          if (lastRow === -1 && totalRows >= cacheBlockSize) {
+            lastRow = cacheBlockSize;
           }
 
           // We must call onRowStatus for each item of the data array and merge the result
@@ -412,6 +421,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         }
       },
       [
+        cacheBlockSize,
+        totalRows,
         onRequestData,
         hasStatusColumn,
         selectedRowKeys,
@@ -534,7 +545,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             onDragStopped={onColumnChanged}
             onColumnResized={onColumnResized}
             rowModelType={"infinite"}
-            cacheBlockSize={30}
+            cacheBlockSize={cacheBlockSize}
             onSelectionChanged={onSelectionChanged}
             cacheOverflowSize={2}
             maxConcurrentDatasourceRequests={1}
