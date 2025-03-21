@@ -20,7 +20,7 @@ import {
   IGetRowsParams,
   RowDoubleClickedEvent,
 } from "ag-grid-community";
-import { TableProps } from "@/types";
+import { TableProps, TableType } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import { HeaderCheckbox } from "./HeaderCheckbox";
 import { areStatesEqual, useColumnState } from "./useColumnState";
@@ -59,9 +59,15 @@ export type InfiniteTableProps = Omit<
   hasStatusColumn?: boolean;
   onRowStatus?: (item: any) => any;
   statusComponent?: (status: any) => ReactNode;
-  strings?: Record<string, string>;
+  strings?: {
+    resetTableViewLabel?: string;
+    changeToInfiniteLabel?: string;
+    changeToPaginatedLabel?: string;
+  };
   showPointerCursorInRows?: boolean;
   initialSortState?: ColumnState[];
+  cacheBlockSize?: number;
+  onChangeTableType?: (targetType: TableType) => void;
 };
 
 export type InfiniteTableRef = {
@@ -73,6 +79,8 @@ export type InfiniteTableRef = {
   getVisibleRows: () => any[];
   refreshRowStyles: () => void;
 };
+
+const DEFAULT_CACHE_BLOCK_SIZE = 30;
 
 const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
   (props, ref) => {
@@ -98,6 +106,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       strings = {},
       showPointerCursorInRows = true,
       initialSortState,
+      cacheBlockSize = 30,
+      onChangeTableType,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -280,6 +290,14 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             resetTableViewLabel={
               strings?.["resetTableViewLabel"] || "resetTableViewLabel"
             }
+            currentTableType="infinite"
+            onChangeTableType={onChangeTableType}
+            changeToInfiniteLabel={
+              strings?.["changeToInfiniteLabel"] || "Canviar a llistat infinit"
+            }
+            changeToPaginatedLabel={
+              strings?.["changeToPaginatedLabel"] || "Canviar a llistat paginat"
+            }
             onResetTableView={async () => {
               applyAndUpdateNewState([]);
               gridRef.current?.api.resetColumnState();
@@ -308,6 +326,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       applyAndUpdateNewState,
       applyAutoFitState,
       onColumnsChangedProps,
+      onChangeTableType,
     ]);
 
     const scrollToSavedPosition = useCallback(() => {
@@ -333,8 +352,12 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           if (dataIsLoading.current) {
             return;
           }
-          dataIsLoading.current = true;
           const { startRow, endRow } = params;
+          if (cacheBlockSize === totalRows && params.startRow !== 0) {
+            params.successCallback([], totalRows);
+            return;
+          }
+          dataIsLoading.current = true;
           if (startRow === 0) {
             gridRef.current?.api.showLoadingOverlay();
           }
@@ -351,6 +374,16 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           let lastRow = -1;
           if (data.length < endRow - startRow) {
             lastRow = startRow + data.length;
+          }
+          // The following code is for setting a fixed number of rows table when the cacheBlockSize is not the default, maybe because we are
+          // showing results for a name_Search and it's fixed on 80
+          // related: https://github.com/gisce/webclient/issues/1959
+          if (
+            lastRow === -1 &&
+            totalRows >= cacheBlockSize &&
+            cacheBlockSize !== DEFAULT_CACHE_BLOCK_SIZE
+          ) {
+            lastRow = cacheBlockSize;
           }
 
           // We must call onRowStatus for each item of the data array and merge the result
@@ -397,6 +430,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         }
       },
       [
+        cacheBlockSize,
+        totalRows,
         onRequestData,
         hasStatusColumn,
         selectedRowKeys,
@@ -519,7 +554,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             onDragStopped={onColumnChanged}
             onColumnResized={onColumnResized}
             rowModelType={"infinite"}
-            cacheBlockSize={30}
+            cacheBlockSize={cacheBlockSize}
             onSelectionChanged={onSelectionChanged}
             cacheOverflowSize={2}
             maxConcurrentDatasourceRequests={1}
