@@ -376,6 +376,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           headerName: column.title,
           sort: initialSort?.sort,
           sortIndex: initialSort?.sortIndex,
+          pinned: false,
           cellRenderer: column.render
             ? (cell: any) => column.render(cell.value, cell.data)
             : undefined,
