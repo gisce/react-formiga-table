@@ -10,6 +10,7 @@ import { useDeepCompareCallback } from "use-deep-compare";
 import { dequal } from "dequal";
 
 const DEBOUNCE_DELAY = 50;
+const INITIAL_MIN_COLUMN_WIDTH = 100;
 const INITIAL_MAX_COLUMN_WIDTH = 400;
 
 export const useColumnState = ({
@@ -74,15 +75,19 @@ export const useColumnState = ({
       const allColumns = gridRef?.current?.api.getAllGridColumns();
       if (!allColumns) return;
 
-      // Cap column widths to INITIAL_MAX_COLUMN_WIDTH
-      if (type === "paginated") {
-        const state = gridRef?.current?.api.getColumnState()!;
-        const cappedState = state.map((col: any) => ({
-          ...col,
-          width: Math.min(col.width || 0, INITIAL_MAX_COLUMN_WIDTH),
-        }));
-        gridRef?.current?.api.applyColumnState({ state: cappedState });
-      }
+      // Cap column widths based on table type
+      const state = gridRef?.current?.api.getColumnState()!;
+      const cappedState = state.map((col: any) => ({
+        ...col,
+        width:
+          type === "paginated"
+            ? Math.min(
+                Math.max(col.width || 0, INITIAL_MIN_COLUMN_WIDTH),
+                INITIAL_MAX_COLUMN_WIDTH,
+              )
+            : Math.max(col.width || 0, INITIAL_MIN_COLUMN_WIDTH),
+      }));
+      gridRef?.current?.api.applyColumnState({ state: cappedState });
 
       // Calculate remaining blank space after capping
       const blankSpace = remainingBlankSpace(allColumns);
