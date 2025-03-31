@@ -45,7 +45,6 @@ const DEFAULT_COL_DEF: ColDef = {
   sortable: false,
   comparator: () => 0,
   resizable: true,
-  minWidth: 100, // Minimum column width to ensure readability
   valueFormatter: () => {
     // To skip warnings, return an empty string, we'll handle ourself the value in the cellRenderer
     return "";
