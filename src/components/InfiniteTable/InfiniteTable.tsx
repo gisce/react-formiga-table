@@ -544,6 +544,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             ref={gridRef}
             columnDefs={colDefs}
             onRowDoubleClicked={memoizedOnRowDoubleClick}
+            enableCellTextSelection={true}
             rowStyle={rowStyle}
             getRowStyle={onRowStyle}
             suppressCellFocus={true}

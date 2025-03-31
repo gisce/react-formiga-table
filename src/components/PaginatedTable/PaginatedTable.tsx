@@ -588,6 +588,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           <AgGridReact
             ref={gridRef}
             rowBuffer={0}
+            enableCellTextSelection={true}
             suppressLoadingOverlay={true}
             noRowsOverlayComponent={NoRowsOverlayComponent}
             columnDefs={memoizedColDefs}
