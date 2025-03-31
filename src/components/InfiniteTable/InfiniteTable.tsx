@@ -258,7 +258,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         return {
           field: column.key,
           sortable: column.isSortable,
-          minWidth: 100,
           headerName: column.title,
           sort: initialSort?.sort,
           sortIndex: initialSort?.sortIndex,
@@ -545,6 +544,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             ref={gridRef}
             columnDefs={colDefs}
             onRowDoubleClicked={memoizedOnRowDoubleClick}
+            enableCellTextSelection={true}
             rowStyle={rowStyle}
             getRowStyle={onRowStyle}
             suppressCellFocus={true}
