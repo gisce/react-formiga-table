@@ -79,13 +79,10 @@ export const useColumnState = ({
       const state = gridRef?.current?.api.getColumnState()!;
       const cappedState = state.map((col: any) => ({
         ...col,
-        width:
-          type === "paginated"
-            ? Math.min(
-                Math.max(col.width || 0, INITIAL_MIN_COLUMN_WIDTH),
-                INITIAL_MAX_COLUMN_WIDTH,
-              )
-            : Math.max(col.width || 0, INITIAL_MIN_COLUMN_WIDTH),
+        width: Math.min(
+          Math.max(col.width || 0, INITIAL_MIN_COLUMN_WIDTH),
+          INITIAL_MAX_COLUMN_WIDTH,
+        ),
       }));
       gridRef?.current?.api.applyColumnState({ state: cappedState });
 
