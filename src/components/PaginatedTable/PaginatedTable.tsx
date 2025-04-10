@@ -21,7 +21,7 @@ import {
   RowSelectedEvent,
   SortChangedEvent,
 } from "ag-grid-community";
-import type { TableColumn, TableType } from "@/types";
+import type { Strings, TableColumn, TableType } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import {
   useColumnState,
@@ -38,6 +38,7 @@ import {
 } from "./PaginatedHeaderCheckbox";
 import { useDeepCompareMemo } from "use-deep-compare";
 import deepEqual from "deep-equal";
+import { NoRowsOverlay } from "../NoRowsOverlay";
 
 const DEFAULT_COL_DEF: ColDef = {
   autoHeight: true,
@@ -64,11 +65,7 @@ export type PaginatedTableProps = {
     selected: boolean;
   }) => void;
 
-  strings?: {
-    resetTableViewLabel?: string;
-    changeToInfiniteLabel?: string;
-    changeToPaginatedLabel?: string;
-  };
+  strings?: Strings;
   height?: number;
   footer?: ReactNode;
   footerHeight?: number;
@@ -458,8 +455,10 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     useEffect(() => {
       if (isLoading) {
         setDataRendered(false);
+      } else if (isLoading === false && dataSource.length === 0) {
+        setDataRendered(true);
       }
-    }, [isLoading]);
+    }, [dataSource.length, isLoading]);
 
     const memoizedOnRowDoubleClick = useCallback(
       ({ data: item }: RowDoubleClickedEvent) => {
@@ -508,8 +507,8 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     const NoRowsOverlayComponent = useMemo(() => {
       // eslint-disable-next-line react/display-name
-      return () => (dataRendered ? <span>No rows to show</span> : null);
-    }, [dataRendered]);
+      return () => <NoRowsOverlay message={strings?.["noResultsLabel"]} />;
+    }, [strings]);
 
     const getRowId = useCallback((params: any) => {
       return String(params.data.id);
