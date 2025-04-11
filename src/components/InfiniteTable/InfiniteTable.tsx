@@ -20,7 +20,7 @@ import {
   IGetRowsParams,
   RowDoubleClickedEvent,
 } from "ag-grid-community";
-import { TableProps, TableType } from "@/types";
+import { Strings, TableProps, TableType } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import { HeaderCheckbox } from "./HeaderCheckbox";
 import { areStatesEqual, useColumnState } from "./useColumnState";
@@ -28,6 +28,7 @@ import { CHECKBOX_COLUMN, STATUS_COLUMN } from "./columnStateHelper";
 import debounce from "lodash/debounce";
 import { useDeepCompareEffect } from "use-deep-compare";
 import { ITOptsButton } from "./ITOptsButton";
+import { NoRowsOverlay } from "../NoRowsOverlay";
 
 const DEBOUNCE_TIME = 100;
 const DEFAULT_TOTAL_ROWS_VALUE = Number.MAX_SAFE_INTEGER;
@@ -59,11 +60,7 @@ export type InfiniteTableProps = Omit<
   hasStatusColumn?: boolean;
   onRowStatus?: (item: any) => any;
   statusComponent?: (status: any) => ReactNode;
-  strings?: {
-    resetTableViewLabel?: string;
-    changeToInfiniteLabel?: string;
-    changeToPaginatedLabel?: string;
-  };
+  strings?: Strings;
   showPointerCursorInRows?: boolean;
   initialSortState?: ColumnState[];
   cacheBlockSize?: number;
@@ -370,6 +367,14 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             throw new Error("Data is undefined");
           }
 
+          // Show no rows overlay if there's no data on the first request
+          if (startRow === 0 && data.length === 0) {
+            gridRef.current?.api.showNoRowsOverlay();
+            params.successCallback([], 0);
+            dataIsLoading.current = false;
+            return;
+          }
+
           let lastRow = -1;
           if (data.length < endRow - startRow) {
             lastRow = startRow + data.length;
@@ -527,6 +532,11 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       };
     }, [showPointerCursorInRows]);
 
+    const NoRowsOverlayComponent = useMemo(() => {
+      // eslint-disable-next-line react/display-name
+      return () => <NoRowsOverlay message={strings?.["noResultsLabel"]} />;
+    }, [strings]);
+
     return (
       <div
         style={{
@@ -563,6 +573,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             onBodyScroll={debouncedOnBodyScroll}
             blockLoadDebounceMillis={DEBOUNCE_TIME}
             suppressDragLeaveHidesColumns={true}
+            noRowsOverlayComponent={NoRowsOverlayComponent}
           />
         </div>
         {footer && (
