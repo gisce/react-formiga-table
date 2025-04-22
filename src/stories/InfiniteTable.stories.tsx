@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Meta } from "@storybook/react";
 import {
   InfiniteTable,
@@ -36,15 +36,15 @@ const columns = [
   {
     title: "Image",
     key: "image",
-    render: (item: any) => {
-      return <img src={item} alt="Image" />;
+    render: (value: any, data: any) => {
+      return <img src={value} alt="Image" />;
     },
   },
   {
     title: "Object",
     key: "object",
-    render: (item: any) => {
-      return <pre>{JSON.stringify(item, null, 2)}</pre>;
+    render: (value: any, data: any) => {
+      return <pre>{JSON.stringify(value, null, 2)}</pre>;
     },
   },
 ];
@@ -56,16 +56,44 @@ const onRequestData = async (startRow: number, endRow: number) => {
 
 export const HeavyTable = (): React.ReactElement => {
   const tableRef = useRef<InfiniteTableRef>(null);
+  const [greenStatusRows, setGreenStatusRows] = useState<number[]>([]);
+  const [redTextRows, setRedTextRows] = useState<number[]>([]);
 
   const refresh = () => {
     tableRef.current?.refresh();
   };
 
+  const updateRandomStyles = () => {
+    // Get current visible rows
+    const visibleRows = tableRef.current?.getVisibleRows() || [];
+
+    // Randomly select 4 rows for green status
+    const selectedStatusRows = [...visibleRows]
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 4)
+      .map((row) => row.id);
+
+    // Randomly select 4 rows for red text (might overlap with status rows)
+    const selectedTextRows = [...visibleRows]
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 4)
+      .map((row) => row.id);
+
+    setGreenStatusRows(selectedStatusRows);
+    setRedTextRows(selectedTextRows);
+
+    // Force refresh of the rows to update both status and style
+    tableRef.current?.refreshRowStyles();
+  };
+
   return (
     <>
-      <Button onClick={refresh} style={{ marginBottom: "10px" }}>
-        Refresh table
-      </Button>
+      <div style={{ marginBottom: "10px", display: "flex", gap: "10px" }}>
+        <Button onClick={refresh}>Refresh table</Button>
+        <Button onClick={updateRandomStyles} type="primary">
+          Update Random Styles
+        </Button>
+      </div>
       <InfiniteTable
         onRequestData={onRequestData}
         columns={columns}
@@ -88,10 +116,27 @@ export const HeavyTable = (): React.ReactElement => {
           return columnsState ? JSON.parse(columnsState) : undefined;
         }}
         footer={<p>This is a footer</p>}
+        hasStatusColumn={true}
         onRowStatus={(record: any) => {
-          return record.id;
+          return greenStatusRows.includes(record.id) ? "success" : "default";
         }}
-        statusComponent={(status: any) => <strong>{status}</strong>}
+        onRowStyle={(record: any) => ({
+          color: redTextRows.includes(record.id) ? "#ff4d4f" : "inherit",
+        })}
+        statusComponent={(status: any) => (
+          <div
+            style={{
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              backgroundColor: status === "success" ? "#52c41a" : "#d9d9d9",
+              margin: "0 auto",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          />
+        )}
       />
     </>
   );

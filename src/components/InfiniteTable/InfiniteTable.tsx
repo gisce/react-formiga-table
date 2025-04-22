@@ -258,8 +258,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           headerName: column.title,
           sort: initialSort?.sort,
           sortIndex: initialSort?.sortIndex,
-          cellRenderer: (cell: { value: any; data: any }) =>
-            column.render(cell.value, cell.data),
+          cellRenderer: column.render
+            ? (cell: { value: any; data: any }) =>
+                column.render(cell.value, cell.data)
+            : undefined,
         };
       });
 
@@ -281,6 +283,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         maxWidth: 30,
         pinned: "left",
         resizable: false,
+        cellStyle: {
+          padding: 0,
+          margin: 0,
+        },
         headerComponent: () => (
           <ITOptsButton
             resetTableViewLabel={
@@ -303,7 +309,18 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           />
         ),
         cellRenderer: MemoizedStatusComponent
-          ? (cell: any) => <MemoizedStatusComponent status={cell.value} />
+          ? (cell: any) => (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  height: "100%",
+                }}
+              >
+                <MemoizedStatusComponent status={cell.value} />
+              </div>
+            )
           : undefined,
       } as ColDef;
 
