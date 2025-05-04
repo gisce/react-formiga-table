@@ -40,7 +40,7 @@ import {
 import { useDeepCompareMemo } from "use-deep-compare";
 import deepEqual from "deep-equal";
 import { NoRowsOverlay } from "../NoRowsOverlay";
-import { useExpandable } from "@/hooks/useExpandable";
+import { ExpandableItem, useExpandable } from "@/hooks/useExpandable";
 
 const DEFAULT_COL_DEF: ColDef = {
   autoHeight: true,
@@ -209,8 +209,8 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onExpandableIconClicked,
       getExpandableStatusForRow,
       getChildsForParent,
-      getAllVisibleKeys,
       getLevelForKey,
+      items: expandableItems,
     } = useExpandable({
       dataSource,
       onFetchChildrenForRecord: expandableOpts?.onFetchChildrenForRecord,
@@ -236,13 +236,13 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     const ExpandCellRenderer = useCallback(
       (params: ICellRendererParams) => {
-        if (!expandableOpts) return null;
+        if (!params.data || !expandableOpts) return null;
 
         const status = getExpandableStatusForRow(params.data);
         const level = getLevelForKey(params.data.id);
 
         if (status === "none") {
-          return <div style={{ width: 19 + level * 25 }} />;
+          return null;
         }
 
         let Icon;
@@ -252,16 +252,20 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           Icon = expandableOpts.collapseIcon;
         } else if (status === "loading") {
           Icon = expandableOpts.loadingIcon;
+        } else {
+          return null;
         }
 
         return (
-          <div style={{ display: "inline-block" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              padding: 10,
+            }}
+          >
             <Icon
-              style={{
-                marginRight: 5,
-                marginLeft: level * 25,
-                cursor: "pointer",
-              }}
+              style={{ cursor: "pointer" }}
               onClick={() => onExpandableIconClicked(params.data)}
             />
           </div>
@@ -413,11 +417,14 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
               headerName: "",
               width: 50,
               minWidth: 50,
-              maxWidth: 50,
               pinned: "left",
               lockPosition: true,
               sortable: false,
+              suppressMovable: true,
+              resizable: false,
               cellRenderer: ExpandCellRenderer,
+              cellStyle: { padding: 0, margin: 0, lineHeight: "normal" },
+              headerComponent: () => null,
             }
           : undefined;
 
@@ -451,15 +458,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           cellRenderer: column.render
             ? (cell: any) => column.render(cell.value, cell.data)
             : undefined,
-          cellStyle:
-            index === 0 && expandableOpts?.onFetchChildrenForRecord
-              ? (params: any) => {
-                  const level = getLevelForKey(params.data.id);
-                  return {
-                    paddingLeft: level > 0 ? `${level * 20 + 8}px` : "8px",
-                  };
-                }
-              : undefined,
         };
       });
 
@@ -539,7 +537,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onChangeTableType,
       expandableOpts,
       ExpandCellRenderer,
-      getLevelForKey,
     ]);
 
     const memoizedColDefs = useDeepCompareMemo(() => colDefs, [colDefs]);
@@ -596,6 +593,46 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         $status: onRowStatus(item),
       }));
     }, [dataSource, hasStatusColumn, onRowStatus]);
+
+    const visibleData = useMemo(() => {
+      if (!expandableOpts?.onFetchChildrenForRecord) {
+        return memoizedDataSource;
+      }
+
+      const buildVisibleData = (
+        currentLevelItems: any[],
+        currentLevel: number,
+      ): any[] => {
+        let visible: any[] = [];
+        currentLevelItems.forEach((item: any) => {
+          if (!item) return;
+          visible.push(item);
+          if (keyIsOpened(item.id)) {
+            const children = getChildsForParent(item.id);
+            if (children.length > 0) {
+              visible = visible.concat(
+                buildVisibleData(
+                  children.map((c) => c.data),
+                  currentLevel + 1,
+                ),
+              );
+            }
+          }
+        });
+        return visible;
+      };
+
+      const rootItems = expandableItems
+        .filter((item: ExpandableItem) => item.level === 0)
+        .map((i: ExpandableItem) => i.data);
+      return buildVisibleData(rootItems, 0);
+    }, [
+      expandableOpts,
+      memoizedDataSource,
+      expandableItems,
+      keyIsOpened,
+      getChildsForParent,
+    ]);
 
     const NoRowsOverlayComponent = useMemo(() => {
       // eslint-disable-next-line react/display-name
@@ -683,7 +720,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             suppressLoadingOverlay={true}
             noRowsOverlayComponent={NoRowsOverlayComponent}
             columnDefs={memoizedColDefs}
-            rowData={memoizedDataSource}
+            rowData={visibleData}
             onRowDoubleClicked={memoizedOnRowDoubleClick}
             suppressCellFocus={true}
             suppressRowClickSelection={true}
