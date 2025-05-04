@@ -41,6 +41,8 @@ import { useDeepCompareMemo } from "use-deep-compare";
 import deepEqual from "deep-equal";
 import { NoRowsOverlay } from "../NoRowsOverlay";
 import { ExpandableItem, useExpandable } from "@/hooks/useExpandable";
+import { ExpandableRowIcon } from "@/types";
+import { ExpandableCellRenderer } from "./ExpandableCellRenderer";
 
 const DEFAULT_COL_DEF: ColDef = {
   autoHeight: true,
@@ -234,51 +236,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       });
     }, []);
 
-    const ExpandCellRenderer = useCallback(
-      (params: ICellRendererParams) => {
-        if (!params.data || !expandableOpts) return null;
-
-        const status = getExpandableStatusForRow(params.data);
-        const level = getLevelForKey(params.data.id);
-
-        if (status === "none") {
-          return null;
-        }
-
-        let Icon;
-        if (status === "expand") {
-          Icon = expandableOpts.expandIcon;
-        } else if (status === "collapse") {
-          Icon = expandableOpts.collapseIcon;
-        } else if (status === "loading") {
-          Icon = expandableOpts.loadingIcon;
-        } else {
-          return null;
-        }
-
-        return (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              padding: 10,
-            }}
-          >
-            <Icon
-              style={{ cursor: "pointer" }}
-              onClick={() => onExpandableIconClicked(params.data)}
-            />
-          </div>
-        );
-      },
-      [
-        expandableOpts,
-        getExpandableStatusForRow,
-        getLevelForKey,
-        onExpandableIconClicked,
-      ],
-    );
-
     const onDataRendered = useCallback(() => {
       // Only trigger once per data update
       if (!dataRendered) {
@@ -409,25 +366,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     }, [onColumnsChangedProps, onForceReload, onSortChange]);
 
     const colDefs = useMemo((): ColDef[] => {
-      const expandColumn: ColDef | undefined =
-        expandableOpts?.onFetchChildrenForRecord
-          ? {
-              ...DEFAULT_COL_DEF,
-              field: "$expandable",
-              headerName: "",
-              width: 50,
-              minWidth: 50,
-              pinned: "left",
-              lockPosition: true,
-              sortable: false,
-              suppressMovable: true,
-              resizable: false,
-              cellRenderer: ExpandCellRenderer,
-              cellStyle: { padding: 0, margin: 0, lineHeight: "normal" },
-              headerComponent: () => null,
-            }
-          : undefined;
-
       const checkboxColumn = {
         ...DEFAULT_COL_DEF,
         checkboxSelection: true,
@@ -447,6 +385,10 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           (state) => state.colId === column.key,
         );
 
+        // Check if this is the first column and if expandable feature is enabled
+        const isFirstExpandableColumn =
+          index === 0 && !!expandableOpts?.onFetchChildrenForRecord;
+
         return {
           ...DEFAULT_COL_DEF,
           field: column.key,
@@ -455,9 +397,21 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           sort: initialSort?.sort,
           sortIndex: initialSort?.sortIndex,
           pinned: false,
-          cellRenderer: column.render
+          cellRenderer: isFirstExpandableColumn
+            ? ExpandableCellRenderer
+            : column.render
             ? (cell: any) => column.render(cell.value, cell.data)
             : undefined,
+          cellRendererParams: isFirstExpandableColumn
+            ? {
+                columnDef: column,
+                expandableOpts,
+                getExpandableStatusForRow,
+                getLevelForKey,
+                onExpandableIconClicked,
+              }
+            : undefined,
+          cellStyle: undefined,
         };
       });
 
@@ -521,7 +475,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       const finalColumns = [
         statusColumn,
         checkboxColumn,
-        ...(expandColumn ? [expandColumn] : []),
         ...restOfColumns,
       ].filter(Boolean);
 
@@ -536,7 +489,8 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       initialSortState,
       onChangeTableType,
       expandableOpts,
-      ExpandCellRenderer,
+      getExpandableStatusForRow,
+      onExpandableIconClicked,
     ]);
 
     const memoizedColDefs = useDeepCompareMemo(() => colDefs, [colDefs]);
