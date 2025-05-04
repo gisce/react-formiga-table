@@ -52,7 +52,7 @@ export const useExpandable = ({
     const parents = idsToRemove.map((id) => {
       return idLevelMap.current.get(id);
     });
-    idsToRemove.push(...parents.filter((id) => id !== undefined));
+    idsToRemove.push(...parents.filter((id): id is number => id !== undefined));
 
     setOpenedKeys(openedKeys.filter((id) => !idsToRemove.includes(id)));
     setLoadedKeys(loadedKeys.filter((id) => !idsToRemove.includes(id)));
