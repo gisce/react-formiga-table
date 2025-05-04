@@ -20,8 +20,9 @@ import {
   RowDoubleClickedEvent,
   RowSelectedEvent,
   SortChangedEvent,
+  ICellRendererParams,
 } from "ag-grid-community";
-import type { Strings, TableColumn, TableType } from "@/types";
+import type { ExpandOptions, Strings, TableColumn, TableType } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import {
   useColumnState,
@@ -39,6 +40,7 @@ import {
 import { useDeepCompareMemo } from "use-deep-compare";
 import deepEqual from "deep-equal";
 import { NoRowsOverlay } from "../NoRowsOverlay";
+import { useExpandable } from "@/hooks/useExpandable";
 
 const DEFAULT_COL_DEF: ColDef = {
   autoHeight: true,
@@ -90,6 +92,8 @@ export type PaginatedTableProps = {
   onHeaderCheckboxClick: () => void;
   onForceReload?: () => void;
   onChangeTableType?: (targetType: TableType) => void;
+
+  expandableOpts?: ExpandOptions;
 };
 
 export type PaginatedTableRef = {
@@ -132,6 +136,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       initialSortState,
       onSortChange,
       onChangeTableType,
+      expandableOpts,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -199,6 +204,19 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       type: "paginated",
     });
 
+    const {
+      keyIsOpened,
+      onExpandableIconClicked,
+      getExpandableStatusForRow,
+      getChildsForParent,
+      getAllVisibleKeys,
+      getLevelForKey,
+    } = useExpandable({
+      dataSource,
+      onFetchChildrenForRecord: expandableOpts?.onFetchChildrenForRecord,
+      childField: expandableOpts?.childField,
+    });
+
     // Function to restore scroll position (vertical)
     const scrollToRowIndex = useCallback((position: number) => {
       requestAnimationFrame(() => {
@@ -215,6 +233,47 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         }
       });
     }, []);
+
+    const ExpandCellRenderer = useCallback(
+      (params: ICellRendererParams) => {
+        if (!expandableOpts) return null;
+
+        const status = getExpandableStatusForRow(params.data);
+        const level = getLevelForKey(params.data.id);
+
+        if (status === "none") {
+          return <div style={{ width: 19 + level * 25 }} />;
+        }
+
+        let Icon;
+        if (status === "expand") {
+          Icon = expandableOpts.expandIcon;
+        } else if (status === "collapse") {
+          Icon = expandableOpts.collapseIcon;
+        } else if (status === "loading") {
+          Icon = expandableOpts.loadingIcon;
+        }
+
+        return (
+          <div style={{ display: "inline-block" }}>
+            <Icon
+              style={{
+                marginRight: 5,
+                marginLeft: level * 25,
+                cursor: "pointer",
+              }}
+              onClick={() => onExpandableIconClicked(params.data)}
+            />
+          </div>
+        );
+      },
+      [
+        expandableOpts,
+        getExpandableStatusForRow,
+        getLevelForKey,
+        onExpandableIconClicked,
+      ],
+    );
 
     const onDataRendered = useCallback(() => {
       // Only trigger once per data update
@@ -346,6 +405,22 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     }, [onColumnsChangedProps, onForceReload, onSortChange]);
 
     const colDefs = useMemo((): ColDef[] => {
+      const expandColumn: ColDef | undefined =
+        expandableOpts?.onFetchChildrenForRecord
+          ? {
+              ...DEFAULT_COL_DEF,
+              field: "$expandable",
+              headerName: "",
+              width: 50,
+              minWidth: 50,
+              maxWidth: 50,
+              pinned: "left",
+              lockPosition: true,
+              sortable: false,
+              cellRenderer: ExpandCellRenderer,
+            }
+          : undefined;
+
       const checkboxColumn = {
         ...DEFAULT_COL_DEF,
         checkboxSelection: true,
@@ -360,7 +435,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         headerComponent: HeaderComponent,
       } as ColDef;
 
-      const restOfColumns: ColDef[] = columns.map((column) => {
+      const restOfColumns: ColDef[] = columns.map((column, index) => {
         const initialSort = initialSortState?.find(
           (state) => state.colId === column.key,
         );
@@ -376,6 +451,15 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           cellRenderer: column.render
             ? (cell: any) => column.render(cell.value, cell.data)
             : undefined,
+          cellStyle:
+            index === 0 && expandableOpts?.onFetchChildrenForRecord
+              ? (params: any) => {
+                  const level = getLevelForKey(params.data.id);
+                  return {
+                    paddingLeft: level > 0 ? `${level * 20 + 8}px` : "8px",
+                  };
+                }
+              : undefined,
         };
       });
 
@@ -436,7 +520,12 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           : undefined,
       } as ColDef;
 
-      const finalColumns = [statusColumn, checkboxColumn, ...restOfColumns];
+      const finalColumns = [
+        statusColumn,
+        checkboxColumn,
+        ...(expandColumn ? [expandColumn] : []),
+        ...restOfColumns,
+      ].filter(Boolean);
 
       return finalColumns;
     }, [
@@ -448,6 +537,9 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onResetTableView,
       initialSortState,
       onChangeTableType,
+      expandableOpts,
+      ExpandCellRenderer,
+      getLevelForKey,
     ]);
 
     const memoizedColDefs = useDeepCompareMemo(() => colDefs, [colDefs]);
