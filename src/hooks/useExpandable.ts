@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { ExpandableRowIcon } from "../types";
+import { useDeepCompareEffect } from "use-deep-compare";
 
 export type ExpandableItem = {
   id: number;
@@ -32,7 +33,7 @@ export const useExpandable = ({
     ),
   );
 
-  useEffect(() => {
+  useDeepCompareEffect(() => {
     setItems(
       dataSource.map((item) =>
         transformData({
@@ -42,7 +43,25 @@ export const useExpandable = ({
         }),
       ),
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // We need to clear the id's that are not in the new dataSource
+    const newIds = dataSource.map((item) => item.id);
+    const oldIds = items.map((item) => item.id);
+    const idsToRemove = oldIds.filter((id) => !newIds.includes(id));
+
+    // Retrieve every parent for each of the idsToRemove in idLevelMap and add them to idsToRemove
+    const parents = idsToRemove.map((id) => {
+      return idLevelMap.current.get(id);
+    });
+    idsToRemove.push(...parents.filter((id): id is number => id !== undefined));
+
+    setOpenedKeys(openedKeys.filter((id) => !idsToRemove.includes(id)));
+    setLoadedKeys(loadedKeys.filter((id) => !idsToRemove.includes(id)));
+
+    // And also update the idLevelMap
+    idsToRemove.forEach((id) => {
+      idLevelMap.current.delete(id);
+    });
+    // eslint-disable-nexu-line react-hooks/exhaustive-deps
   }, [dataSource]);
 
   const toggleOpenedKey = useCallback(
