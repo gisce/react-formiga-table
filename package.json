@@ -1,6 +1,6 @@
 {
   "name": "@gisce/react-formiga-table",
-  "version": "1.14.0-alpha.4",
+  "version": "1.13.4",
   "engines": {
     "node": "20.5.0"
   },
