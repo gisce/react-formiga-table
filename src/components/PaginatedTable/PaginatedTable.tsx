@@ -20,7 +20,6 @@ import {
   RowDoubleClickedEvent,
   RowSelectedEvent,
   SortChangedEvent,
-  ICellRendererParams,
 } from "ag-grid-community";
 import type { ExpandOptions, Strings, TableColumn, TableType } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
@@ -41,7 +40,6 @@ import { useDeepCompareMemo } from "use-deep-compare";
 import deepEqual from "deep-equal";
 import { NoRowsOverlay } from "../NoRowsOverlay";
 import { ExpandableItem, useExpandable } from "@/hooks/useExpandable";
-import { ExpandableRowIcon } from "@/types";
 import { ExpandableCellRenderer } from "./ExpandableCellRenderer";
 
 const DEFAULT_COL_DEF: ColDef = {
@@ -484,13 +482,14 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       columns,
       onGetColumnsState,
       MemoizedStatusComponent,
-      strings,
-      onResetTableView,
       initialSortState,
-      onChangeTableType,
       expandableOpts,
       getExpandableStatusForRow,
+      getLevelForKey,
       onExpandableIconClicked,
+      strings,
+      onChangeTableType,
+      onResetTableView,
     ]);
 
     const memoizedColDefs = useDeepCompareMemo(() => colDefs, [colDefs]);

@@ -34,6 +34,40 @@ export const useExpandable = ({
   );
 
   useDeepCompareEffect(() => {
+    // Find IDs that are no longer in the new dataSource
+    const newIds = dataSource.map((item) => item.id);
+    const oldIds = items.map((item) => item.id);
+    const idsToRemove = oldIds.filter((id) => !newIds.includes(id));
+
+    // Find parents that had children removed
+    const parentsToClean = new Set<number>();
+
+    // Check each item in the new dataSource
+    dataSource.forEach((item) => {
+      if (item[childField]?.length > 0) {
+        // If any of this parent's children were removed
+        const hasRemovedChildren = item[childField].some((childId: number) =>
+          idsToRemove.includes(childId),
+        );
+
+        if (hasRemovedChildren) {
+          parentsToClean.add(item.id);
+        }
+      }
+    });
+
+    // Combine direct removals and parents that need cleaning
+    const allKeysToClean = [...idsToRemove, ...Array.from(parentsToClean)];
+
+    // Clean up opened and loaded keys
+    setOpenedKeys(openedKeys.filter((id) => !allKeysToClean.includes(id)));
+    setLoadedKeys(loadedKeys.filter((id) => !allKeysToClean.includes(id)));
+
+    // Clean up idLevelMap
+    idsToRemove.forEach((id) => {
+      idLevelMap.current.delete(id);
+    });
+
     setItems(
       dataSource.map((item) =>
         transformData({
@@ -43,25 +77,6 @@ export const useExpandable = ({
         }),
       ),
     );
-    // We need to clear the id's that are not in the new dataSource
-    const newIds = dataSource.map((item) => item.id);
-    const oldIds = items.map((item) => item.id);
-    const idsToRemove = oldIds.filter((id) => !newIds.includes(id));
-
-    // Retrieve every parent for each of the idsToRemove in idLevelMap and add them to idsToRemove
-    const parents = idsToRemove.map((id) => {
-      return idLevelMap.current.get(id);
-    });
-    idsToRemove.push(...parents.filter((id): id is number => id !== undefined));
-
-    setOpenedKeys(openedKeys.filter((id) => !idsToRemove.includes(id)));
-    setLoadedKeys(loadedKeys.filter((id) => !idsToRemove.includes(id)));
-
-    // And also update the idLevelMap
-    idsToRemove.forEach((id) => {
-      idLevelMap.current.delete(id);
-    });
-    // eslint-disable-nexu-line react-hooks/exhaustive-deps
   }, [dataSource]);
 
   const toggleOpenedKey = useCallback(
