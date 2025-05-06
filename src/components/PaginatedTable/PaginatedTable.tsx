@@ -21,7 +21,7 @@ import {
   RowSelectedEvent,
   SortChangedEvent,
 } from "ag-grid-community";
-import type { Strings, TableColumn, TableType } from "@/types";
+import type { ExpandOptions, Strings, TableColumn, TableType } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
 import {
   useColumnState,
@@ -39,6 +39,8 @@ import {
 import { useDeepCompareMemo } from "use-deep-compare";
 import deepEqual from "deep-equal";
 import { NoRowsOverlay } from "../NoRowsOverlay";
+import { ExpandableItem, useExpandable } from "@/hooks/useExpandable";
+import { ExpandableCellRenderer } from "./ExpandableCellRenderer";
 
 const DEFAULT_COL_DEF: ColDef = {
   autoHeight: true,
@@ -90,6 +92,8 @@ export type PaginatedTableProps = {
   onHeaderCheckboxClick: () => void;
   onForceReload?: () => void;
   onChangeTableType?: (targetType: TableType) => void;
+
+  expandableOpts?: ExpandOptions;
 };
 
 export type PaginatedTableRef = {
@@ -132,6 +136,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       initialSortState,
       onSortChange,
       onChangeTableType,
+      expandableOpts,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -197,6 +202,19 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       containerRef,
       columns,
       type: "paginated",
+    });
+
+    const {
+      keyIsOpened,
+      onExpandableIconClicked,
+      getExpandableStatusForRow,
+      getChildsForParent,
+      getLevelForKey,
+      items: expandableItems,
+    } = useExpandable({
+      dataSource,
+      onFetchChildrenForRecord: expandableOpts?.onFetchChildrenForRecord,
+      childField: expandableOpts?.childField,
     });
 
     // Function to restore scroll position (vertical)
@@ -360,10 +378,14 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         headerComponent: HeaderComponent,
       } as ColDef;
 
-      const restOfColumns: ColDef[] = columns.map((column) => {
+      const restOfColumns: ColDef[] = columns.map((column, index) => {
         const initialSort = initialSortState?.find(
           (state) => state.colId === column.key,
         );
+
+        // Check if this is the first column and if expandable feature is enabled
+        const isFirstExpandableColumn =
+          index === 0 && !!expandableOpts?.onFetchChildrenForRecord;
 
         return {
           ...DEFAULT_COL_DEF,
@@ -373,9 +395,21 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           sort: initialSort?.sort,
           sortIndex: initialSort?.sortIndex,
           pinned: false,
-          cellRenderer: column.render
+          cellRenderer: isFirstExpandableColumn
+            ? ExpandableCellRenderer
+            : column.render
             ? (cell: any) => column.render(cell.value, cell.data)
             : undefined,
+          cellRendererParams: isFirstExpandableColumn
+            ? {
+                columnDef: column,
+                expandableOpts,
+                getExpandableStatusForRow,
+                getLevelForKey,
+                onExpandableIconClicked,
+              }
+            : undefined,
+          cellStyle: undefined,
         };
       });
 
@@ -436,7 +470,11 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           : undefined,
       } as ColDef;
 
-      const finalColumns = [statusColumn, checkboxColumn, ...restOfColumns];
+      const finalColumns = [
+        statusColumn,
+        checkboxColumn,
+        ...restOfColumns,
+      ].filter(Boolean);
 
       return finalColumns;
     }, [
@@ -444,10 +482,14 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       columns,
       onGetColumnsState,
       MemoizedStatusComponent,
-      strings,
-      onResetTableView,
       initialSortState,
+      expandableOpts,
+      getExpandableStatusForRow,
+      getLevelForKey,
+      onExpandableIconClicked,
+      strings,
       onChangeTableType,
+      onResetTableView,
     ]);
 
     const memoizedColDefs = useDeepCompareMemo(() => colDefs, [colDefs]);
@@ -504,6 +546,46 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         $status: onRowStatus(item),
       }));
     }, [dataSource, hasStatusColumn, onRowStatus]);
+
+    const visibleData = useMemo(() => {
+      if (!expandableOpts?.onFetchChildrenForRecord) {
+        return memoizedDataSource;
+      }
+
+      const buildVisibleData = (
+        currentLevelItems: any[],
+        currentLevel: number,
+      ): any[] => {
+        let visible: any[] = [];
+        currentLevelItems.forEach((item: any) => {
+          if (!item) return;
+          visible.push(item);
+          if (keyIsOpened(item.id)) {
+            const children = getChildsForParent(item.id);
+            if (children.length > 0) {
+              visible = visible.concat(
+                buildVisibleData(
+                  children.map((c) => c.data),
+                  currentLevel + 1,
+                ),
+              );
+            }
+          }
+        });
+        return visible;
+      };
+
+      const rootItems = expandableItems
+        .filter((item: ExpandableItem) => item.level === 0)
+        .map((i: ExpandableItem) => i.data);
+      return buildVisibleData(rootItems, 0);
+    }, [
+      expandableOpts,
+      memoizedDataSource,
+      expandableItems,
+      keyIsOpened,
+      getChildsForParent,
+    ]);
 
     const NoRowsOverlayComponent = useMemo(() => {
       // eslint-disable-next-line react/display-name
@@ -591,7 +673,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             suppressLoadingOverlay={true}
             noRowsOverlayComponent={NoRowsOverlayComponent}
             columnDefs={memoizedColDefs}
-            rowData={memoizedDataSource}
+            rowData={visibleData}
             onRowDoubleClicked={memoizedOnRowDoubleClick}
             suppressCellFocus={true}
             suppressRowClickSelection={true}
