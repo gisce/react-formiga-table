@@ -559,13 +559,25 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         let visible: any[] = [];
         currentLevelItems.forEach((item: any) => {
           if (!item) return;
-          visible.push(item);
+          // Make sure to add status to the item if needed
+          const itemWithStatus =
+            hasStatusColumn && onRowStatus && !item.$status
+              ? { ...item, $status: onRowStatus(item) }
+              : item;
+          visible.push(itemWithStatus);
           if (keyIsOpened(item.id)) {
             const children = getChildsForParent(item.id);
             if (children.length > 0) {
               visible = visible.concat(
                 buildVisibleData(
-                  children.map((c) => c.data),
+                  children.map((c) => {
+                    // Ensure each child has the status property
+                    const childData = c.data;
+                    if (hasStatusColumn && onRowStatus && !childData.$status) {
+                      return { ...childData, $status: onRowStatus(childData) };
+                    }
+                    return childData;
+                  }),
                   currentLevel + 1,
                 ),
               );
@@ -585,6 +597,8 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       expandableItems,
       keyIsOpened,
       getChildsForParent,
+      hasStatusColumn,
+      onRowStatus,
     ]);
 
     const NoRowsOverlayComponent = useMemo(() => {

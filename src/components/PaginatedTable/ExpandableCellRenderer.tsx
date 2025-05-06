@@ -53,7 +53,12 @@ const ExpandableCellRendererComponent: React.FC<ExpandableCellRendererProps> = (
     >
       {status !== "none" && IconComponent ? (
         <IconComponent
-          style={{ marginRight: 8, cursor: "pointer", flexShrink: 0 }}
+          style={{
+            marginRight: 8,
+            cursor: "pointer",
+            flexShrink: 0,
+            color: "#000",
+          }}
           onClick={(e: React.MouseEvent) => {
             e.stopPropagation();
             onExpandableIconClicked(data);
