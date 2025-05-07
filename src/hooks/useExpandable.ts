@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { ExpandableRowIcon } from "../types";
 import { useDeepCompareEffect } from "use-deep-compare";
 
