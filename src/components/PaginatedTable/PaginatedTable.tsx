@@ -40,7 +40,6 @@ import { useDeepCompareMemo } from "use-deep-compare";
 import deepEqual from "deep-equal";
 import { NoRowsOverlay } from "../NoRowsOverlay";
 import { ExpandableItem, useExpandable } from "@/hooks/useExpandable";
-import { ExpandableCellRenderer } from "./ExpandableCellRenderer";
 
 const DEFAULT_COL_DEF: ColDef = {
   autoHeight: true,
@@ -372,20 +371,65 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         pinned: "left",
         lockPosition: "left",
         lockPinned: true,
-        maxWidth: 50,
+        maxWidth: expandableOpts?.onFetchChildrenForRecord ? 30 : 50,
         resizable: false,
         field: CHECKBOX_COLUMN,
         headerComponent: HeaderComponent,
       } as ColDef;
 
-      const restOfColumns: ColDef[] = columns.map((column, index) => {
+      const expandableColumn = expandableOpts?.onFetchChildrenForRecord
+        ? ({
+            ...DEFAULT_COL_DEF,
+            field: "$expandable",
+            suppressMovable: true,
+            sortable: false,
+            pinned: "left",
+            lockPosition: "left",
+            lockPinned: true,
+            maxWidth: 40,
+            resizable: false,
+            cellStyle: {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            },
+            headerName: "",
+            headerComponent: null,
+            cellRenderer: (params: any) => {
+              if (!params.data) return null;
+
+              const status = getExpandableStatusForRow(params.data);
+              let IconComponent: any = null;
+
+              if (status === "expand") {
+                IconComponent = expandableOpts.expandIcon;
+              } else if (status === "collapse") {
+                IconComponent = expandableOpts.collapseIcon;
+              } else if (status === "loading") {
+                IconComponent = expandableOpts.loadingIcon;
+              }
+
+              if (!IconComponent) return null;
+
+              return (
+                <div style={{ cursor: "pointer" }}>
+                  <IconComponent
+                    style={{ color: "#000" }}
+                    onClick={(e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      onExpandableIconClicked(params.data);
+                    }}
+                  />
+                </div>
+              );
+            },
+          } as ColDef)
+        : null;
+
+      const restOfColumns: ColDef[] = columns.map((column) => {
         const initialSort = initialSortState?.find(
           (state) => state.colId === column.key,
         );
-
-        // Check if this is the first column and if expandable feature is enabled
-        const isFirstExpandableColumn =
-          index === 0 && !!expandableOpts?.onFetchChildrenForRecord;
 
         return {
           ...DEFAULT_COL_DEF,
@@ -395,21 +439,17 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           sort: initialSort?.sort,
           sortIndex: initialSort?.sortIndex,
           pinned: false,
-          cellRenderer: isFirstExpandableColumn
-            ? ExpandableCellRenderer
-            : column.render
-            ? (cell: any) => column.render(cell.value, cell.data)
-            : undefined,
-          cellRendererParams: isFirstExpandableColumn
-            ? {
-                columnDef: column,
-                expandableOpts,
-                getExpandableStatusForRow,
-                getLevelForKey,
-                onExpandableIconClicked,
+          cellStyle: expandableOpts?.onFetchChildrenForRecord
+            ? (params: any) => {
+                const level = getLevelForKey(params.data?.id) || 0;
+                return {
+                  paddingLeft: `${(level + 1) * 20}px`,
+                };
               }
             : undefined,
-          cellStyle: undefined,
+          cellRenderer: column.render
+            ? (cell: any) => column.render(cell.value, cell.data)
+            : undefined,
         };
       });
 
@@ -473,20 +513,24 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       const finalColumns = [
         statusColumn,
         checkboxColumn,
+        ...(expandableColumn ? [expandableColumn] : []),
         ...restOfColumns,
       ].filter(Boolean);
 
       return finalColumns;
     }, [
       HeaderComponent,
+      expandableOpts?.onFetchChildrenForRecord,
+      expandableOpts?.expandIcon,
+      expandableOpts?.collapseIcon,
+      expandableOpts?.loadingIcon,
       columns,
       onGetColumnsState,
       MemoizedStatusComponent,
-      initialSortState,
-      expandableOpts,
       getExpandableStatusForRow,
-      getLevelForKey,
       onExpandableIconClicked,
+      initialSortState,
+      getLevelForKey,
       strings,
       onChangeTableType,
       onResetTableView,
