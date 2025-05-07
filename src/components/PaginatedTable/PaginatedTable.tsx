@@ -515,7 +515,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         checkboxColumn,
         ...(expandableColumn ? [expandableColumn] : []),
         ...restOfColumns,
-      ].filter(Boolean);
+      ];
 
       return finalColumns;
     }, [
