@@ -243,10 +243,12 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         if (!isLoading && api && api.getDisplayedRowCount() > 0) {
           const persistedState = onGetColumnsState?.();
           if (persistedState && persistedState.length > 0) {
-            gridRef?.current?.api?.applyColumnState({
-              state: persistedState,
-              applyOrder: true,
-            });
+            setTimeout(() => {
+              gridRef?.current?.api?.applyColumnState({
+                state: persistedState,
+                applyOrder: true,
+              });
+            }, 100);
           } else {
             applyAutoFitState();
           }
