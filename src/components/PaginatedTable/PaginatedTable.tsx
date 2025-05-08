@@ -28,30 +28,13 @@ import {
   areStatesEqual,
 } from "../InfiniteTable/useColumnState";
 import {
-  CHECKBOX_COLUMN,
-  STATUS_COLUMN,
-} from "../InfiniteTable/columnStateHelper";
-import { ITOptsButton } from "../InfiniteTable/ITOptsButton";
-import {
   CheckboxState,
   usePaginatedHeaderCheckbox,
 } from "./PaginatedHeaderCheckbox";
-import { useDeepCompareMemo } from "use-deep-compare";
 import deepEqual from "deep-equal";
 import { NoRowsOverlay } from "../NoRowsOverlay";
 import { ExpandableItem, useExpandable } from "@/hooks/useExpandable";
-
-const DEFAULT_COL_DEF: ColDef = {
-  autoHeight: true,
-  wrapText: true,
-  sortable: false,
-  comparator: () => 0,
-  resizable: true,
-  valueFormatter: () => {
-    // To skip warnings, return an empty string, we'll handle ourself the value in the cellRenderer
-    return "";
-  },
-};
+import { usePaginatedTableColumns } from "./usePaginatedTableColumns.tsx";
 
 export type PaginatedTableProps = {
   dataSource: Array<Record<string, any>>;
@@ -243,12 +226,10 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         if (!isLoading && api && api.getDisplayedRowCount() > 0) {
           const persistedState = onGetColumnsState?.();
           if (persistedState && persistedState.length > 0) {
-            setTimeout(() => {
-              gridRef?.current?.api?.applyColumnState({
-                state: persistedState,
-                applyOrder: true,
-              });
-            }, 100);
+            gridRef?.current?.api?.applyColumnState({
+              state: persistedState,
+              applyOrder: true,
+            });
           } else {
             applyAutoFitState();
           }
@@ -364,181 +345,26 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onForceReload?.();
     }, [onColumnsChangedProps, onForceReload, onSortChange]);
 
-    const colDefs = useMemo((): ColDef[] => {
-      const checkboxColumn = {
-        ...DEFAULT_COL_DEF,
-        checkboxSelection: true,
-        suppressMovable: true,
-        sortable: false,
-        pinned: "left",
-        lockPosition: "left",
-        lockPinned: true,
-        maxWidth: expandableOpts?.onFetchChildrenForRecord ? 30 : 50,
-        resizable: false,
-        field: CHECKBOX_COLUMN,
-        headerComponent: HeaderComponent,
-      } as ColDef;
-
-      const expandableColumn = expandableOpts?.onFetchChildrenForRecord
-        ? ({
-            ...DEFAULT_COL_DEF,
-            field: "$expandable",
-            suppressMovable: true,
-            sortable: false,
-            pinned: "left",
-            lockPosition: "left",
-            lockPinned: true,
-            maxWidth: 40,
-            resizable: false,
-            cellStyle: {
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            },
-            headerName: "",
-            headerComponent: null,
-            cellRenderer: (params: any) => {
-              if (!params.data) return null;
-
-              const status = getExpandableStatusForRow(params.data);
-              let IconComponent: any = null;
-
-              if (status === "expand") {
-                IconComponent = expandableOpts.expandIcon;
-              } else if (status === "collapse") {
-                IconComponent = expandableOpts.collapseIcon;
-              } else if (status === "loading") {
-                IconComponent = expandableOpts.loadingIcon;
-              }
-
-              if (!IconComponent) return null;
-
-              return (
-                <div style={{ cursor: "pointer" }}>
-                  <IconComponent
-                    style={{ color: "#000" }}
-                    onClick={(e: React.MouseEvent) => {
-                      e.stopPropagation();
-                      onExpandableIconClicked(params.data);
-                    }}
-                  />
-                </div>
-              );
-            },
-          } as ColDef)
-        : null;
-
-      const restOfColumns: ColDef[] = columns.map((column) => {
-        const initialSort = initialSortState?.find(
-          (state) => state.colId === column.key,
-        );
-
-        return {
-          ...DEFAULT_COL_DEF,
-          field: column.key,
-          sortable: column.isSortable,
-          headerName: column.title,
-          sort: initialSort?.sort,
-          sortIndex: initialSort?.sortIndex,
-          pinned: false,
-          cellStyle: expandableOpts?.onFetchChildrenForRecord
-            ? (params: any) => {
-                const level = getLevelForKey(params.data?.id) || 0;
-                return {
-                  paddingLeft: `${(level + 1) * 20}px`,
-                };
-              }
-            : undefined,
-          cellRenderer: column.render
-            ? (cell: any) => column.render(cell.value, cell.data)
-            : undefined,
-        };
-      });
-
-      const storedState = onGetColumnsState?.();
-      const storedStateKeys = storedState?.map((col: any) => col.colId);
-
-      storedState &&
-        storedStateKeys &&
-        restOfColumns.sort((a, b) => {
-          const aIndex = storedStateKeys.indexOf(a.field);
-          const bIndex = storedStateKeys.indexOf(b.field);
-          return aIndex - bIndex;
-        });
-
-      const statusColumn = {
-        ...DEFAULT_COL_DEF,
-        field: STATUS_COLUMN,
-        suppressMovable: true,
-        sortable: false,
-        lockPosition: "left",
-        lockPinned: true,
-        maxWidth: 30,
-        pinned: "left",
-        resizable: false,
-        cellStyle: {
-          padding: 0,
-          margin: 0,
-        },
-        headerComponent: () => (
-          <ITOptsButton
-            resetTableViewLabel={
-              strings?.["resetTableViewLabel"] || "resetTableViewLabel"
-            }
-            currentTableType="paginated"
-            onChangeTableType={onChangeTableType}
-            changeToInfiniteLabel={
-              strings?.["changeToInfiniteLabel"] || "Canviar a llistat infinit"
-            }
-            changeToPaginatedLabel={
-              strings?.["changeToPaginatedLabel"] || "Canviar a llistat paginat"
-            }
-            onResetTableView={onResetTableView}
-          />
-        ),
-        cellRenderer: MemoizedStatusComponent
-          ? (cell: any) => (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  alignItems: "center",
-                  height: "100%",
-                }}
-              >
-                <MemoizedStatusComponent status={cell.value} />
-              </div>
-            )
-          : undefined,
-      } as ColDef;
-
-      const finalColumns = [
-        statusColumn,
-        checkboxColumn,
-        ...(expandableColumn ? [expandableColumn] : []),
-        ...restOfColumns,
-      ];
-
-      return finalColumns;
-    }, [
-      HeaderComponent,
-      expandableOpts?.onFetchChildrenForRecord,
-      expandableOpts?.expandIcon,
-      expandableOpts?.collapseIcon,
-      expandableOpts?.loadingIcon,
+    const memoizedColDefs = usePaginatedTableColumns({
       columns,
-      onGetColumnsState,
-      MemoizedStatusComponent,
-      getExpandableStatusForRow,
-      onExpandableIconClicked,
       initialSortState,
-      getLevelForKey,
+      onGetColumnsState,
+      HeaderComponent,
+      statusComponent,
       strings,
       onChangeTableType,
       onResetTableView,
-    ]);
-
-    const memoizedColDefs = useDeepCompareMemo(() => colDefs, [colDefs]);
+      expandableOpts,
+      getExpandableStatusForRow: expandableOpts?.onFetchChildrenForRecord
+        ? getExpandableStatusForRow
+        : undefined,
+      onExpandableIconClicked: expandableOpts?.onFetchChildrenForRecord
+        ? onExpandableIconClicked
+        : undefined,
+      getLevelForKey: expandableOpts?.onFetchChildrenForRecord
+        ? getLevelForKey
+        : undefined,
+    });
 
     useEffect(() => {
       if (isLoading) {
@@ -678,6 +504,36 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       [initialSortState, onSortChange],
     );
 
+    // Callback to apply persisted column state or auto-fit
+    const applyCurrentColumnState = useCallback(() => {
+      const api = gridRef.current?.api;
+      if (api && !isLoading) {
+        // Ensure API is available and not loading
+        // It's good practice to check if the component is still mounted if operations are async
+        const persistedState = onGetColumnsState?.();
+        if (persistedState && persistedState.length > 0) {
+          api.applyColumnState({
+            state: persistedState,
+            applyOrder: true,
+          });
+        } else {
+          applyAutoFitState(); // from useColumnState
+        }
+      }
+    }, [isLoading, onGetColumnsState, applyAutoFitState, gridRef]); // gridRef is stable
+
+    useEffect(() => {
+      if (gridRef.current?.api && !isLoading) {
+        // Apply column state when colDefs change.
+        // A timeout helps ensure AG Grid has processed the new colDefs.
+        const timerId = setTimeout(() => {
+          applyCurrentColumnState();
+        }, 50); // Adjust delay as needed, could be 0 for next tick
+
+        return () => clearTimeout(timerId);
+      }
+    }, [memoizedColDefs, isLoading, applyCurrentColumnState]); // Key dependencies
+
     return (
       <div
         style={{
@@ -751,7 +607,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             onSortChanged={handleSortChanged}
             reactiveCustomComponents={true}
             debounceVerticalScrollbar={true}
-            // debug={true}
+            debug={true}
           />
         </div>
         {footer && (
