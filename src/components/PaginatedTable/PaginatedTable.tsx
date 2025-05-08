@@ -606,7 +606,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             onSortChanged={handleSortChanged}
             reactiveCustomComponents={true}
             debounceVerticalScrollbar={true}
-            debug={true}
+            // debug={true}
           />
         </div>
         {footer && (
