@@ -105,9 +105,9 @@ export const useExpandable = ({
     [loadedKeys],
   );
 
-  const getLevelForKey = (key: number) => {
+  const getLevelForKey = useCallback((key: number) => {
     return idLevelMap.current.get(key) || 0;
-  };
+  }, []);
 
   const keyHasChilds = useCallback(
     (key: number) => {
