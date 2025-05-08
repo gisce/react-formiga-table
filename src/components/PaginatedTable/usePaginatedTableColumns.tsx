@@ -85,40 +85,36 @@ export const usePaginatedTableColumns = ({
         onExpandableIconClicked,
     );
 
-    console.log({ mustShowExpandableColumn });
-    const expandableColumn: ColDef | null =
-      expandableOpts?.onFetchChildrenForRecord &&
-      getExpandableStatusForRow &&
-      onExpandableIconClicked
-        ? {
-            ...DEFAULT_COL_DEF,
-            field: "$expandable",
-            suppressMovable: true,
-            sortable: false,
-            pinned: "left",
-            lockPosition: "left",
-            lockPinned: true,
-            maxWidth: 40,
-            resizable: false,
-            headerName: "",
-            headerComponent: null,
-            cellRenderer: (params: any) => (
-              <ExpandableCellRenderer
-                data={params.data}
-                expandableOpts={expandableOpts!}
-                getExpandableStatusForRow={getExpandableStatusForRow!}
-                onExpandableIconClicked={onExpandableIconClicked!}
-              />
-            ),
-            cellStyle: {
-              padding: 0, // Handled by renderer
-              margin: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            },
-          }
-        : null;
+    const expandableColumn: ColDef | null = mustShowExpandableColumn
+      ? {
+          ...DEFAULT_COL_DEF,
+          field: "$expandable",
+          suppressMovable: true,
+          sortable: false,
+          pinned: "left",
+          lockPosition: "left",
+          lockPinned: true,
+          maxWidth: 40,
+          resizable: false,
+          headerName: "",
+          headerComponent: null,
+          cellRenderer: (params: any) => (
+            <ExpandableCellRenderer
+              data={params.data}
+              expandableOpts={expandableOpts!}
+              getExpandableStatusForRow={getExpandableStatusForRow!}
+              onExpandableIconClicked={onExpandableIconClicked!}
+            />
+          ),
+          cellStyle: {
+            padding: 0, // Handled by renderer
+            margin: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          },
+        }
+      : null;
 
     const restOfColumns: ColDef[] = columns.map((column) => {
       const initialSort = initialSortState?.find(
@@ -141,9 +137,6 @@ export const usePaginatedTableColumns = ({
             hasExpandableColumn={!!expandableOpts?.onFetchChildrenForRecord}
           />
         ),
-        cellStyle: expandableOpts?.onFetchChildrenForRecord
-          ? () => ({ paddingLeft: "0px" }) // Padding is handled by StyledTextCell
-          : undefined,
       };
     });
 
