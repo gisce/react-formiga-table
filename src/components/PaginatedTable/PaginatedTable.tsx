@@ -14,7 +14,6 @@ import "ag-grid-community/styles/ag-grid.css";
 import "@/styles/ag-theme-quartz.css";
 import {
   BodyScrollEvent,
-  ColDef,
   ColumnResizedEvent,
   ColumnState,
   RowDoubleClickedEvent,
@@ -325,14 +324,6 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       },
       [onChangeFirstVisibleRowIndex, onChangeFirstVisibleColumn],
     );
-
-    const MemoizedStatusComponent = useMemo(() => {
-      if (!statusComponent) return undefined;
-      // eslint-disable-next-line react/display-name
-      return memo((propsComp: { status: any }) =>
-        statusComponent(propsComp.status),
-      );
-    }, [statusComponent]);
 
     const { HeaderComponent } = usePaginatedHeaderCheckbox(
       headerCheckboxState,
