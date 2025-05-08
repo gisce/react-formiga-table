@@ -1,4 +1,4 @@
-import React, { useMemo, ReactNode, memo } from "react";
+import React, { useMemo, ReactNode, memo, useRef, useEffect } from "react";
 import { ColDef, ColumnState } from "ag-grid-community";
 import type {
   ExpandOptions,
@@ -56,6 +56,25 @@ export const usePaginatedTableColumns = ({
   onExpandableIconClicked,
   getLevelForKey,
 }: UsePaginatedTableColumnsProps): ColDef[] => {
+  // Add refs for the expandable-related functions and options
+  const expandableOptsRef = useRef(expandableOpts);
+  const getExpandableStatusForRowRef = useRef(getExpandableStatusForRow);
+  const onExpandableIconClickedRef = useRef(onExpandableIconClicked);
+  const getLevelForKeyRef = useRef(getLevelForKey);
+
+  // Update refs when the values change
+  useEffect(() => {
+    expandableOptsRef.current = expandableOpts;
+    getExpandableStatusForRowRef.current = getExpandableStatusForRow;
+    onExpandableIconClickedRef.current = onExpandableIconClicked;
+    getLevelForKeyRef.current = getLevelForKey;
+  }, [
+    expandableOpts,
+    getExpandableStatusForRow,
+    onExpandableIconClicked,
+    getLevelForKey,
+  ]);
+
   const MemoizedStatusComponent = useMemo(() => {
     if (!statusComponent) return undefined;
     // eslint-disable-next-line react/display-name
@@ -73,16 +92,16 @@ export const usePaginatedTableColumns = ({
       pinned: "left",
       lockPosition: "left",
       lockPinned: true,
-      maxWidth: expandableOpts?.onFetchChildrenForRecord ? 30 : 50,
+      maxWidth: expandableOptsRef.current?.onFetchChildrenForRecord ? 30 : 50,
       resizable: false,
       field: CHECKBOX_COLUMN,
       headerComponent: HeaderComponent,
     };
 
     const mustShowExpandableColumn = Boolean(
-      expandableOpts?.onFetchChildrenForRecord &&
-        getExpandableStatusForRow &&
-        onExpandableIconClicked,
+      expandableOptsRef.current?.onFetchChildrenForRecord &&
+        getExpandableStatusForRowRef.current &&
+        onExpandableIconClickedRef.current,
     );
 
     const expandableColumn: ColDef | null = mustShowExpandableColumn
@@ -101,9 +120,16 @@ export const usePaginatedTableColumns = ({
           cellRenderer: (params: any) => (
             <ExpandableCellRenderer
               data={params.data}
-              expandableOpts={expandableOpts!}
-              getExpandableStatusForRow={getExpandableStatusForRow!}
-              onExpandableIconClicked={onExpandableIconClicked!}
+              expandableOpts={expandableOptsRef.current!}
+              getExpandableStatusForRow={getExpandableStatusForRowRef.current!}
+              onExpandableIconClicked={(data) => {
+                onExpandableIconClickedRef.current?.(data);
+                params.api.refreshCells({
+                  rowNodes: [params.node],
+                  columns: [params.column],
+                  force: true,
+                });
+              }}
             />
           ),
           cellStyle: {
@@ -133,8 +159,10 @@ export const usePaginatedTableColumns = ({
             value={params.value}
             data={params.data}
             columnRender={column.render}
-            getLevelForKey={getLevelForKey}
-            hasExpandableColumn={!!expandableOpts?.onFetchChildrenForRecord}
+            getLevelForKey={getLevelForKeyRef.current}
+            hasExpandableColumn={
+              !!expandableOptsRef.current?.onFetchChildrenForRecord
+            }
           />
         ),
       };
@@ -201,14 +229,10 @@ export const usePaginatedTableColumns = ({
     return finalColumns;
   }, [
     HeaderComponent,
-    expandableOpts,
     columns,
     onGetColumnsState,
     MemoizedStatusComponent,
-    getExpandableStatusForRow,
-    onExpandableIconClicked,
     initialSortState,
-    getLevelForKey,
     strings,
     onChangeTableType,
     onResetTableView,
