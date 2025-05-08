@@ -34,6 +34,7 @@ import deepEqual from "deep-equal";
 import { NoRowsOverlay } from "../NoRowsOverlay";
 import { ExpandableItem, useExpandable } from "@/hooks/useExpandable";
 import { usePaginatedTableColumns } from "./usePaginatedTableColumns.tsx";
+import { useDeepCompareMemo } from "use-deep-compare";
 
 export type PaginatedTableProps = {
   dataSource: Array<Record<string, any>>;
@@ -192,6 +193,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       getChildsForParent,
       getLevelForKey,
       items: expandableItems,
+      openedKeys,
     } = useExpandable({
       dataSource,
       onFetchChildrenForRecord: expandableOpts?.onFetchChildrenForRecord,
@@ -454,6 +456,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         .filter((item: ExpandableItem) => item.level === 0)
         .map((i: ExpandableItem) => i.data);
       return buildVisibleData(rootItems, 0);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
       expandableOpts,
       memoizedDataSource,
@@ -462,7 +465,12 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       getChildsForParent,
       hasStatusColumn,
       onRowStatus,
+      openedKeys,
     ]);
+
+    const safeVisibleData = useDeepCompareMemo(() => {
+      return visibleData;
+    }, [visibleData]);
 
     const NoRowsOverlayComponent = useMemo(() => {
       // eslint-disable-next-line react/display-name
@@ -580,7 +588,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             suppressLoadingOverlay={true}
             noRowsOverlayComponent={NoRowsOverlayComponent}
             columnDefs={memoizedColDefs}
-            rowData={visibleData}
+            rowData={safeVisibleData}
             onRowDoubleClicked={memoizedOnRowDoubleClick}
             suppressCellFocus={true}
             suppressRowClickSelection={true}

@@ -19,8 +19,9 @@ export const useExpandable = ({
   onFetchChildrenForRecord?: (item: any) => Promise<any[]>;
   childField?: string;
 }) => {
+  const openedKeysRef = useRef<number[]>([]);
   const [openedKeys, setOpenedKeys] = useState<number[]>([]);
-  const [loadedKeys, setLoadedKeys] = useState<number[]>([]);
+  const loadedKeysRef = useRef<number[]>([]);
   const idLevelMap = useRef<Map<number, number>>(new Map<number, number>());
 
   const [items, setItems] = useState<ExpandableItem[]>(
@@ -60,8 +61,14 @@ export const useExpandable = ({
     const allKeysToClean = [...idsToRemove, ...Array.from(parentsToClean)];
 
     // Clean up opened and loaded keys
-    setOpenedKeys(openedKeys.filter((id) => !allKeysToClean.includes(id)));
-    setLoadedKeys(loadedKeys.filter((id) => !allKeysToClean.includes(id)));
+    openedKeysRef.current = openedKeysRef.current.filter(
+      (id) => !allKeysToClean.includes(id),
+    );
+    // Sync the state with the ref after cleanup
+    setOpenedKeys([...openedKeysRef.current]);
+    loadedKeysRef.current = loadedKeysRef.current.filter(
+      (id) => !allKeysToClean.includes(id),
+    );
 
     // Clean up idLevelMap
     idsToRemove.forEach((id) => {
@@ -79,31 +86,25 @@ export const useExpandable = ({
     );
   }, [dataSource]);
 
-  const toggleOpenedKey = useCallback(
-    (key: number) => {
-      if (openedKeys.indexOf(key) === -1) {
-        openedKeys.push(key);
-        setOpenedKeys([...openedKeys]);
-      } else {
-        setOpenedKeys(openedKeys.filter((item) => item !== key));
-      }
-    },
-    [openedKeys],
-  );
+  const toggleOpenedKey = useCallback((key: number) => {
+    if (openedKeysRef.current.indexOf(key) === -1) {
+      openedKeysRef.current.push(key);
+    } else {
+      openedKeysRef.current = openedKeysRef.current.filter(
+        (item) => item !== key,
+      );
+    }
+    // Sync the state with the ref
+    setOpenedKeys([...openedKeysRef.current]);
+  }, []);
 
-  const keyIsOpened = useCallback(
-    (key: number) => {
-      return openedKeys.includes(key);
-    },
-    [openedKeys],
-  );
+  const keyIsOpened = useCallback((key: number) => {
+    return openedKeysRef.current.includes(key);
+  }, []);
 
-  const keyIsLoaded = useCallback(
-    (key: number) => {
-      return loadedKeys.includes(key);
-    },
-    [loadedKeys],
-  );
+  const keyIsLoaded = useCallback((key: number) => {
+    return loadedKeysRef.current.includes(key);
+  }, []);
 
   const getLevelForKey = useCallback((key: number) => {
     return idLevelMap.current.get(key) || 0;
@@ -198,8 +199,7 @@ export const useExpandable = ({
             ),
           );
 
-          loadedKeys.push(item.id);
-          setLoadedKeys([...loadedKeys]);
+          loadedKeysRef.current.push(item.id);
         } catch (err) {
           console.error(err);
           setItems(
@@ -222,7 +222,6 @@ export const useExpandable = ({
       keyIsLoaded,
       toggleOpenedKey,
       onFetchChildrenForRecord,
-      loadedKeys,
       childField,
     ],
   );
@@ -244,7 +243,7 @@ export const useExpandable = ({
     const firstLevelItems = items.filter((item) => item.level === 0);
     const visibleKeys = firstLevelItems.map((item) => item.id);
 
-    openedKeys.forEach((key: number) => {
+    openedKeysRef.current.forEach((key: number) => {
       const item: any = items.find((lItem) => lItem.id === key);
       if (!item) {
         return;
@@ -259,10 +258,11 @@ export const useExpandable = ({
       });
     });
     return visibleKeys;
-  }, [openedKeys, items]);
+  }, [items]);
 
   return {
     items,
+    openedKeys,
     keyIsOpened,
     onExpandableIconClicked,
     getExpandableStatusForRow,
