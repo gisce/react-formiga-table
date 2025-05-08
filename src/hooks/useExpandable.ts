@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { ExpandableRowIcon } from "../types";
 import { useDeepCompareEffect } from "use-deep-compare";
 
@@ -19,8 +19,9 @@ export const useExpandable = ({
   onFetchChildrenForRecord?: (item: any) => Promise<any[]>;
   childField?: string;
 }) => {
+  const openedKeysRef = useRef<number[]>([]);
   const [openedKeys, setOpenedKeys] = useState<number[]>([]);
-  const [loadedKeys, setLoadedKeys] = useState<number[]>([]);
+  const loadedKeysRef = useRef<number[]>([]);
   const idLevelMap = useRef<Map<number, number>>(new Map<number, number>());
 
   const [items, setItems] = useState<ExpandableItem[]>(
@@ -34,6 +35,46 @@ export const useExpandable = ({
   );
 
   useDeepCompareEffect(() => {
+    // Find IDs that are no longer in the new dataSource
+    const newIds = dataSource.map((item) => item.id);
+    const oldIds = items.map((item) => item.id);
+    const idsToRemove = oldIds.filter((id) => !newIds.includes(id));
+
+    // Find parents that had children removed
+    const parentsToClean = new Set<number>();
+
+    // Check each item in the new dataSource
+    dataSource.forEach((item) => {
+      if (item[childField]?.length > 0) {
+        // If any of this parent's children were removed
+        const hasRemovedChildren = item[childField].some((childId: number) =>
+          idsToRemove.includes(childId),
+        );
+
+        if (hasRemovedChildren) {
+          parentsToClean.add(item.id);
+        }
+      }
+    });
+
+    // Combine direct removals and parents that need cleaning
+    const allKeysToClean = [...idsToRemove, ...Array.from(parentsToClean)];
+
+    // Clean up opened and loaded keys
+    openedKeysRef.current = openedKeysRef.current.filter(
+      (id) => !allKeysToClean.includes(id),
+    );
+    // Sync the state with the ref after cleanup
+    setOpenedKeys([...openedKeysRef.current]);
+    loadedKeysRef.current = loadedKeysRef.current.filter(
+      (id) => !allKeysToClean.includes(id),
+    );
+
+    // Clean up idLevelMap
+    idsToRemove.forEach((id) => {
+      idLevelMap.current.delete(id);
+    });
+
     setItems(
       dataSource.map((item) =>
         transformData({
@@ -43,56 +84,31 @@ export const useExpandable = ({
         }),
       ),
     );
-    // We need to clear the id's that are not in the new dataSource
-    const newIds = dataSource.map((item) => item.id);
-    const oldIds = items.map((item) => item.id);
-    const idsToRemove = oldIds.filter((id) => !newIds.includes(id));
-
-    // Retrieve every parent for each of the idsToRemove in idLevelMap and add them to idsToRemove
-    const parents = idsToRemove.map((id) => {
-      return idLevelMap.current.get(id);
-    });
-    idsToRemove.push(...parents.filter((id): id is number => id !== undefined));
-
-    setOpenedKeys(openedKeys.filter((id) => !idsToRemove.includes(id)));
-    setLoadedKeys(loadedKeys.filter((id) => !idsToRemove.includes(id)));
-
-    // And also update the idLevelMap
-    idsToRemove.forEach((id) => {
-      idLevelMap.current.delete(id);
-    });
-    // eslint-disable-nexu-line react-hooks/exhaustive-deps
   }, [dataSource]);
 
-  const toggleOpenedKey = useCallback(
-    (key: number) => {
-      if (openedKeys.indexOf(key) === -1) {
-        openedKeys.push(key);
-        setOpenedKeys([...openedKeys]);
-      } else {
-        setOpenedKeys(openedKeys.filter((item) => item !== key));
-      }
-    },
-    [openedKeys],
-  );
+  const toggleOpenedKey = useCallback((key: number) => {
+    if (openedKeysRef.current.indexOf(key) === -1) {
+      openedKeysRef.current.push(key);
+    } else {
+      openedKeysRef.current = openedKeysRef.current.filter(
+        (item) => item !== key,
+      );
+    }
+    // Sync the state with the ref
+    setOpenedKeys([...openedKeysRef.current]);
+  }, []);
 
-  const keyIsOpened = useCallback(
-    (key: number) => {
-      return openedKeys.includes(key);
-    },
-    [openedKeys],
-  );
+  const keyIsOpened = useCallback((key: number) => {
+    return openedKeysRef.current.includes(key);
+  }, []);
 
-  const keyIsLoaded = useCallback(
-    (key: number) => {
-      return loadedKeys.includes(key);
-    },
-    [loadedKeys],
-  );
+  const keyIsLoaded = useCallback((key: number) => {
+    return loadedKeysRef.current.includes(key);
+  }, []);
 
-  const getLevelForKey = (key: number) => {
+  const getLevelForKey = useCallback((key: number) => {
     return idLevelMap.current.get(key) || 0;
-  };
+  }, []);
 
   const keyHasChilds = useCallback(
     (key: number) => {
@@ -183,8 +199,7 @@ export const useExpandable = ({
             ),
           );
 
-          loadedKeys.push(item.id);
-          setLoadedKeys([...loadedKeys]);
+          loadedKeysRef.current.push(item.id);
         } catch (err) {
           console.error(err);
           setItems(
@@ -207,7 +222,6 @@ export const useExpandable = ({
       keyIsLoaded,
       toggleOpenedKey,
       onFetchChildrenForRecord,
-      loadedKeys,
       childField,
     ],
   );
@@ -229,7 +243,7 @@ export const useExpandable = ({
     const firstLevelItems = items.filter((item) => item.level === 0);
     const visibleKeys = firstLevelItems.map((item) => item.id);
 
-    openedKeys.forEach((key: number) => {
+    openedKeysRef.current.forEach((key: number) => {
       const item: any = items.find((lItem) => lItem.id === key);
       if (!item) {
         return;
@@ -244,9 +258,11 @@ export const useExpandable = ({
       });
     });
     return visibleKeys;
-  }, [openedKeys, items]);
+  }, [items]);
 
   return {
+    items,
+    openedKeys,
     keyIsOpened,
     onExpandableIconClicked,
     getExpandableStatusForRow,
