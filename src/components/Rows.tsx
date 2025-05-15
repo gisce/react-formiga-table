@@ -26,9 +26,7 @@ export const Rows = ({
   keyIsOpened,
   getChildsForParent,
   getLevelForKey,
-  onCellRender,
   cellStyle,
-  readonly,
 }: {
   onRowSelectionChange?: (selectedRowItems: any[]) => void;
   dataSource: any[];
@@ -47,7 +45,6 @@ export const Rows = ({
   getLevelForKey: (key: number) => number;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
   cellStyle?: RFTLabelStyle;
-  readonly?: boolean;
 }) => {
   return (
     <>
@@ -72,7 +69,6 @@ export const Rows = ({
             keyIsOpened,
             getChildsForParent,
             cellStyle,
-            readonly,
           });
         })}
     </>
@@ -97,7 +93,6 @@ function getRowComponent({
   level = 0,
   onCellRender,
   cellStyle,
-  readonly,
 }: {
   row: any;
   columns: TableColumn[];
@@ -116,7 +111,6 @@ function getRowComponent({
   onRowStatus?: (item: any) => any;
   level?: number;
   onCellRender?: (opts: OnCellRenderOpts) => React.ReactNode;
-  readonly?: boolean;
 }): React.ReactNode {
   const rowStyle = onRowStyle ? onRowStyle(row) : "";
   const rowIsSelected = isRowSelected(row);
@@ -128,7 +122,7 @@ function getRowComponent({
         onRowDoubleClick?.(row);
       }}
     >
-      {onRowSelectionChange && !readonly && (
+      {onRowSelectionChange && (
         <td
           key={`react_formiga_table_selection-${row.id}`}
           style={{
@@ -150,14 +144,12 @@ function getRowComponent({
               alignItems: "center",
             }}
           >
-            {!readonly && (
-              <Checkbox
-                value={rowIsSelected}
-                onChange={(event) => {
-                  toggleRowSelected(row.id, event);
-                }}
-              />
-            )}
+            <Checkbox
+              value={rowIsSelected}
+              onChange={(event) => {
+                toggleRowSelected(row.id, event);
+              }}
+            />
           </div>
         </td>
       )}

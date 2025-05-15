@@ -112,7 +112,6 @@ export const Table = forwardRef<TableRef, TableProps>((props, ref) => {
               handleColumnClick={handleColumnClick}
               getColumnSorter={getColumnSorter}
               sortEnabled={expandableOpts === undefined}
-              readonly={readonly}
               status={!!onRowStatus}
               headerStyle={customStyle?.headerStyle}
             />
@@ -137,7 +136,6 @@ export const Table = forwardRef<TableRef, TableProps>((props, ref) => {
             getLevelForKey={getLevelForKey}
             onCellRender={onCellRender}
             cellStyle={customStyle?.cellStyle}
-            readonly={readonly}
           />
         </tbody>
       </table>
