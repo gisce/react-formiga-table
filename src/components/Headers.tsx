@@ -10,7 +10,6 @@ export const Headers = ({
   handleColumnClick,
   getColumnSorter,
   sortEnabled,
-  readonly,
   status = false,
   headerStyle,
 }: {
@@ -22,13 +21,12 @@ export const Headers = ({
   handleColumnClick: (columnId: string) => void;
   getColumnSorter: (columnId: string) => Sorter | undefined;
   sortEnabled: boolean;
-  readonly?: boolean;
   status?: boolean;
   headerStyle?: RFTLabelStyle;
 }) => {
   return (
     <>
-      {onRowSelectionChange && !readonly && (
+      {onRowSelectionChange && (
         <th
           style={{
             width: 10,
