@@ -76,6 +76,7 @@ export type PaginatedTableProps = {
   onChangeTableType?: (targetType: TableType) => void;
 
   expandableOpts?: ExpandOptions;
+  debug?: boolean;
 };
 
 export type PaginatedTableRef = {
@@ -119,6 +120,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onSortChange,
       onChangeTableType,
       expandableOpts,
+      debug,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -606,7 +608,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             onSortChanged={handleSortChanged}
             reactiveCustomComponents={true}
             debounceVerticalScrollbar={true}
-            // debug={true}
+            debug={debug}
           />
         </div>
         {footer && (
