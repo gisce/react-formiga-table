@@ -513,33 +513,36 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       return allNodes;
     }, []);
 
-    const onSelectionChanged = useCallback(
-      (event: { api: { getSelectedNodes: () => any } }) => {
-        const allNodesInTable = getAllNodeKeys();
-        const allSelectedNodes = event.api.getSelectedNodes() || [];
+    const onRowSelected = useCallback(
+      (event: any) => {
+        if (event.source === "checkboxSelected" && event.node.data.id) {
+          // Get all currently selected nodes to build the complete selection list
+          const allSelectedNodes =
+            gridRef.current?.api?.getSelectedNodes() || [];
+          const allNodesInTable = getAllNodeKeys();
 
-        // get the records that are not in allNodesInTable but they exist in selectedRowKeys
-        const rowKeysInSelectedRowKeysButNotInAllNodes = selectedRowKeys.filter(
-          (key) => !allNodesInTable.includes(key),
-        );
+          // get the records that are not in allNodesInTable but they exist in selectedRowKeys
+          const rowKeysInSelectedRowKeysButNotInAllNodes =
+            selectedRowKeys.filter((key) => !allNodesInTable.includes(key));
 
-        const selectedKeys = allSelectedNodes.map(
-          (node: { data: any }) => node.data.id,
-        );
+          const selectedKeys = allSelectedNodes.map(
+            (node: { data: any }) => node.data.id,
+          );
 
-        const finalSelectedKeys = Array.from(
-          new Set([
-            ...selectedKeys,
-            ...rowKeysInSelectedRowKeysButNotInAllNodes,
-          ]),
-        );
+          const finalSelectedKeys = Array.from(
+            new Set([
+              ...selectedKeys,
+              ...rowKeysInSelectedRowKeysButNotInAllNodes,
+            ]),
+          );
 
-        const hasSelectionChanged =
-          finalSelectedKeys.length !== selectedRowKeys.length ||
-          finalSelectedKeys.some((key) => !selectedRowKeys.includes(key));
+          const hasSelectionChanged =
+            finalSelectedKeys.length !== selectedRowKeys.length ||
+            finalSelectedKeys.some((key) => !selectedRowKeys.includes(key));
 
-        if (hasSelectionChanged) {
-          onRowSelectionChange?.(finalSelectedKeys);
+          if (hasSelectionChanged) {
+            onRowSelectionChange?.(finalSelectedKeys);
+          }
         }
       },
       [getAllNodeKeys, onRowSelectionChange, selectedRowKeys],
@@ -584,7 +587,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             onColumnResized={onColumnResized}
             rowModelType={"infinite"}
             cacheBlockSize={cacheBlockSize}
-            onSelectionChanged={onSelectionChanged}
+            onRowSelected={onRowSelected}
             cacheOverflowSize={2}
             maxConcurrentDatasourceRequests={1}
             infiniteInitialRowCount={totalRows}
