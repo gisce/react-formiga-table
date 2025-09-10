@@ -65,6 +65,7 @@ export type InfiniteTableProps = Omit<
   initialSortState?: ColumnState[];
   cacheBlockSize?: number;
   onChangeTableType?: (targetType: TableType) => void;
+  debug?: boolean;
 };
 
 export type InfiniteTableRef = {
@@ -105,6 +106,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       initialSortState,
       cacheBlockSize = 30,
       onChangeTableType,
+      debug = false,
     } = props;
 
     const gridRef = useRef<AgGridReact>(null);
@@ -591,6 +593,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             blockLoadDebounceMillis={DEBOUNCE_TIME}
             suppressDragLeaveHidesColumns={true}
             noRowsOverlayComponent={NoRowsOverlayComponent}
+            debug={debug}
           />
         </div>
         {footer && (
