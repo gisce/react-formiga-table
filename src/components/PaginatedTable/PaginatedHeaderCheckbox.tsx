@@ -86,22 +86,33 @@ const PaginatedHeaderCheckboxComp = memo(
       );
 
       return (
-        <input
+        <div
           style={{
-            width: "13px",
-            height: "13px",
-            border: "1px solid grey",
-            cursor: "pointer",
-            margin: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            height: "100%",
+            paddingRight: "5px",
           }}
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-          }}
-          ref={checkboxRef}
-          type="checkbox"
-          onChange={handleClick}
-          tabIndex={-1}
-        />
+        >
+          <input
+            style={{
+              width: "13px",
+              height: "13px",
+              border: "1px solid grey",
+              cursor: "pointer",
+              margin: 0,
+            }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+            }}
+            ref={checkboxRef}
+            type="checkbox"
+            onChange={handleClick}
+            tabIndex={-1}
+          />
+        </div>
       );
     },
   ),
