@@ -40,6 +40,7 @@ type UsePaginatedTableColumnsProps = {
   ) => "expand" | "collapse" | "loading" | "none";
   onExpandableIconClicked?: (data: any) => void;
   getLevelForKey?: (key: any) => number | undefined;
+  showCheckboxColumn?: boolean;
 };
 
 export const usePaginatedTableColumns = ({
@@ -55,6 +56,7 @@ export const usePaginatedTableColumns = ({
   getExpandableStatusForRow,
   onExpandableIconClicked,
   getLevelForKey,
+  showCheckboxColumn = true,
 }: UsePaginatedTableColumnsProps): ColDef[] => {
   // Add refs for the expandable-related functions and options
   const expandableOptsRef = useRef(expandableOpts);
@@ -92,10 +94,21 @@ export const usePaginatedTableColumns = ({
       pinned: "left",
       lockPosition: "left",
       lockPinned: true,
-      maxWidth: expandableOptsRef.current?.onFetchChildrenForRecord ? 30 : 50,
+      width: 40,
+      maxWidth: 40,
+      minWidth: 40,
       resizable: false,
       field: CHECKBOX_COLUMN,
       headerComponent: HeaderComponent,
+      headerClass: "ag-checkbox-header",
+      cellClass: "ag-cell-checkbox-centered",
+      cellStyle: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-start",
+        paddingLeft: "10px",
+        paddingRight: "5px",
+      },
     };
 
     const mustShowExpandableColumn = Boolean(
@@ -186,7 +199,9 @@ export const usePaginatedTableColumns = ({
       sortable: false,
       lockPosition: "left",
       lockPinned: true,
-      maxWidth: 30,
+      width: showCheckboxColumn ? 25 : 30,
+      maxWidth: showCheckboxColumn ? 25 : 30,
+      minWidth: showCheckboxColumn ? 25 : 30,
       pinned: "left",
       resizable: false,
       cellStyle: {
@@ -221,7 +236,7 @@ export const usePaginatedTableColumns = ({
 
     const finalColumns = [
       statusColumn,
-      checkboxColumn,
+      ...(showCheckboxColumn ? [checkboxColumn] : []),
       ...(expandableColumn ? [expandableColumn] : []),
       ...restOfColumns,
     ];
@@ -236,6 +251,7 @@ export const usePaginatedTableColumns = ({
     strings,
     onChangeTableType,
     onResetTableView,
+    showCheckboxColumn,
   ]);
 
   return useDeepCompareMemo(() => colDefs, [colDefs]);

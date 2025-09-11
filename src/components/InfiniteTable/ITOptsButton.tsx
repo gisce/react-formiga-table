@@ -22,7 +22,7 @@ const StyledMenuItem = styled(MenuItem)`
 `;
 
 const StyledMoreOutlined = styled(MoreIcon)`
-  font-size: 1.5em;
+  font-size: 16px;
   cursor: pointer;
   color: #000000;
 `;
@@ -84,15 +84,20 @@ export const ITOptsButton = ({
   );
 
   return (
-    <Dropdown overlay={menu} trigger={["click"]}>
-      <div
-        style={{ display: "inline-block" }}
-        aria-label="More options"
-        role="button"
-        tabIndex={0}
-      >
-        <StyledMoreOutlined />
-      </div>
-    </Dropdown>
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Dropdown overlay={menu} trigger={["click"]}>
+        <div aria-label="More options" role="button" tabIndex={0}>
+          <StyledMoreOutlined />
+        </div>
+      </Dropdown>
+    </div>
   );
 };

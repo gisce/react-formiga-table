@@ -359,6 +359,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       getLevelForKey: expandableOpts?.onFetchChildrenForRecord
         ? getLevelForKey
         : undefined,
+      showCheckboxColumn: !!onRowSelectionChangeProps,
     });
 
     useEffect(() => {

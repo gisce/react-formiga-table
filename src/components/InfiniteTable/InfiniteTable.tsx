@@ -234,9 +234,20 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         pinned: "left",
         lockPosition: "left",
         lockPinned: true,
-        maxWidth: 50,
+        width: 40,
+        maxWidth: 40,
+        minWidth: 40,
         resizable: false,
         field: CHECKBOX_COLUMN,
+        headerClass: "ag-checkbox-header",
+        cellClass: "ag-cell-checkbox-centered",
+        cellStyle: {
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          paddingLeft: "10px",
+          paddingRight: "5px",
+        },
         headerComponent: () => (
           <HeaderCheckbox
             totalRows={totalRows}
@@ -282,7 +293,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         sortable: false,
         lockPosition: "left",
         lockPinned: true,
-        maxWidth: 30,
+        width: onRowSelectionChange ? 25 : 30,
+        maxWidth: onRowSelectionChange ? 25 : 30,
+        minWidth: onRowSelectionChange ? 25 : 30,
         pinned: "left",
         resizable: false,
         cellStyle: {
@@ -326,7 +339,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           : undefined,
       } as ColDef;
 
-      const finalColumns = [statusColumn, checkboxColumn, ...restOfColumns];
+      const finalColumns = onRowSelectionChange
+        ? [statusColumn, checkboxColumn, ...restOfColumns]
+        : [statusColumn, ...restOfColumns];
 
       return finalColumns;
     }, [
@@ -342,6 +357,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       applyAutoFitState,
       onColumnsChangedProps,
       onChangeTableType,
+      onRowSelectionChange,
     ]);
 
     const scrollToSavedPosition = useCallback(() => {
