@@ -190,7 +190,7 @@ export const WithAutoRefresh = (): React.ReactElement => {
         }}
         height={400}
         ref={tableRef}
-        autoRefresh={2} // Refresh every 2 seconds
+        autoRefresh={2000}
         hasStatusColumn={false}
       />
     </>

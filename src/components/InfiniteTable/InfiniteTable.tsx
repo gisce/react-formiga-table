@@ -149,7 +149,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         activeAutoRefreshRequests.current = 0;
 
         gridRef.current.api.refreshInfiniteCache();
-      }, autoRefresh * 1000);
+      }, autoRefresh);
 
       return () => clearInterval(intervalId);
     }, [autoRefresh]);

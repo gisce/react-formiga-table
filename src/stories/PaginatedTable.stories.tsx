@@ -508,7 +508,7 @@ export const WithAutoRefresh = () => {
           console.log("Row selection changed:", changedRow);
         }}
         onForceReload={handleForceReload}
-        autoRefresh={2} // Refresh every 2 seconds
+        autoRefresh={2000}
         strings={{
           resetTableViewLabel: "Reset View",
           changeToInfiniteLabel: "Switch to Infinite",

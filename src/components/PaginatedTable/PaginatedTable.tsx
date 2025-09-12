@@ -164,7 +164,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           gridRef.current?.api?.refreshCells({ force: true });
           setTimeout(() => setIsAutoRefreshing(false), 100);
         }
-      }, autoRefresh * 1000);
+      }, autoRefresh);
 
       return () => clearInterval(intervalId);
     }, [autoRefresh, onForceReload, wrappedOnForceReload]);
