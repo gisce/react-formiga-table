@@ -167,7 +167,8 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       }, autoRefresh);
 
       return () => clearInterval(intervalId);
-    }, [autoRefresh, onForceReload, wrappedOnForceReload]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [autoRefresh]);
 
     useImperativeHandle(ref, () => ({
       setSelectedRows: (keys: number[]) => {
