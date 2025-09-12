@@ -1,4 +1,10 @@
-import React, { useRef, useState, useMemo } from "react";
+import React, {
+  useRef,
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+} from "react";
 import { ComponentMeta, ComponentStoryObj } from "@storybook/react";
 import {
   PaginatedTable,
@@ -444,6 +450,70 @@ export const Expandable = () => {
         }}
         // Provide the expandable options
         expandableOpts={expandableOptions}
+      />
+    </div>
+  );
+};
+
+// Story demonstrating auto-refresh functionality
+export const WithAutoRefresh = () => {
+  const tableRef = useRef<PaginatedTableRef>(null);
+  const [dataCounter, setDataCounter] = useState(0);
+  const [initialData] = useState(() =>
+    dataSource.map((item) => ({
+      ...item,
+      name: `${item.name} (refresh: 0)`,
+    })),
+  );
+
+  // Use updateRows to update data without flickering
+  const handleForceReload = useCallback(() => {
+    setDataCounter((prev) => {
+      const newCounter = prev + 1;
+
+      // Update rows using the imperative API
+      const updates = dataSource.map((item) => ({
+        id: item.id,
+        name: `${item.name} (refresh: ${newCounter})`,
+      }));
+
+      // Use setTimeout to ensure the table is ready
+      setTimeout(() => {
+        tableRef.current?.updateRows(updates);
+      }, 0);
+
+      return newCounter;
+    });
+  }, []);
+
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}>
+        <h3>Auto-Refresh Demo (2 seconds)</h3>
+        <p>
+          The table automatically refreshes every 2 seconds. Watch the refresh
+          counter in the Name column.
+        </p>
+        <p>Current refresh count: {dataCounter}</p>
+      </div>
+      <PaginatedTable
+        ref={tableRef}
+        dataSource={initialData}
+        columns={columns}
+        isLoading={false}
+        height={400}
+        headerCheckboxState="unchecked"
+        onHeaderCheckboxClick={() => console.log("Header checkbox clicked")}
+        onRowSelectionChange={(changedRow) => {
+          console.log("Row selection changed:", changedRow);
+        }}
+        onForceReload={handleForceReload}
+        autoRefresh={2} // Refresh every 2 seconds
+        strings={{
+          resetTableViewLabel: "Reset View",
+          changeToInfiniteLabel: "Switch to Infinite",
+          changeToPaginatedLabel: "Switch to Paginated",
+        }}
       />
     </div>
   );
