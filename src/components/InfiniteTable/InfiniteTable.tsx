@@ -65,6 +65,7 @@ export type InfiniteTableProps = Omit<
   initialSortState?: ColumnState[];
   cacheBlockSize?: number;
   onChangeTableType?: (targetType: TableType) => void;
+  autoRefresh?: number;
   debug?: boolean;
 };
 
@@ -106,6 +107,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       initialSortState,
       cacheBlockSize = 30,
       onChangeTableType,
+      autoRefresh,
       debug = false,
     } = props;
 
@@ -113,6 +115,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const firstTimeDataLoaded = useRef(true);
     const firstTimeOnBodyScroll = useRef(true);
     const dataIsLoading = useRef(false);
+    const isAutoRefreshing = useRef(false);
+    const activeAutoRefreshRequests = useRef(0);
     const containerRef = useRef<HTMLDivElement>(null);
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
@@ -134,6 +138,21 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     useDeepCompareEffect(() => {
       updateSelectedRowKeys();
     }, [selectedRowKeys]);
+
+    useEffect(() => {
+      if (!autoRefresh || autoRefresh <= 0) return;
+
+      const intervalId = setInterval(() => {
+        if (!gridRef.current?.api) return;
+
+        isAutoRefreshing.current = true;
+        activeAutoRefreshRequests.current = 0;
+
+        gridRef.current.api.refreshInfiniteCache();
+      }, autoRefresh);
+
+      return () => clearInterval(intervalId);
+    }, [autoRefresh]);
 
     useImperativeHandle(ref, () => ({
       setSelectedRows: (keys: number[]) => {
@@ -389,7 +408,12 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             return;
           }
           dataIsLoading.current = true;
-          if (startRow === 0) {
+
+          if (isAutoRefreshing.current) {
+            activeAutoRefreshRequests.current += 1;
+          }
+
+          if (startRow === 0 && !isAutoRefreshing.current) {
             gridRef.current?.api.showLoadingOverlay();
           }
           const data = await onRequestData({
@@ -402,7 +426,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             throw new Error("Data is undefined");
           }
 
-          // Show no rows overlay if there's no data on the first request
           if (startRow === 0 && data.length === 0) {
             gridRef.current?.api.showNoRowsOverlay();
             params.successCallback([], 0);
@@ -414,9 +437,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           if (data.length < endRow - startRow) {
             lastRow = startRow + data.length;
           }
-          // The following code is for setting a fixed number of rows table when the cacheBlockSize is not the default, maybe because we are
-          // showing results for a name_Search and it's fixed on 80
-          // related: https://github.com/gisce/webclient/issues/1959
           if (
             lastRow === -1 &&
             totalRows >= cacheBlockSize &&
@@ -425,8 +445,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             lastRow = cacheBlockSize;
           }
 
-          // We must call onRowStatus for each item of the data array and merge the result
-          // with the data array
           const finalData = hasStatusColumn
             ? await Promise.all(
                 data.map(async (item) => {
@@ -457,15 +475,37 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           }
 
           dataIsLoading.current = false;
-          gridRef.current?.api.hideOverlay();
+
+          if (isAutoRefreshing.current) {
+            activeAutoRefreshRequests.current -= 1;
+            if (activeAutoRefreshRequests.current <= 0) {
+              isAutoRefreshing.current = false;
+              activeAutoRefreshRequests.current = 0;
+            }
+          }
+
+          if (!isAutoRefreshing.current) {
+            gridRef.current?.api.hideOverlay();
+          }
           if (firstTimeDataLoaded.current) {
             firstTimeDataLoaded.current = false;
             scrollToSavedPosition();
           }
         } catch (error) {
           dataIsLoading.current = false;
+
+          if (isAutoRefreshing.current) {
+            activeAutoRefreshRequests.current -= 1;
+            if (activeAutoRefreshRequests.current <= 0) {
+              isAutoRefreshing.current = false;
+              activeAutoRefreshRequests.current = 0;
+            }
+          }
+
           params.failCallback();
-          gridRef.current?.api.hideOverlay();
+          if (!isAutoRefreshing.current) {
+            gridRef.current?.api.hideOverlay();
+          }
         }
       },
       [
