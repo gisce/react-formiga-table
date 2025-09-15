@@ -89,6 +89,8 @@ export type PaginatedTableRef = {
   getVisibleRowIds: () => string[];
   getVisibleRows: () => any[];
   refreshRowStyles: () => void;
+  pauseAutoRefresh: () => void;
+  resumeAutoRefresh: () => void;
 };
 
 const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
@@ -131,6 +133,8 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
     const [dataRendered, setDataRendered] = useState(false);
     const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+    const autoRefreshPaused = useRef<boolean>(false);
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const effectiveIsLoading = isAutoRefreshing ? false : isLoading;
 
@@ -153,9 +157,17 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     }, [onForceReload]);
 
     useEffect(() => {
-      if (!autoRefresh || autoRefresh <= 0) return;
+      if (!autoRefresh || autoRefresh <= 0) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        return;
+      }
 
-      const intervalId = setInterval(() => {
+      intervalRef.current = setInterval(() => {
+        if (autoRefreshPaused.current) return;
+
         setIsAutoRefreshing(true);
 
         if (onForceReload) {
@@ -166,7 +178,12 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
         }
       }, autoRefresh);
 
-      return () => clearInterval(intervalId);
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [autoRefresh]);
 
@@ -217,6 +234,12 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       refreshRowStyles: () => {
         if (!gridRef.current?.api) return;
         gridRef.current.api.redrawRows();
+      },
+      pauseAutoRefresh: () => {
+        autoRefreshPaused.current = true;
+      },
+      resumeAutoRefresh: () => {
+        autoRefreshPaused.current = false;
       },
     }));
 

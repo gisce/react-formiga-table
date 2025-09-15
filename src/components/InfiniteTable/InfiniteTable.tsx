@@ -77,6 +77,8 @@ export type InfiniteTableRef = {
   getVisibleRowIds: () => string[];
   getVisibleRows: () => any[];
   refreshRowStyles: () => void;
+  pauseAutoRefresh: () => void;
+  resumeAutoRefresh: () => void;
 };
 
 const DEFAULT_CACHE_BLOCK_SIZE = 30;
@@ -118,6 +120,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const isAutoRefreshing = useRef(false);
     const activeAutoRefreshRequests = useRef(0);
     const containerRef = useRef<HTMLDivElement>(null);
+    const autoRefreshPaused = useRef<boolean>(false);
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
     const datasourceRef = useRef<{
@@ -140,10 +144,16 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     }, [selectedRowKeys]);
 
     useEffect(() => {
-      if (!autoRefresh || autoRefresh <= 0) return;
+      if (!autoRefresh || autoRefresh <= 0) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        return;
+      }
 
-      const intervalId = setInterval(() => {
-        if (!gridRef.current?.api) return;
+      intervalRef.current = setInterval(() => {
+        if (!gridRef.current?.api || autoRefreshPaused.current) return;
 
         isAutoRefreshing.current = true;
         activeAutoRefreshRequests.current = 0;
@@ -151,7 +161,12 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
         gridRef.current.api.refreshInfiniteCache();
       }, autoRefresh);
 
-      return () => clearInterval(intervalId);
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      };
     }, [autoRefresh]);
 
     useImperativeHandle(ref, () => ({
@@ -199,6 +214,12 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       refreshRowStyles: () => {
         if (!gridRef.current?.api) return;
         gridRef.current.api.redrawRows();
+      },
+      pauseAutoRefresh: () => {
+        autoRefreshPaused.current = true;
+      },
+      resumeAutoRefresh: () => {
+        autoRefreshPaused.current = false;
       },
     }));
 
