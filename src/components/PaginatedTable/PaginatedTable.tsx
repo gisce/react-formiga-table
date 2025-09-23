@@ -76,6 +76,7 @@ export type PaginatedTableProps = {
   onChangeTableType?: (targetType: TableType) => void;
 
   expandableOpts?: ExpandOptions;
+  autoRefresh?: number;
   debug?: boolean;
 };
 
@@ -88,6 +89,8 @@ export type PaginatedTableRef = {
   getVisibleRowIds: () => string[];
   getVisibleRows: () => any[];
   refreshRowStyles: () => void;
+  pauseAutoRefresh: () => void;
+  resumeAutoRefresh: () => void;
 };
 
 const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
@@ -120,6 +123,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onSortChange,
       onChangeTableType,
       expandableOpts,
+      autoRefresh,
       debug,
     } = props;
 
@@ -128,6 +132,60 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
     const [dataRendered, setDataRendered] = useState(false);
+    const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+    const autoRefreshPaused = useRef<boolean>(false);
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const effectiveIsLoading = isAutoRefreshing ? false : isLoading;
+
+    const wrappedOnForceReload = useCallback(() => {
+      if (onForceReload) {
+        const columnState = gridRef.current?.api?.getColumnState();
+
+        onForceReload();
+
+        setTimeout(() => {
+          if (columnState) {
+            gridRef.current?.api?.applyColumnState({
+              state: columnState,
+              applyOrder: true,
+            });
+          }
+          setTimeout(() => setIsAutoRefreshing(false), 100);
+        }, 50);
+      }
+    }, [onForceReload]);
+
+    useEffect(() => {
+      if (!autoRefresh || autoRefresh <= 0) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        return;
+      }
+
+      intervalRef.current = setInterval(() => {
+        if (autoRefreshPaused.current) return;
+
+        setIsAutoRefreshing(true);
+
+        if (onForceReload) {
+          wrappedOnForceReload();
+        } else {
+          gridRef.current?.api?.refreshCells({ force: true });
+          setTimeout(() => setIsAutoRefreshing(false), 100);
+        }
+      }, autoRefresh);
+
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [autoRefresh]);
 
     useImperativeHandle(ref, () => ({
       setSelectedRows: (keys: number[]) => {
@@ -176,6 +234,12 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       refreshRowStyles: () => {
         if (!gridRef.current?.api) return;
         gridRef.current.api.redrawRows();
+      },
+      pauseAutoRefresh: () => {
+        autoRefreshPaused.current = true;
+      },
+      resumeAutoRefresh: () => {
+        autoRefreshPaused.current = false;
       },
     }));
 
@@ -226,7 +290,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
         const api = gridRef.current?.api;
 
-        if (!isLoading && api && api.getDisplayedRowCount() > 0) {
+        if (!effectiveIsLoading && api && api.getDisplayedRowCount() > 0) {
           const persistedState = onGetColumnsState?.();
           if (persistedState && persistedState.length > 0) {
             gridRef?.current?.api?.applyColumnState({
@@ -256,7 +320,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       }
     }, [
       dataRendered,
-      isLoading,
+      effectiveIsLoading,
       onGetColumnsState,
       onGetFirstVisibleRowIndex,
       onGetFirstVisibleColumn,
@@ -359,15 +423,16 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       getLevelForKey: expandableOpts?.onFetchChildrenForRecord
         ? getLevelForKey
         : undefined,
+      showCheckboxColumn: !!onRowSelectionChangeProps,
     });
 
     useEffect(() => {
-      if (isLoading) {
+      if (effectiveIsLoading) {
         setDataRendered(false);
-      } else if (isLoading === false && dataSource.length === 0) {
+      } else if (effectiveIsLoading === false && dataSource.length === 0) {
         setDataRendered(true);
       }
-    }, [dataSource.length, isLoading]);
+    }, [dataSource.length, effectiveIsLoading]);
 
     const memoizedOnRowDoubleClick = useCallback(
       ({ data: item }: RowDoubleClickedEvent) => {
@@ -398,11 +463,11 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     }, [showPointerCursorInRows]);
 
     const onModelUpdated = useCallback(() => {
-      isLoading === false &&
+      effectiveIsLoading === false &&
         requestAnimationFrame(() => {
           onDataRendered();
         });
-    }, [isLoading, onDataRendered]);
+    }, [effectiveIsLoading, onDataRendered]);
 
     const memoizedDataSource = useMemo(() => {
       if (!hasStatusColumn || !onRowStatus) {
@@ -508,7 +573,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     // Callback to apply persisted column state or auto-fit
     const applyCurrentColumnState = useCallback(() => {
       const api = gridRef.current?.api;
-      if (api && !isLoading) {
+      if (api && !effectiveIsLoading) {
         // Ensure API is available and not loading
         // It's good practice to check if the component is still mounted if operations are async
         const persistedState = onGetColumnsState?.();
@@ -521,10 +586,10 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           applyAutoFitState(); // from useColumnState
         }
       }
-    }, [isLoading, onGetColumnsState, applyAutoFitState, gridRef]); // gridRef is stable
+    }, [effectiveIsLoading, onGetColumnsState, applyAutoFitState, gridRef]); // gridRef is stable
 
     useEffect(() => {
-      if (gridRef.current?.api && !isLoading) {
+      if (gridRef.current?.api && !effectiveIsLoading) {
         // Apply column state when colDefs change.
         // A timeout helps ensure AG Grid has processed the new colDefs.
         const timerId = setTimeout(() => {
@@ -533,7 +598,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
         return () => clearTimeout(timerId);
       }
-    }, [memoizedColDefs, isLoading, applyCurrentColumnState]); // Key dependencies
+    }, [memoizedColDefs, effectiveIsLoading, applyCurrentColumnState]); // Key dependencies
 
     return (
       <div

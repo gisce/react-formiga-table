@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Meta } from "@storybook/react";
 import {
   InfiniteTable,
@@ -137,6 +137,61 @@ export const HeavyTable = (): React.ReactElement => {
             }}
           />
         )}
+      />
+    </>
+  );
+};
+
+export const WithAutoRefresh = (): React.ReactElement => {
+  const tableRef = useRef<InfiniteTableRef>(null);
+  const [dataCounter, setDataCounter] = useState(0);
+
+  // Modified onRequestData that adds a counter to the data to show it's refreshing
+  const onRequestDataWithCounter = async ({
+    startRow,
+    endRow,
+  }: {
+    startRow: number;
+    endRow: number;
+  }) => {
+    await new Promise((resolve) => setTimeout(resolve, 500)); // simulate fetch delay
+    const data = heavyTable.slice(startRow, endRow);
+
+    // Add a refresh counter to each item to demonstrate the data is being refreshed
+    return data.map((item) => ({
+      ...item,
+      name: `${item.name} (refresh: ${dataCounter})`,
+    }));
+  };
+
+  // Increment counter every 2 seconds to show data changes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDataCounter((prev) => prev + 1);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <>
+      <div style={{ marginBottom: "10px" }}>
+        <h3>Auto-Refresh Demo (2 seconds)</h3>
+        <p>
+          The table automatically refreshes every 2 seconds. Watch the refresh
+          counter in the Name column.
+        </p>
+        <p>Current refresh count: {dataCounter}</p>
+      </div>
+      <InfiniteTable
+        onRequestData={onRequestDataWithCounter}
+        columns={columns}
+        onRowSelectionChange={(selectedRows: any) => {
+          console.log("selectedRows: " + JSON.stringify(selectedRows));
+        }}
+        height={400}
+        ref={tableRef}
+        autoRefresh={2000}
+        hasStatusColumn={false}
       />
     </>
   );
