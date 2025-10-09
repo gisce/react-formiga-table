@@ -454,6 +454,23 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             return;
           }
 
+          // If we got 0 rows for a non-zero startRow, we're beyond the end
+          if (data.length === 0 && startRow > 0) {
+            // Tell AG Grid there are no rows in this range, but we know totalRows from props
+            // This prevents infinite loading when jumping to end
+            if (
+              totalRows !== DEFAULT_TOTAL_ROWS_VALUE &&
+              totalRows < startRow
+            ) {
+              params.successCallback([], totalRows);
+            } else {
+              // We don't know the exact end, so just say this range is empty
+              params.successCallback([], startRow);
+            }
+            dataIsLoading.current = false;
+            return;
+          }
+
           let lastRow = -1;
           if (data.length < endRow - startRow) {
             lastRow = startRow + data.length;
