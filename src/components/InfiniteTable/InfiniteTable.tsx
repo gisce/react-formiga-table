@@ -79,6 +79,7 @@ export type InfiniteTableRef = {
   refreshRowStyles: () => void;
   pauseAutoRefresh: () => void;
   resumeAutoRefresh: () => void;
+  scrollToTop: () => void;
 };
 
 const DEFAULT_CACHE_BLOCK_SIZE = 30;
@@ -220,6 +221,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       },
       resumeAutoRefresh: () => {
         autoRefreshPaused.current = false;
+      },
+      scrollToTop: () => {
+        gridRef.current?.api?.ensureIndexVisible(0, "top");
       },
     }));
 
@@ -454,29 +458,33 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             return;
           }
 
-          // If we got 0 rows for a non-zero startRow, we're beyond the end
+          // If we get 0 rows for a request beyond the start, we're past the end
           if (data.length === 0 && startRow > 0) {
-            // Tell AG Grid there are no rows in this range, but we know totalRows from props
-            // This prevents infinite loading when jumping to end
-            if (
-              totalRows !== DEFAULT_TOTAL_ROWS_VALUE &&
-              totalRows < startRow
-            ) {
-              params.successCallback([], totalRows);
-            } else {
-              // We don't know the exact end, so just say this range is empty
-              params.successCallback([], startRow);
-            }
+            // Use totalRows if available and valid, otherwise use startRow as a fallback
+            const effectiveLastRow =
+              totalRows !== undefined && totalRows !== DEFAULT_TOTAL_ROWS_VALUE
+                ? totalRows
+                : startRow;
+            params.successCallback([], effectiveLastRow);
             dataIsLoading.current = false;
             return;
           }
 
           let lastRow = -1;
+
+          // First check: did we get less data than requested? This means we've hit the end
           if (data.length < endRow - startRow) {
             lastRow = startRow + data.length;
           }
-          if (
-            lastRow === -1 &&
+          // Second check: if we know totalRows, always use it (unless already set above)
+          else if (
+            totalRows !== undefined &&
+            totalRows !== DEFAULT_TOTAL_ROWS_VALUE
+          ) {
+            lastRow = totalRows;
+          }
+          // Special case for cacheBlockSize (fallback if we still don't know)
+          else if (
             totalRows >= cacheBlockSize &&
             cacheBlockSize !== DEFAULT_CACHE_BLOCK_SIZE
           ) {
