@@ -30,8 +30,8 @@ import { useDeepCompareEffect } from "use-deep-compare";
 import { ITOptsButton } from "./ITOptsButton";
 import { NoRowsOverlay } from "../NoRowsOverlay";
 
-const DEBOUNCE_TIME = 100;
-const DEFAULT_TOTAL_ROWS_VALUE = Number.MAX_SAFE_INTEGER;
+const DEBOUNCE_TIME = 500;
+const DEFAULT_TOTAL_ROWS_VALUE = 1;
 
 export type InfiniteTableProps = Omit<
   TableProps,
@@ -79,6 +79,7 @@ export type InfiniteTableRef = {
   refreshRowStyles: () => void;
   pauseAutoRefresh: () => void;
   resumeAutoRefresh: () => void;
+  scrollToTop: () => void;
 };
 
 const DEFAULT_CACHE_BLOCK_SIZE = 30;
@@ -128,6 +129,10 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       getRows: (params: IGetRowsParams) => void;
     }>();
     const firstTimeResized = useRef(false);
+
+    // Store totalRows in a ref so getRows always uses the latest value
+    const totalRowsRef = useRef(totalRows);
+    totalRowsRef.current = totalRows;
 
     const updateSelectedRowKeys = useCallback(() => {
       gridRef.current?.api?.forEachNode((node) => {
@@ -220,6 +225,9 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       },
       resumeAutoRefresh: () => {
         autoRefreshPaused.current = false;
+      },
+      scrollToTop: () => {
+        gridRef.current?.api?.ensureIndexVisible(0, "top");
       },
     }));
 
@@ -424,8 +432,11 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             return;
           }
           const { startRow, endRow } = params;
-          if (cacheBlockSize === totalRows && params.startRow !== 0) {
-            params.successCallback([], totalRows);
+          if (
+            cacheBlockSize === totalRowsRef.current &&
+            params.startRow !== 0
+          ) {
+            params.successCallback([], totalRowsRef.current);
             return;
           }
           dataIsLoading.current = true;
@@ -443,6 +454,8 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             state: gridRef.current?.api.getColumnState(),
           });
 
+          const currentTotalRows = totalRowsRef.current;
+
           if (!data) {
             throw new Error("Data is undefined");
           }
@@ -454,13 +467,35 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             return;
           }
 
+          // If we get 0 rows for a request beyond the start, we're past the end
+          if (data.length === 0 && startRow > 0) {
+            // Use totalRows if available and valid, otherwise use startRow as a fallback
+            const effectiveLastRow =
+              currentTotalRows !== undefined &&
+              currentTotalRows !== DEFAULT_TOTAL_ROWS_VALUE
+                ? currentTotalRows
+                : startRow;
+            params.successCallback([], effectiveLastRow);
+            dataIsLoading.current = false;
+            return;
+          }
+
           let lastRow = -1;
+
+          // First check: did we get less data than requested? This means we've hit the end
           if (data.length < endRow - startRow) {
             lastRow = startRow + data.length;
           }
-          if (
-            lastRow === -1 &&
-            totalRows >= cacheBlockSize &&
+          // Second check: if we know totalRows, always use it (unless already set above)
+          else if (
+            currentTotalRows !== undefined &&
+            currentTotalRows !== DEFAULT_TOTAL_ROWS_VALUE
+          ) {
+            lastRow = currentTotalRows;
+          }
+          // Special case for cacheBlockSize (fallback if we still don't know)
+          else if (
+            currentTotalRows >= cacheBlockSize &&
             cacheBlockSize !== DEFAULT_CACHE_BLOCK_SIZE
           ) {
             lastRow = cacheBlockSize;
@@ -531,7 +566,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       },
       [
         cacheBlockSize,
-        totalRows,
         onRequestData,
         hasStatusColumn,
         selectedRowKeys,

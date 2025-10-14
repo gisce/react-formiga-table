@@ -91,6 +91,7 @@ export type PaginatedTableRef = {
   refreshRowStyles: () => void;
   pauseAutoRefresh: () => void;
   resumeAutoRefresh: () => void;
+  scrollToTop: () => void;
 };
 
 const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
@@ -240,6 +241,9 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       },
       resumeAutoRefresh: () => {
         autoRefreshPaused.current = false;
+      },
+      scrollToTop: () => {
+        gridRef.current?.api?.ensureIndexVisible(0, "top");
       },
     }));
 
