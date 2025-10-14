@@ -30,7 +30,7 @@ import { useDeepCompareEffect } from "use-deep-compare";
 import { ITOptsButton } from "./ITOptsButton";
 import { NoRowsOverlay } from "../NoRowsOverlay";
 
-const DEBOUNCE_TIME = 100;
+const DEBOUNCE_TIME = 500;
 const DEFAULT_TOTAL_ROWS_VALUE = 1;
 
 export type InfiniteTableProps = Omit<
