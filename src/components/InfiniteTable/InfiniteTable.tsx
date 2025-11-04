@@ -29,6 +29,7 @@ import debounce from "lodash/debounce";
 import { useDeepCompareEffect } from "use-deep-compare";
 import { ITOptsButton } from "./ITOptsButton";
 import { NoRowsOverlay } from "../NoRowsOverlay";
+import { isFirefox } from "../../utils/browserDetection";
 
 const DEBOUNCE_TIME = 500;
 const DEFAULT_TOTAL_ROWS_VALUE = 1;
@@ -233,6 +234,12 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
 
     const columns = useDeepArrayMemo(columnsProps, "key");
 
+    // Capture the original column order on mount/change
+    const originalColumnsOrderRef = useRef<string[]>([]);
+    useEffect(() => {
+      originalColumnsOrderRef.current = columns.map((col) => col.key);
+    }, [columns]);
+
     const {
       loadPersistedColumnState,
       columnsPersistedStateRef,
@@ -364,9 +371,30 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
               strings?.["changeToPaginatedLabel"] || "Canviar a llistat paginat"
             }
             onResetTableView={async () => {
-              applyAndUpdateNewState([]);
-              gridRef.current?.api.resetColumnState();
+              // Create a column state with original order (unpinned, unsorted)
+              const originalColumnState = originalColumnsOrderRef.current.map(
+                (colKey, index) => ({
+                  colId: colKey,
+                  pinned: null,
+                  hide: false,
+                  sort: null,
+                  sortIndex: null,
+                }),
+              );
+
+              // Clear the persisted state ref so pre-sorting doesn't happen on next render
+              columnsPersistedStateRef.current = [];
+
+              // Apply original column order
+              gridRef.current?.api.applyColumnState({
+                state: originalColumnState,
+                applyOrder: true,
+              });
+
+              // Apply auto-fit sizing
               applyAutoFitState();
+
+              // Notify parent to clear persisted state
               onColumnsChangedProps?.([]);
             }}
           />
@@ -546,6 +574,17 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
           if (firstTimeDataLoaded.current) {
             firstTimeDataLoaded.current = false;
             scrollToSavedPosition();
+
+            // Force Firefox to recalculate pinned column layout
+            if (isFirefox() && columnsPersistedStateRef.current) {
+              requestAnimationFrame(() => {
+                gridRef.current?.api?.refreshHeader();
+                // Also trigger a cells refresh to fix any layout issues
+                requestAnimationFrame(() => {
+                  gridRef.current?.api?.refreshCells({ force: true });
+                });
+              });
+            }
           }
         } catch (error) {
           dataIsLoading.current = false;

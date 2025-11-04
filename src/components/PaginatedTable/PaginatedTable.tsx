@@ -35,6 +35,7 @@ import { NoRowsOverlay } from "../NoRowsOverlay";
 import { ExpandableItem, useExpandable } from "@/hooks/useExpandable";
 import { usePaginatedTableColumns } from "./usePaginatedTableColumns.tsx";
 import { useDeepCompareMemo } from "use-deep-compare";
+import { isFirefox } from "../../utils/browserDetection";
 
 export type PaginatedTableProps = {
   dataSource: Array<Record<string, any>>;
@@ -249,6 +250,12 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
 
     const columns = useDeepArrayMemo(columnsProps, "key");
 
+    // Capture the original column order on mount/change
+    const originalColumnsOrderRef = useRef<string[]>([]);
+    useEffect(() => {
+      originalColumnsOrderRef.current = columns.map((col) => col.key);
+    }, [columns]);
+
     const { applyAndUpdateNewState, applyAutoFitState } = useColumnState({
       gridRef,
       containerRef,
@@ -402,11 +409,34 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       onHeaderCheckboxClick,
     );
 
-    const onResetTableView = useCallback(() => {
+    const onResetTableView = useCallback(async () => {
+      // Create a column state with original order (unpinned, unsorted)
+      const originalColumnState = originalColumnsOrderRef.current.map(
+        (colKey) => ({
+          colId: colKey,
+          pinned: null,
+          hide: false,
+          sort: null,
+          sortIndex: null,
+        }),
+      );
+
+      // Apply original column order
+      gridRef.current?.api.applyColumnState({
+        state: originalColumnState,
+        applyOrder: true,
+      });
+
+      // Apply auto-fit sizing
+      applyAutoFitState();
+
+      // Notify parent to clear persisted state and sort
       onColumnsChangedProps?.([]);
       onSortChange?.([]);
+
+      // Trigger reload if needed (this will cause re-render with cleared state)
       onForceReload?.();
-    }, [onColumnsChangedProps, onForceReload, onSortChange]);
+    }, [applyAutoFitState, onColumnsChangedProps, onForceReload, onSortChange]);
 
     const memoizedColDefs = usePaginatedTableColumns({
       columns,
@@ -586,6 +616,17 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
             state: persistedState,
             applyOrder: true,
           });
+
+          // Force Firefox to recalculate pinned column layout
+          if (isFirefox()) {
+            requestAnimationFrame(() => {
+              gridRef?.current?.api?.refreshHeader();
+              // Also trigger a cells refresh to fix any layout issues
+              requestAnimationFrame(() => {
+                gridRef?.current?.api?.refreshCells({ force: true });
+              });
+            });
+          }
         } else {
           applyAutoFitState(); // from useColumnState
         }
