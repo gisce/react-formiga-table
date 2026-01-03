@@ -1,9 +1,6 @@
 {
   "name": "@gisce/react-formiga-table",
   "version": "1.16.2",
-  "engines": {
-    "node": "20.5.0"
-  },
   "files": [
     "dist",
     "dist/style.css",
