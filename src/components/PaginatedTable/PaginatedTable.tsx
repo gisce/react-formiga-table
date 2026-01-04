@@ -10,8 +10,6 @@ import {
   useState,
 } from "react";
 import { AgGridReact } from "ag-grid-react";
-import "ag-grid-community/styles/ag-grid.css";
-import "@/styles/ag-theme-quartz.css";
 import {
   BodyScrollEndEvent,
   ColumnResizedEvent,
@@ -656,7 +654,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       >
         <div
           ref={containerRef}
-          className="ag-grid-default-table"
+          className="ag-grid-default-table ag-theme-quartz"
           style={{ height: tableHeight, width: "100%", position: "relative" }}
         >
           {!dataRendered && (

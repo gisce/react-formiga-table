@@ -9,7 +9,6 @@ import {
   useRef,
 } from "react";
 import { AgGridReact } from "ag-grid-react";
-import "ag-grid-community/styles/ag-grid.css";
 import "@/styles/ag-theme-quartz.css";
 import {
   BodyScrollEvent,
@@ -720,7 +719,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       >
         <div
           ref={containerRef}
-          className="ag-grid-default-table"
+          className="ag-grid-default-table ag-theme-quartz"
           style={{ height: tableHeight, width: "100%" }}
         >
           <AgGridReact
