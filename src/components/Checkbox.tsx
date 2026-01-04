@@ -7,7 +7,7 @@ export const Checkbox = ({
   value: boolean | null;
   onChange: (value: boolean | null) => void;
 }) => {
-  const checkboxRef = React.useRef();
+  const checkboxRef = React.useRef<HTMLInputElement | null>(null);
 
   React.useEffect(() => {
     const cbRef = checkboxRef.current as any;

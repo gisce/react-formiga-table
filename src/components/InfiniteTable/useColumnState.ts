@@ -20,13 +20,13 @@ export const useColumnState = ({
   onGetColumnsState,
   type = "infinite",
 }: {
-  gridRef: RefObject<AgGridReact>;
-  containerRef: RefObject<HTMLDivElement>;
+  gridRef: RefObject<AgGridReact | null>;
+  containerRef: RefObject<HTMLDivElement | null>;
   columns: TableColumn[];
   onGetColumnsState?: () => ColumnState[] | undefined;
   type?: "infinite" | "paginated";
 }) => {
-  const columnsPersistedStateRef = useRef<ColumnState[]>();
+  const columnsPersistedStateRef = useRef<ColumnState[] | undefined>(undefined);
 
   const columnsToIgnore = FIXED_COLUMNS_TO_IGNORE;
 

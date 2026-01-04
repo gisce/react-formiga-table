@@ -13,11 +13,12 @@ import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "@/styles/ag-theme-quartz.css";
 import {
-  BodyScrollEvent,
+  BodyScrollEndEvent,
   ColumnResizedEvent,
   ColumnState,
   RowDoubleClickedEvent,
   RowSelectedEvent,
+  themeQuartz,
   SortChangedEvent,
 } from "ag-grid-community";
 import type { ExpandOptions, Strings, TableColumn, TableType } from "@/types";
@@ -364,7 +365,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     );
 
     const onBodyScrollEnd = useCallback(
-      (params: BodyScrollEvent) => {
+      (params: BodyScrollEndEvent) => {
         // Ignore first event which is automatically triggered
         if (
           params.top === -1 &&
@@ -655,7 +656,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
       >
         <div
           ref={containerRef}
-          className={`ag-grid-default-table ag-theme-quartz`}
+          className="ag-grid-default-table"
           style={{ height: tableHeight, width: "100%", position: "relative" }}
         >
           {!dataRendered && (
@@ -695,6 +696,7 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
           </style>
           <AgGridReact
             ref={gridRef}
+            theme={themeQuartz}
             rowBuffer={0}
             enableCellTextSelection={true}
             suppressLoadingOverlay={true}

@@ -19,6 +19,7 @@ import {
   GridReadyEvent,
   IGetRowsParams,
   RowDoubleClickedEvent,
+  themeQuartz,
 } from "ag-grid-community";
 import { Strings, TableProps, TableType } from "@/types";
 import { useDeepArrayMemo } from "@/hooks/useDeepArrayMemo";
@@ -36,7 +37,7 @@ const DEFAULT_TOTAL_ROWS_VALUE = 1;
 
 export type InfiniteTableProps = Omit<
   TableProps,
-  "dataSource" & "loading" & "loadingComponent" & "height"
+  "dataSource" | "loading" | "loadingComponent" | "height"
 > & {
   onRequestData: ({
     startRow,
@@ -126,9 +127,12 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const totalHeight = footer ? heightProps + footerHeight : heightProps;
     const tableHeight = footer ? heightProps - footerHeight : heightProps;
-    const datasourceRef = useRef<{
-      getRows: (params: IGetRowsParams) => void;
-    }>();
+    const datasourceRef = useRef<
+      | {
+          getRows: (params: IGetRowsParams) => void;
+        }
+      | undefined
+    >(undefined);
     const firstTimeResized = useRef(false);
 
     // Store totalRows in a ref so getRows always uses the latest value
@@ -716,11 +720,12 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       >
         <div
           ref={containerRef}
-          className={`ag-grid-default-table ag-theme-quartz`}
+          className="ag-grid-default-table"
           style={{ height: tableHeight, width: "100%" }}
         >
           <AgGridReact
             ref={gridRef}
+            theme={themeQuartz}
             columnDefs={colDefs}
             onRowDoubleClicked={memoizedOnRowDoubleClick}
             enableCellTextSelection={true}
