@@ -2,6 +2,7 @@ name: Release
 
 env:
   LIBRARY_NAME: "gisce/react-formiga-table"
+  NODE_VERSION: "24.12.0"
 
 on:
   push:
@@ -19,7 +20,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: '!contains(github.event.head_commit.message, ''[skip ci]'')'
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     outputs:
       release_type: ${{ steps.get_release_type.outputs.release_type }}
       tag_name: ${{ steps.get_tag_name.outputs.tag_name }}
@@ -28,7 +29,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '20.5.0'
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Checkout Repository
         uses: actions/checkout@v2
@@ -84,7 +85,7 @@ jobs:
             branch: ${{ needs.release.outputs.branch_name }}
     steps:
       - name: Call update version dependency flow for each project
-        uses: gisce/create-update-version-pr@v0.0.9
+        uses: gisce/create-update-version-pr@v0.0.10
         with:
           dependentProject: ${{ matrix.project }}
           tagName: ${{ needs.release.outputs.tag_name }}
@@ -92,6 +93,7 @@ jobs:
           libraryName: ${{ env.LIBRARY_NAME }}
           githubToken: ${{ secrets.GH_PAT }}
           releaseType: ${{ needs.release.outputs.release_type }}
+          nodeVersion: ${{ env.NODE_VERSION }}
 
   create-sync-prs:
     name: Create sync PRs
@@ -100,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: ['alpha', 'v2-develop']
+        target: ["alpha", "v2-develop"]
     steps:
       - name: Call create sync pr
         uses: gisce/create-sync-pr@v0.0.26
