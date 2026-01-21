@@ -698,6 +698,13 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       [getAllNodeKeys, onRowSelectionChange, selectedRowKeys],
     );
 
+    const getRowId = useCallback(
+      (params: { data: { id: number | string } }) => {
+        return String(params.data.id);
+      },
+      [],
+    );
+
     const rowStyle = useMemo(() => {
       return {
         cursor: showPointerCursorInRows ? "pointer" : "default",
@@ -729,6 +736,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             enableCellTextSelection={true}
             rowStyle={rowStyle}
             getRowStyle={onRowStyle}
+            getRowId={getRowId}
             suppressCellFocus={true}
             suppressRowClickSelection={true}
             rowBuffer={5}
