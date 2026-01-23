@@ -1,6 +1,6 @@
 {
   "name": "@gisce/react-formiga-table",
-  "version": "1.18.0-alpha.1",
+  "version": "1.18.0-alpha.2",
   "files": [
     "dist",
     "dist/style.css",
