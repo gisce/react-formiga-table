@@ -543,7 +543,16 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
               )
             : data;
 
-          params.successCallback(finalData, lastRow);
+          // Single-block deduplication: remove duplicates within this response only
+          const seenIds = new Set<string | number>();
+          const dedupedData = finalData.filter((item) => {
+            if (item?.id === undefined || item?.id === null) return true;
+            if (seenIds.has(item.id)) return false;
+            seenIds.add(item.id);
+            return true;
+          });
+
+          params.successCallback(dedupedData, lastRow);
 
           if (selectedRowKeys && selectedRowKeys.length > 0) {
             gridRef?.current?.api.forEachNode((node) => {
