@@ -463,10 +463,10 @@ const PaginatedTableComp = forwardRef<PaginatedTableRef, PaginatedTableProps>(
     useEffect(() => {
       if (effectiveIsLoading) {
         setDataRendered(false);
-      } else if (effectiveIsLoading === false && dataSource.length === 0) {
+      } else {
         setDataRendered(true);
       }
-    }, [dataSource.length, effectiveIsLoading]);
+    }, [effectiveIsLoading]);
 
     const memoizedOnRowDoubleClick = useCallback(
       ({ data: item }: RowDoubleClickedEvent) => {
