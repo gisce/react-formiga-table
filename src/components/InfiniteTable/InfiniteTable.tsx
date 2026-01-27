@@ -543,16 +543,7 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
               )
             : data;
 
-          // Single-block deduplication: remove duplicates within this response only
-          const seenIds = new Set<string | number>();
-          const dedupedData = finalData.filter((item) => {
-            if (item?.id === undefined || item?.id === null) return true;
-            if (seenIds.has(item.id)) return false;
-            seenIds.add(item.id);
-            return true;
-          });
-
-          params.successCallback(dedupedData, lastRow);
+          params.successCallback(finalData, lastRow);
 
           if (selectedRowKeys && selectedRowKeys.length > 0) {
             gridRef?.current?.api.forEachNode((node) => {
@@ -707,13 +698,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
       [getAllNodeKeys, onRowSelectionChange, selectedRowKeys],
     );
 
-    const getRowId = useCallback(
-      (params: { data: { id: number | string } }) => {
-        return String(params.data.id);
-      },
-      [],
-    );
-
     const rowStyle = useMemo(() => {
       return {
         cursor: showPointerCursorInRows ? "pointer" : "default",
@@ -745,7 +729,6 @@ const InfiniteTableComp = forwardRef<InfiniteTableRef, InfiniteTableProps>(
             enableCellTextSelection={true}
             rowStyle={rowStyle}
             getRowStyle={onRowStyle}
-            getRowId={getRowId}
             suppressCellFocus={true}
             suppressRowClickSelection={true}
             rowBuffer={5}
